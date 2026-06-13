@@ -17,11 +17,5 @@
     "applications",
     "automation"
   ],
-  "skills": [
-    "skills/source",
-    "skills/new-role",
-    "skills/generate-cv",
-    "skills/apply",
-    "skills/track"
-  ]
+  "skills": "skills"
 }
