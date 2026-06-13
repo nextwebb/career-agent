@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>career-agent — Agentic job application workflow for Claude</title>
+  <meta name="description" content="Generate tailored CV + cover letter PDFs per role. Claude fills the ATS form. You review and click Submit.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #e8e8e8;
+      --muted: #888;
+      --accent: #2563eb;
+      --accent-light: #3b82f6;
+      --green: #22c55e;
+      --red: #ef4444;
+      --code-bg: #111;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent-light); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* NAV */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(15,15,15,0.95);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+    .nav-logo { font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; }
+    .nav-links { display: flex; gap: 1.5rem; font-size: 0.875rem; color: var(--muted); }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+
+    /* HERO */
+    .hero {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 6rem 2rem 4rem;
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: rgba(37,99,235,0.15);
+      border: 1px solid rgba(37,99,235,0.3);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      color: var(--accent-light);
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 1.25rem;
+    }
+    h1 span { color: var(--accent-light); }
+    .hero-sub {
+      font-size: 1.125rem;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+    }
+    .hero-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+
+    /* FLOW */
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+      padding: 2rem;
+      max-width: 900px;
+      margin: 0 auto 4rem;
+    }
+    .flow-step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-size: 0.875rem;
+      text-align: center;
+      min-width: 130px;
+    }
+    .flow-step .icon { font-size: 1.5rem; margin-bottom: 0.4rem; }
+    .flow-step .label { color: var(--muted); font-size: 0.75rem; margin-top: 0.2rem; }
+    .flow-arrow {
+      color: var(--border);
+      font-size: 1.25rem;
+      padding: 0 0.5rem;
+    }
+    .flow-step.you { border-color: var(--accent); }
+    .flow-step.you .icon::after { content: " ✋"; font-size: 0.9rem; }
+
+    /* SECTION */
+    section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 2rem;
+      border-top: 1px solid var(--border);
+    }
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+
+    /* FEATURES GRID */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .feature {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    .feature-icon { font-size: 1.25rem; margin-bottom: 0.75rem; }
+    .feature p { font-size: 0.875rem; color: var(--muted); margin-top: 0.25rem; }
+
+    /* COMPARE TABLE */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    th, td {
+      padding: 0.625rem 0.875rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 500; }
+    td:first-child { font-weight: 500; }
+    .yes { color: var(--green); }
+    .no { color: var(--red); }
+
+    /* CODE BLOCK */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      margin: 1rem 0;
+    }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; }
+    .comment { color: #555; }
+    .cmd { color: var(--accent-light); }
+
+    /* PLATFORMS */
+    .platforms {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .platform-badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8125rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .platform-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+    /* HANDOFF BOX */
+    .handoff {
+      background: rgba(37,99,235,0.08);
+      border: 1px solid rgba(37,99,235,0.25);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+    }
+    .handoff h3 { color: var(--accent-light); margin-bottom: 0.75rem; }
+    .handoff ul { list-style: none; }
+    .handoff li { font-size: 0.875rem; color: var(--muted); padding: 0.2rem 0; }
+    .handoff li::before { content: "✅ "; }
+    .handoff li.never::before { content: "🚫 "; }
+
+    /* INSTALL */
+    .install-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .tab {
+      padding: 0.375rem 0.875rem;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.8125rem;
+    }
+    footer a { color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">career-agent</div>
+  <div class="nav-links">
+    <a href="#quickstart">Quick start</a>
+    <a href="#platforms">Platforms</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/YOUR_USERNAME/career-agent">GitHub</a>
+  </div>
+  <a href="https://github.com/YOUR_USERNAME/career-agent" class="btn btn-primary">
+    ★ Star on GitHub
+  </a>
+</nav>
+
+<div class="hero">
+  <div class="badge">Claude Code + Cowork Plugin</div>
+  <h1>Job applications,<br><span>done by an agent</span></h1>
+  <p class="hero-sub">
+    One command generates a tailored CV + cover letter PDF per role.
+    Claude fills the ATS form. You review and click Submit.
+  </p>
+  <div class="hero-actions">
+    <a href="https://github.com/YOUR_USERNAME/career-agent" class="btn btn-primary">Get started</a>
+    <a href="https://github.com/YOUR_USERNAME/career-agent#readme" class="btn btn-ghost">Read the docs</a>
+  </div>
+</div>
+
+<div style="max-width:900px; margin:0 auto 2rem; padding:0 2rem;">
+  <img
+    src="demo.gif"
+    alt="career-agent filling a real Greenhouse application form — fields, CV upload, cover letter, handoff"
+    style="width:100%; border-radius:10px; border:1px solid #2a2a2a;"
+  />
+</div>
+
+<div class="flow">
+  <div class="flow-step">
+    <div class="icon">📄</div>
+    <div><strong>Role config</strong></div>
+    <div class="label">roles/my_role.json</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">
+    <div class="icon">🖨️</div>
+    <div><strong>PDF generation</strong></div>
+    <div class="label">/generate-cv</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">
+    <div class="icon">🤖</div>
+    <div><strong>Form filling</strong></div>
+    <div class="label">/apply</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step you">
+    <div class="icon">👤</div>
+    <div><strong>You</strong></div>
+    <div class="label">EEO + Submit</div>
+  </div>
+</div>
+
+<section id="features">
+  <h2>What it does</h2>
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">📋</div>
+      <h3>Tailored CVs, not templates</h3>
+      <p>A/B/C variant system orders your experience differently per role type. Each application gets a PDF built for that specific JD.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🌐</div>
+      <h3>Multi-ATS browser automation</h3>
+      <p>Claude fills Greenhouse, Lever, and Workable forms via DOM — not pixel clicking. Handles hidden file inputs, React comboboxes, and cross-origin iframes.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">✉️</div>
+      <h3>Per-role cover letters</h3>
+      <p>Role config holds your cover letter paragraphs. Generated as a matching PDF, or pasted as text where the platform requires it.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔒</div>
+      <h3>Your data stays local</h3>
+      <p>profile.json and roles/ are gitignored. Your personal data, phone number, and salary expectations never leave your machine.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">✋</div>
+      <h3>You own the Submit button</h3>
+      <p>Claude fills, you verify and submit. EEO/voluntary fields are always yours. No surprises.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🧩</div>
+      <h3>Cowork + Claude Code</h3>
+      <p>Install as a Cowork desktop plugin or a Claude Code CLI skill. Same workflow, two surfaces.</p>
+    </div>
+  </div>
+</section>
+
+<section id="compare">
+  <h2>How it compares</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>career-agent</th>
+        <th>job-application-quality</th>
+        <th>career-ops</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>ATS form filling (browser)</td>
+        <td class="yes">✅ Greenhouse, Lever, Workable</td>
+        <td class="no">❌</td>
+        <td class="no">❌</td>
+      </tr>
+      <tr>
+        <td>Tailored PDF per role</td>
+        <td class="yes">✅</td>
+        <td class="yes">✅ basic</td>
+        <td class="no">❌</td>
+      </tr>
+      <tr>
+        <td>CV variant system</td>
+        <td class="yes">✅ A/B/C by role type</td>
+        <td class="no">❌</td>
+        <td class="no">❌</td>
+      </tr>
+      <tr>
+        <td>Per-role cover letters</td>
+        <td class="yes">✅</td>
+        <td class="no">❌</td>
+        <td class="no">❌</td>
+      </tr>
+      <tr>
+        <td>Profile data local + gitignored</td>
+        <td class="yes">✅</td>
+        <td>varies</td>
+        <td>varies</td>
+      </tr>
+      <tr>
+        <td>Cowork + Claude Code plugin</td>
+        <td class="yes">✅ both</td>
+        <td class="no">❌</td>
+        <td class="no">❌</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="quickstart">
+  <h2>Quick start</h2>
+  <pre><code><span class="comment"># Clone and configure</span>
+<span class="cmd">git clone</span> https://github.com/YOUR_USERNAME/career-agent
+<span class="cmd">cd</span> career-agent
+<span class="cmd">cp</span> profile.example.json profile.json      <span class="comment"># fill in your details</span>
+<span class="cmd">cp</span> roles.example/example_role.json roles/stripe_backend.json
+<span class="cmd">pip install</span> reportlab
+
+<span class="comment"># In Claude Code or Cowork</span>
+/generate-cv stripe_backend
+/apply stripe_backend</code></pre>
+  <p style="font-size:0.875rem; color:var(--muted); margin-top:0.75rem;">
+    Claude generates your PDFs, opens the job URL, fills the form, uploads your CV, and hands off to you for EEO fields and Submit.
+  </p>
+</section>
+
+<section id="platforms">
+  <h2>ATS platform support</h2>
+  <p style="color:var(--muted); font-size:0.875rem; margin-bottom:0.5rem;">Tested and working:</p>
+  <div class="platforms">
+    <div class="platform-badge"><div class="dot"></div>Greenhouse (direct)</div>
+    <div class="platform-badge"><div class="dot"></div>Greenhouse (iframe embed)</div>
+    <div class="platform-badge"><div class="dot"></div>Lever</div>
+    <div class="platform-badge"><div class="dot"></div>Workable</div>
+  </div>
+  <p style="color:var(--muted); font-size:0.875rem; margin-top:1.25rem;">
+    Want to add Ashby, SmartRecruiters, Taleo, or iCIMS? See <a href="https://github.com/YOUR_USERNAME/career-agent/blob/main/README.md#contributing">contributing guide</a>.
+  </p>
+</section>
+
+<section id="handoff">
+  <h2>Human-in-the-loop design</h2>
+  <div class="handoff">
+    <h3>Clear boundary between agent and human</h3>
+    <ul>
+      <li>Fills all required fields verifiable from your profile and role config</li>
+      <li>Uploads CV and cover letter PDFs</li>
+      <li>Answers custom questions (work authorisation, cities, "how did you hear")</li>
+      <li>Reports exactly what was filled and what remains</li>
+      <li class="never">Never clicks Submit or irreversible confirmation buttons</li>
+      <li class="never">Never fills EEO/voluntary self-identification fields</li>
+      <li class="never">Never enters passwords or credentials</li>
+    </ul>
+  </div>
+</section>
+
+<section id="install">
+  <h2>Install</h2>
+  <div class="install-tabs">
+    <div class="tab active">Cowork</div>
+    <div class="tab">Claude Code</div>
+  </div>
+  <pre><code><span class="comment"># Cowork (desktop app)</span>
+<span class="comment"># Settings → Plugins → Install from folder → select repo root</span>
+<span class="comment"># Skills appear as /generate-cv, /apply, /new-role</span></code></pre>
+  <pre><code><span class="comment"># Claude Code (CLI)</span>
+<span class="cmd">cp -r</span> skills ~/.claude/skills/career-agent
+
+<span class="comment"># Then in any session:</span>
+/career-agent:apply stripe_backend</code></pre>
+</section>
+
+<footer>
+  <p>
+    <a href="https://github.com/YOUR_USERNAME/career-agent">GitHub</a> ·
+    <a href="https://github.com/YOUR_USERNAME/career-agent/issues">Issues</a> ·
+    MIT License
+  </p>
+  <p style="margin-top:0.5rem;">Built with <a href="https://claude.ai">Claude</a> + <a href="https://claude.ai/code">Claude Code</a></p>
+</footer>
+
+</body>
+</html>

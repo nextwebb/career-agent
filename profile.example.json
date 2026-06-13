@@ -1,0 +1,115 @@
+{
+  "_comment": "Copy this file to profile.json and fill in your details. profile.json is gitignored and never committed.",
+  "name": {
+    "first": "Jane",
+    "last": "Doe",
+    "preferred": "Jane"
+  },
+  "email": "jane@example.com",
+  "phone": {
+    "country_code": "+1",
+    "number": "5551234567",
+    "formatted": "+15551234567"
+  },
+  "location": "Berlin, Germany",
+  "relocation": "Open to EU/UK relocation with visa sponsorship",
+  "links": {
+    "linkedin": "https://www.linkedin.com/in/janedoe/",
+    "github": "https://github.com/janedoe",
+    "website": "https://janedoe.dev",
+    "twitter": "https://x.com/janedoe",
+    "blog": "https://blog.janedoe.dev"
+  },
+  "years_experience": 7,
+  "headline": "Senior Software Engineer — Python · Distributed Systems · AI",
+  "summary": "7+ years building production Python systems across distributed architectures, data platforms, and AI/LLM evaluation workflows. Open to remote EMEA/US roles.",
+  "variants": {
+    "A": {
+      "label": "AI/LLM/Evaluation",
+      "headline": "Senior Software Engineer — LLM Evaluation · Python · AI Safety",
+      "summary": "7+ years building Python systems, with the last 18 months focused on LLM evaluation and alignment...",
+      "impact_order": ["llm_eval", "eval_framework", "distributed", "etl", "agentic"]
+    },
+    "B": {
+      "label": "Data Platform/Pipelines",
+      "headline": "Senior Software Engineer — Data Platform · Airflow · AWS",
+      "summary": "7+ years across data engineering, ETL/ELT pipelines, and distributed cloud systems...",
+      "impact_order": ["etl", "distributed", "llm_eval", "agentic", "eval_framework"]
+    },
+    "C": {
+      "label": "Senior Backend/APIs",
+      "headline": "Senior Software Engineer — Python · Backend · Open-Source",
+      "summary": "7+ years building production Python backend systems, APIs, and developer tooling...",
+      "impact_order": ["agentic", "distributed", "etl", "llm_eval", "eval_framework"]
+    }
+  },
+  "impact_statements": {
+    "llm_eval": {
+      "title": "LLM Evaluation",
+      "body": "Describe your LLM evaluation work here..."
+    },
+    "eval_framework": {
+      "title": "Evaluation Framework Design",
+      "body": "Describe your evaluation framework work here..."
+    },
+    "distributed": {
+      "title": "Distributed System Reliability",
+      "body": "Describe your distributed systems work here..."
+    },
+    "etl": {
+      "title": "ETL Platform Engineering",
+      "body": "Describe your ETL/data platform work here..."
+    },
+    "agentic": {
+      "title": "Agentic Workflow Architecture",
+      "body": "Describe your agentic workflow work here..."
+    }
+  },
+  "experience": [
+    {
+      "id": "job_1",
+      "title": "Senior Software Engineer",
+      "company": "Company Name",
+      "company_line": "Company Name · Industry · Location · Start – End",
+      "bullets": {
+        "default": [
+          "Bullet 1 for this role...",
+          "Bullet 2 for this role..."
+        ],
+        "A": [
+          "LLM-focused bullet for variant A...",
+          "Evaluation-focused bullet..."
+        ],
+        "B": [
+          "Data platform bullet for variant B...",
+          "Pipeline-focused bullet..."
+        ],
+        "C": [
+          "Backend-focused bullet for variant C...",
+          "API-focused bullet..."
+        ]
+      }
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.Sc. Computer Science",
+      "institution": "University Name",
+      "year": "2017"
+    }
+  ],
+  "skills": [
+    {
+      "label": "Languages",
+      "items": "Python · TypeScript · Go · SQL"
+    },
+    {
+      "label": "Backend",
+      "items": "REST APIs · Microservices · Event-Driven Architecture · Distributed Systems"
+    },
+    {
+      "label": "Cloud & Infra",
+      "items": "AWS (Lambda · ECS · S3 · SQS · Step Functions) · Terraform · Docker · GitHub Actions"
+    }
+  ]
+}
