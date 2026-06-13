@@ -13,13 +13,13 @@ Usage:
     python src/tracker.py --note stripe_backend "Recruiter called, technical screen Thu"
 """
 
-import json
 import argparse
+import json
 from datetime import date
 from pathlib import Path
 
 TRACKER_PATH = Path(__file__).parent.parent / "tracker.json"
-ROLES_DIR    = Path(__file__).parent.parent / "roles"
+ROLES_DIR = Path(__file__).parent.parent / "roles"
 
 STATUSES = ["draft", "applied", "screen", "interview", "offer", "rejected", "withdrawn"]
 
@@ -42,7 +42,11 @@ def load_role_meta(role_id: str) -> dict:
         return {}
     with open(path, encoding="utf-8") as f:
         cfg = json.load(f)
-    return {"company": cfg.get("company", ""), "title": cfg.get("title", ""), "url": cfg.get("url", "")}
+    return {
+        "company": cfg.get("company", ""),
+        "title": cfg.get("title", ""),
+        "url": cfg.get("url", ""),
+    }
 
 
 def add(role_id: str) -> None:
@@ -98,12 +102,12 @@ def add_note(role_id: str, note: str) -> None:
 
 
 STATUS_ICONS = {
-    "draft":     "📝",
-    "applied":   "📤",
-    "screen":    "📞",
+    "draft": "📝",
+    "applied": "📤",
+    "screen": "📞",
     "interview": "🎯",
-    "offer":     "🎉",
-    "rejected":  "❌",
+    "offer": "🎉",
+    "rejected": "❌",
     "withdrawn": "↩️ ",
 }
 
@@ -144,12 +148,12 @@ def list_entries(filter_status: str = None) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="Track job application status.")
-    parser.add_argument("--add",    metavar="ROLE_ID", help="Add a role to the tracker")
+    parser.add_argument("--add", metavar="ROLE_ID", help="Add a role to the tracker")
     parser.add_argument("--update", metavar="ROLE_ID", help="Update status for a role")
-    parser.add_argument("--status", metavar="STATUS",  help=f"Status: {', '.join(STATUSES)}")
-    parser.add_argument("--note",   metavar="ROLE_ID", help="Add a note to a role")
-    parser.add_argument("--list",   action="store_true", help="List all tracked applications")
-    parser.add_argument("text",     nargs="?", help="Note text (used with --note)")
+    parser.add_argument("--status", metavar="STATUS", help=f"Status: {', '.join(STATUSES)}")
+    parser.add_argument("--note", metavar="ROLE_ID", help="Add a note to a role")
+    parser.add_argument("--list", action="store_true", help="List all tracked applications")
+    parser.add_argument("text", nargs="?", help="Note text (used with --note)")
     args = parser.parse_args()
 
     if args.add:

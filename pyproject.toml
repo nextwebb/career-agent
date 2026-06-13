@@ -61,8 +61,13 @@ ignore = [
 # Allow unused imports in __init__.py files
 "__init__.py" = ["F401"]
 # Allow print statements in CLI scripts
-"src/generate_application.py" = ["T201"]
+"src/generate_application.py" = ["T201", "E402"]  # E402: imports after sys.path manipulation
 "src/tracker.py" = ["T201"]
+# Allow HTTP handler naming conventions and style variable naming
+"save_server.py" = ["N802"]  # do_GET, do_POST are HTTP handler conventions
+"src/cv_builder.py" = ["N806", "C408"]  # Style constants intentionally uppercase
+"src/cl_builder.py" = ["N806", "C408"]  # Style constants intentionally uppercase
+"tests/smoke_test.py" = ["F401"]  # Imports tested for availability
 
 [tool.ruff.format]
 quote-style = "double"

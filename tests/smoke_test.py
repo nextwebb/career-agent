@@ -74,8 +74,8 @@ class TestPythonSyntax:
         sys.path.insert(0, str(ROOT / "src"))
 
         try:
-            import cv_builder
             import cl_builder
+            import cv_builder
             import generate_application
             import tracker
 
@@ -211,8 +211,9 @@ class TestRequirementsTxt:
 
         for line in lines:
             # Should have version constraint
-            assert any(op in line for op in ["==", ">=", "~=", "<="]), \
+            assert any(op in line for op in ["==", ">=", "~=", "<="]), (
                 f"Requirement '{line}' should specify version constraint"
+            )
 
 
 class TestReadmeAndDocs:
@@ -238,4 +239,5 @@ class TestReadmeAndDocs:
 
 if __name__ == "__main__":
     import pytest
+
     sys.exit(pytest.main([__file__, "-v"]))

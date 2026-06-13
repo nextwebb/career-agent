@@ -22,21 +22,21 @@ Profile:         ./profile.json
 Output PDFs:     ./generated/
 """
 
+import argparse
 import json
 import sys
 import time
-import argparse
 import webbrowser
 from pathlib import Path
 
-SCRIPT_DIR  = Path(__file__).parent.parent   # repo root
-ROLES_DIR   = SCRIPT_DIR / "roles"
-OUTPUT_DIR  = SCRIPT_DIR / "generated"
+SCRIPT_DIR = Path(__file__).parent.parent  # repo root
+ROLES_DIR = SCRIPT_DIR / "roles"
+OUTPUT_DIR = SCRIPT_DIR / "generated"
 PROFILE_PATH = SCRIPT_DIR / "profile.json"
 
 sys.path.insert(0, str(Path(__file__).parent))
-from cv_builder import build_cv
 from cl_builder import build_cover_letter
+from cv_builder import build_cv
 
 
 def load_profile() -> dict:
@@ -67,14 +67,14 @@ def generate(profile: dict, role_id: str, open_url: bool = False) -> tuple[str, 
     config = load_role(role_id)
     OUTPUT_DIR.mkdir(exist_ok=True)
 
-    prefix  = config["output_prefix"]
+    prefix = config["output_prefix"]
     cv_path = str(OUTPUT_DIR / f"{prefix}_CV.pdf")
     cl_path = str(OUTPUT_DIR / f"{prefix}_CoverLetter.pdf")
 
-    print(f"\n{'─'*60}")
+    print(f"\n{'─' * 60}")
     print(f"  {config['company']} — {config['title']}")
     print(f"  {config.get('location', '')}")
-    print(f"{'─'*60}")
+    print(f"{'─' * 60}")
 
     build_cv(profile, config, cv_path)
     build_cover_letter(profile, config, cl_path)
@@ -98,7 +98,7 @@ def list_roles():
         try:
             with open(r) as f:
                 cfg = json.load(f)
-            print(f"  {r.stem:35s}  {cfg.get('company','')} — {cfg.get('title','')}")
+            print(f"  {r.stem:35s}  {cfg.get('company', '')} — {cfg.get('title', '')}")
         except Exception:
             print(f"  {r.stem:35s}  (could not read config)")
 
@@ -110,10 +110,11 @@ def main():
         epilog=__doc__,
     )
     parser.add_argument("--role", help="Role ID to generate (e.g. stripe_backend)")
-    parser.add_argument("--all",  action="store_true", help="Generate all roles in roles/")
+    parser.add_argument("--all", action="store_true", help="Generate all roles in roles/")
     parser.add_argument("--list", action="store_true", help="List available role configs")
-    parser.add_argument("--open", action="store_true",
-                        help="Open each job URL in your browser after generating")
+    parser.add_argument(
+        "--open", action="store_true", help="Open each job URL in your browser after generating"
+    )
     args = parser.parse_args()
 
     if args.list:
@@ -133,9 +134,9 @@ def main():
             results.append((role_id, cv, cl))
             if args.open and i < len(role_ids) - 1:
                 time.sleep(1.5)
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"  Generated {len(results)} application(s) → {OUTPUT_DIR}/")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         for role_id, cv, cl in results:
             cfg = load_role(role_id)
             print(f"\n  {cfg['company']} — {cfg['title']}")
@@ -148,11 +149,11 @@ def main():
     if args.role:
         cv, cl = generate(profile, args.role, open_url=args.open)
         cfg = load_role(args.role)
-        print(f"\n  Done.")
+        print("\n  Done.")
         print(f"  CV:  {Path(cv).name}")
         print(f"  CL:  {Path(cl).name}")
         if args.open and cfg.get("url"):
-            print(f"  Application page opened → upload the two PDFs above.")
+            print("  Application page opened → upload the two PDFs above.")
         return
 
     parser.print_help()

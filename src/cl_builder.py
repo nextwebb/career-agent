@@ -8,21 +8,22 @@ Usage:
 """
 
 import datetime
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.units import inch
+
 from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer
 
-
-DARK   = colors.HexColor("#1a1a2e")
-GREY   = colors.HexColor("#555566")
-LGREY  = colors.HexColor("#888899")
+DARK = colors.HexColor("#1a1a2e")
+GREY = colors.HexColor("#555566")
+LGREY = colors.HexColor("#888899")
 
 
 def _s(name, **kw):
-    base = dict(fontName="Helvetica", fontSize=10, leading=15,
-                textColor=DARK, spaceAfter=0, spaceBefore=0)
+    base = dict(
+        fontName="Helvetica", fontSize=10, leading=15, textColor=DARK, spaceAfter=0, spaceBefore=0
+    )
     base.update(kw)
     return ParagraphStyle(name, **base)
 
@@ -48,27 +49,35 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
-        leftMargin=0.85*inch, rightMargin=0.85*inch,
-        topMargin=0.75*inch, bottomMargin=0.75*inch,
+        leftMargin=0.85 * inch,
+        rightMargin=0.85 * inch,
+        topMargin=0.75 * inch,
+        bottomMargin=0.75 * inch,
         title=f"{profile['name']} — Cover Letter — {config.get('company', '')}",
         author=profile["name"],
     )
 
-    NAME     = _s("name",  fontName="Helvetica-Bold", fontSize=16, leading=20,
-                  textColor=DARK, spaceAfter=2)
-    CONTACT  = _s("con",   fontSize=8.5, textColor=LGREY, spaceAfter=0)
-    DATE     = _s("date",  fontSize=9.5, textColor=LGREY, spaceAfter=12)
-    DEST     = _s("dest",  fontName="Helvetica-Bold", fontSize=9.5, textColor=DARK,
-                  spaceAfter=4, spaceBefore=4)
-    SALUTE   = _s("sal",   fontName="Helvetica-Bold", fontSize=10, textColor=DARK,
-                  spaceAfter=10)
-    BODY     = _s("body",  fontSize=10, leading=15.5, textColor=DARK, spaceAfter=10)
-    CLOSE    = _s("cls",   fontSize=10, textColor=DARK, spaceAfter=6, spaceBefore=8)
-    SIG      = _s("sig",   fontName="Helvetica-Bold", fontSize=10, textColor=DARK)
+    NAME = _s(
+        "name", fontName="Helvetica-Bold", fontSize=16, leading=20, textColor=DARK, spaceAfter=2
+    )
+    CONTACT = _s("con", fontSize=8.5, textColor=LGREY, spaceAfter=0)
+    DATE = _s("date", fontSize=9.5, textColor=LGREY, spaceAfter=12)
+    DEST = _s(
+        "dest", fontName="Helvetica-Bold", fontSize=9.5, textColor=DARK, spaceAfter=4, spaceBefore=4
+    )
+    SALUTE = _s("sal", fontName="Helvetica-Bold", fontSize=10, textColor=DARK, spaceAfter=10)
+    BODY = _s("body", fontSize=10, leading=15.5, textColor=DARK, spaceAfter=10)
+    CLOSE = _s("cls", fontSize=10, textColor=DARK, spaceAfter=6, spaceBefore=8)
+    SIG = _s("sig", fontName="Helvetica-Bold", fontSize=10, textColor=DARK)
 
     def rule():
-        return HRFlowable(width="100%", thickness=0.4,
-                          color=colors.HexColor("#d1d5db"), spaceAfter=8, spaceBefore=2)
+        return HRFlowable(
+            width="100%",
+            thickness=0.4,
+            color=colors.HexColor("#d1d5db"),
+            spaceAfter=8,
+            spaceBefore=2,
+        )
 
     def sp(n=6):
         return Spacer(1, n)
@@ -82,9 +91,7 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
             f'<a href="mailto:{profile["email"]}" color="#2563eb">{profile["email"]}</a>'
         )
     if links.get("linkedin"):
-        contact_parts.append(
-            f'<a href="{links["linkedin"]}" color="#2563eb">LinkedIn</a>'
-        )
+        contact_parts.append(f'<a href="{links["linkedin"]}" color="#2563eb">LinkedIn</a>')
     if links.get("blog") or links.get("website"):
         url = links.get("blog") or links.get("website")
         label = url.replace("https://", "").replace("http://", "")
