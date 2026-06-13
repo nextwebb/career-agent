@@ -19,6 +19,14 @@ LGREY = colors.HexColor("#888899")
 ACCENT = colors.HexColor("#2563eb")
 
 
+def _get_name(profile: dict) -> str:
+    """Extract full name from profile, handling both string and dict formats."""
+    name = profile["name"]
+    if isinstance(name, dict):
+        return f"{name.get('first', '')} {name.get('last', '')}".strip()
+    return str(name)
+
+
 def _s(name, **kw):
     base = dict(
         fontName="Helvetica",
@@ -55,6 +63,7 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         experience      list[{title, company_line, client_line?, bullets: list[str]}]
         skills          list[{label, items}]
     """
+    full_name = _get_name(profile)
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
@@ -62,8 +71,8 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         rightMargin=0.7 * inch,
         topMargin=0.6 * inch,
         bottomMargin=0.6 * inch,
-        title=f"{profile['name']} — {config.get('company', 'CV')}",
-        author=profile["name"],
+        title=f"{full_name} — {config.get('company', 'CV')}",
+        author=full_name,
     )
 
     NAME = _s(
@@ -144,7 +153,7 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
 
     # ── Header ───────────────────────────────────────────────────────────────
     story += [
-        Paragraph(profile["name"], NAME),
+        Paragraph(full_name, NAME),
         Paragraph(config["headline"], ROLETITLE),
         Paragraph(
             config.get(

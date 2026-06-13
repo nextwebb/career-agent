@@ -20,6 +20,14 @@ GREY = colors.HexColor("#555566")
 LGREY = colors.HexColor("#888899")
 
 
+def _get_name(profile: dict) -> str:
+    """Extract full name from profile, handling both string and dict formats."""
+    name = profile["name"]
+    if isinstance(name, dict):
+        return f"{name.get('first', '')} {name.get('last', '')}".strip()
+    return str(name)
+
+
 def _s(name, **kw):
     base = dict(
         fontName="Helvetica", fontSize=10, leading=15, textColor=DARK, spaceAfter=0, spaceBefore=0
@@ -45,6 +53,7 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
     """
     cl = config.get("cover_letter", {})
     links = profile.get("links", {})
+    full_name = _get_name(profile)
 
     doc = SimpleDocTemplate(
         output_path,
@@ -53,8 +62,8 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
         rightMargin=0.85 * inch,
         topMargin=0.75 * inch,
         bottomMargin=0.75 * inch,
-        title=f"{profile['name']} — Cover Letter — {config.get('company', '')}",
-        author=profile["name"],
+        title=f"{full_name} — Cover Letter — {config.get('company', '')}",
+        author=full_name,
     )
 
     NAME = _s(
@@ -104,7 +113,7 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
 
     # ── Letterhead ───────────────────────────────────────────────────────────
     story += [
-        Paragraph(profile["name"], NAME),
+        Paragraph(full_name, NAME),
         Paragraph(contact_line, CONTACT),
         rule(),
     ]
@@ -127,7 +136,7 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
     story += [
         sp(4),
         Paragraph(cl.get("closing", "Best regards,"), CLOSE),
-        Paragraph(profile["name"], SIG),
+        Paragraph(full_name, SIG),
     ]
 
     doc.build(story)
