@@ -45,7 +45,7 @@ Claude never submits on your behalf. That boundary is intentional.
 ## Quick start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/career-agent
+git clone https://github.com/nextwebb/career-agent
 cd career-agent
 cp profile.example.json profile.json      # fill in your details
 cp roles.example/example_role.json roles/my_role.json  # fill in the role
