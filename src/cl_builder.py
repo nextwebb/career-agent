@@ -45,13 +45,21 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
     cl = config.get("cover_letter", {})
     links = profile.get("links", {})
 
+    # Build full name from profile
+    name_dict = profile.get("name", {})
+    if isinstance(name_dict, dict):
+        full_name = f"{name_dict.get('first', '')} {name_dict.get('last', '')}".strip()
+    else:
+        # Fallback for legacy string format
+        full_name = str(name_dict)
+
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
         leftMargin=0.85*inch, rightMargin=0.85*inch,
         topMargin=0.75*inch, bottomMargin=0.75*inch,
-        title=f"{profile['name']} — Cover Letter — {config.get('company', '')}",
-        author=profile["name"],
+        title=f"{full_name} — Cover Letter — {config.get('company', '')}",
+        author=full_name,
     )
 
     NAME     = _s("name",  fontName="Helvetica-Bold", fontSize=16, leading=20,
@@ -97,7 +105,7 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
 
     # ── Letterhead ───────────────────────────────────────────────────────────
     story += [
-        Paragraph(profile["name"], NAME),
+        Paragraph(full_name, NAME),
         Paragraph(contact_line, CONTACT),
         rule(),
     ]
@@ -120,7 +128,7 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
     story += [
         sp(4),
         Paragraph(cl.get("closing", "Best regards,"), CLOSE),
-        Paragraph(profile["name"], SIG),
+        Paragraph(full_name, SIG),
     ]
 
     doc.build(story)

@@ -51,13 +51,21 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         experience      list[{title, company_line, client_line?, bullets: list[str]}]
         skills          list[{label, items}]
     """
+    # Build full name from profile
+    name_dict = profile.get("name", {})
+    if isinstance(name_dict, dict):
+        full_name = f"{name_dict.get('first', '')} {name_dict.get('last', '')}".strip()
+    else:
+        # Fallback for legacy string format
+        full_name = str(name_dict)
+
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
         leftMargin=0.7*inch, rightMargin=0.7*inch,
         topMargin=0.6*inch, bottomMargin=0.6*inch,
-        title=f"{profile['name']} — {config.get('company', 'CV')}",
-        author=profile["name"],
+        title=f"{full_name} — {config.get('company', 'CV')}",
+        author=full_name,
     )
 
     NAME      = _s("name",  fontName="Helvetica-Bold", fontSize=20, leading=24, textColor=DARK, spaceAfter=1)
@@ -118,7 +126,7 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
 
     # ── Header ───────────────────────────────────────────────────────────────
     story += [
-        Paragraph(profile["name"], NAME),
+        Paragraph(full_name, NAME),
         Paragraph(config["headline"], ROLETITLE),
         Paragraph(
             config.get("openness", "Open to fully remote roles globally and relocation for the right team."),
