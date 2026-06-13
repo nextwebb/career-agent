@@ -6,15 +6,19 @@ One command generates a tailored CV + cover letter PDF per role. Claude fills th
 
 Not a template engine. Not a job tracker. An agent that does the work.
 
+**[📖 Live Demo & Docs](https://nextwebb.github.io/career-agent/)** | **[⭐ Star on GitHub](https://github.com/nextwebb/career-agent)**
+
 ![career-agent demo](demo.gif)
 
 ---
 
 ## What it does
 
-1. You define a role config (`roles/my_role.json`) with the JD URL, CV variant, and cover letter paragraphs
-2. `generate-cv` skill builds an ATS-optimised PDF using your profile data
-3. `apply` skill opens the job URL in Chrome, fills every required field, uploads your PDF, answers custom questions — then hands off to you for EEO/voluntary fields and the Submit button
+1. **`/source`** — Find and verify open roles matching your profile from company career pages
+2. **`/new-role`** — Scaffold a new role config interactively by scraping the JD
+3. **`/generate-cv`** — Build ATS-optimised CV + cover letter PDFs tailored to the role
+4. **`/apply`** — Open the job URL in Chrome, fill every required field, upload PDFs, answer custom questions — then hand off to you for EEO/voluntary fields and Submit
+5. **`/track`** — View your application pipeline, update statuses, add notes
 
 Claude never submits on your behalf. That boundary is intentional.
 
@@ -55,8 +59,10 @@ pip install reportlab
 Then in Claude Code or Cowork:
 
 ```
-/generate-cv my_role
-/apply my_role
+/new-role                    # Interactively create a role config
+/generate-cv my_role         # Generate tailored PDFs
+/apply my_role               # Fill the ATS form
+/track                       # View your application pipeline
 ```
 
 ---
@@ -148,7 +154,7 @@ The role config picks a variant. The CV builder selects the matching experience 
 
 1. Open Cowork → Settings → Plugins
 2. Click **Install from folder** → select this repo root
-3. Skills appear as `/generate-cv`, `/apply`, `/new-role`
+3. Skills appear as `/source`, `/new-role`, `/generate-cv`, `/apply`, `/track`
 
 ### Claude Code (CLI)
 
@@ -188,27 +194,29 @@ career-agent/
 ├── README.md
 ├── CLAUDE.md                        # Claude Code context + slash commands
 ├── plugin.json                      # Cowork + Claude Code plugin manifest
+├── requirements.txt                 # pip install reportlab
 ├── profile.example.json             # Copy → profile.json (gitignored)
 ├── .gitignore
 │
 ├── skills/
-│   ├── apply/SKILL.md               # Fill ATS form + upload + handoff
+│   ├── source/SKILL.md              # Find + verify open roles from your profile
+│   ├── new-role/SKILL.md            # Scaffold a new role JSON interactively
 │   ├── generate-cv/SKILL.md         # Build PDF from profile + role config
-│   └── new-role/SKILL.md            # Scaffold a new role JSON interactively
+│   ├── apply/SKILL.md               # Fill ATS form + upload + handoff
+│   └── track/SKILL.md               # Application pipeline tracker
 │
 ├── src/
 │   ├── cv_builder.py                # reportlab Platypus PDF engine
-│   ├── generate_application.py      # CLI: python generate_application.py <role_id>
-│   └── ats/
-│       ├── greenhouse.py            # Greenhouse helpers (direct + iframe)
-│       ├── lever.py
-│       └── workable.py
+│   ├── cl_builder.py                # Cover letter PDF builder
+│   ├── generate_application.py      # CLI: python src/generate_application.py <role_id>
+│   └── tracker.py                   # Pipeline tracker CLI
 │
 ├── roles.example/
 │   └── example_role.json            # Role config schema reference
 │
 ├── roles/                           # gitignored — your role configs
 ├── generated/                       # gitignored — output PDFs
+├── tracker.json                     # gitignored — application pipeline
 └── profile.json                     # gitignored — your profile data
 ```
 
