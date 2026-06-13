@@ -23,16 +23,17 @@ Output PDFs:     ./generated/
 """
 
 import argparse
+
+# Check for reportlab early
+import importlib.util
 import json
 import sys
 import time
 import webbrowser
 from pathlib import Path
+from typing import Any, cast
 
-# Check for reportlab early
-try:
-    import reportlab
-except ImportError:
+if importlib.util.find_spec("reportlab") is None:
     print("ERROR: reportlab is not installed.")
     print("Install it with:  pip install -r requirements.txt")
     print("Or directly:      pip install reportlab")
@@ -44,12 +45,18 @@ OUTPUT_DIR  = SCRIPT_DIR / "generated"
 PROFILE_PATH = SCRIPT_DIR / "profile.json"
 
 sys.path.insert(0, str(Path(__file__).parent))
+
 from cl_builder import build_cover_letter
 from cv_builder import build_cv
-from validation import validate_and_report, validate_profile, validate_role_config, ValidationError
+from validation import (
+    ValidationError,
+    validate_and_report,
+    validate_profile,
+    validate_role_config,
+)
 
 
-def load_profile() -> dict:
+def load_profile() -> dict[str, Any]:
     if not PROFILE_PATH.exists():
         print("ERROR: profile.json not found.")
         print("Run:  cp profile.example.json profile.json")
@@ -58,9 +65,9 @@ def load_profile() -> dict:
 
     try:
         with open(PROFILE_PATH, encoding="utf-8") as f:
-            profile = json.load(f)
+            profile = cast(dict[str, Any], json.load(f))
     except json.JSONDecodeError as e:
-        print(f"ERROR: Invalid JSON in profile.json")
+        print("ERROR: Invalid JSON in profile.json")
         print(f"  {e}")
         print("\nCheck for:")
         print("  - Missing commas between fields")
@@ -78,7 +85,7 @@ def load_profile() -> dict:
     return profile
 
 
-def load_role(role_id: str) -> dict:
+def load_role(role_id: str) -> dict[str, Any]:
     # Ensure roles directory exists
     ROLES_DIR.mkdir(exist_ok=True)
 
@@ -95,7 +102,7 @@ def load_role(role_id: str) -> dict:
 
     try:
         with open(config_path, encoding="utf-8") as f:
-            config = json.load(f)
+            config = cast(dict[str, Any], json.load(f))
     except json.JSONDecodeError as e:
         print(f"ERROR: Invalid JSON in {config_path}")
         print(f"  {e}")
@@ -115,7 +122,7 @@ def load_role(role_id: str) -> dict:
     return config
 
 
-def generate(profile: dict, role_id: str, open_url: bool = False) -> tuple[str, str]:
+def generate(profile: dict[str, Any], role_id: str, open_url: bool = False) -> tuple[str, str]:
     config = load_role(role_id)
     OUTPUT_DIR.mkdir(exist_ok=True)
 

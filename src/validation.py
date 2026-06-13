@@ -4,7 +4,7 @@ Validates required fields and data types without external dependencies.
 Provides actionable error messages for debugging.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from collections.abc import Callable
 
 
 class ValidationError(Exception):
@@ -12,7 +12,7 @@ class ValidationError(Exception):
     pass
 
 
-def validate_profile(data: dict, strict: bool = False) -> Tuple[bool, List[str]]:
+def validate_profile(data: dict, strict: bool = False) -> tuple[bool, list[str]]:
     """
     Validate profile.json structure.
 
@@ -43,9 +43,8 @@ def validate_profile(data: dict, strict: bool = False) -> Tuple[bool, List[str]]
                 errors.append("'name.last' is required")
 
     # Validate email
-    if "email" in data:
-        if not isinstance(data["email"], str) or "@" not in data["email"]:
-            errors.append("'email' must be a valid email address")
+    if "email" in data and (not isinstance(data["email"], str) or "@" not in data["email"]):
+        errors.append("'email' must be a valid email address")
 
     # Validate links
     if "links" in data:
@@ -77,9 +76,8 @@ def validate_profile(data: dict, strict: bool = False) -> Tuple[bool, List[str]]
                     errors.append(f"'experience[{i}].bullets' is required")
 
     # Validate education
-    if "education" in data:
-        if not isinstance(data["education"], list):
-            errors.append("'education' must be a list")
+    if "education" in data and not isinstance(data["education"], list):
+        errors.append("'education' must be a list")
 
     # Validate skills
     if "skills" in data:
@@ -101,7 +99,7 @@ def validate_profile(data: dict, strict: bool = False) -> Tuple[bool, List[str]]
             errors.append("'variants' must be a dictionary")
         else:
             valid_variants = {"A", "B", "C"}
-            for variant_key in data["variants"].keys():
+            for variant_key in data["variants"]:
                 if variant_key not in valid_variants:
                     errors.append(
                         f"Unknown variant '{variant_key}'. Valid variants: A, B, C"
@@ -124,7 +122,7 @@ def validate_profile(data: dict, strict: bool = False) -> Tuple[bool, List[str]]
     return len(errors) == 0, errors
 
 
-def validate_role_config(data: dict, strict: bool = False) -> Tuple[bool, List[str]]:
+def validate_role_config(data: dict, strict: bool = False) -> tuple[bool, list[str]]:
     """
     Validate role config JSON structure.
 
@@ -190,9 +188,8 @@ def validate_role_config(data: dict, strict: bool = False) -> Tuple[bool, List[s
             errors.append("'output_prefix' cannot be empty")
 
     # Validate custom_answers if present
-    if "custom_answers" in data:
-        if not isinstance(data["custom_answers"], dict):
-            errors.append("'custom_answers' must be a dictionary")
+    if "custom_answers" in data and not isinstance(data["custom_answers"], dict):
+        errors.append("'custom_answers' must be a dictionary")
 
     # Validate cover_letter if present
     if "cover_letter" in data:
@@ -204,18 +201,17 @@ def validate_role_config(data: dict, strict: bool = False) -> Tuple[bool, List[s
                 errors.append("'cover_letter.paragraphs' must be a list")
 
     # Validate experience_overrides if present
-    if "experience_overrides" in data:
-        if not isinstance(data["experience_overrides"], dict):
-            errors.append("'experience_overrides' must be a dictionary")
+    if "experience_overrides" in data and not isinstance(data["experience_overrides"], dict):
+        errors.append("'experience_overrides' must be a dictionary")
 
     return len(errors) == 0, errors
 
 
 def validate_and_report(
     data: dict,
-    validator_func: callable,
+    validator_func: Callable[[dict, bool], tuple[bool, list[str]]],
     config_type: str,
-    filepath: str = None
+    filepath: str | None = None
 ) -> None:
     """
     Validate data and raise ValidationError with formatted message if invalid.
@@ -229,7 +225,7 @@ def validate_and_report(
     Raises:
         ValidationError: If validation fails
     """
-    is_valid, errors = validator_func(data)
+    is_valid, errors = validator_func(data, False)
 
     if not is_valid:
         file_context = f" in {filepath}" if filepath else ""
