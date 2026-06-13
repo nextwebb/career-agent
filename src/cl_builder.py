@@ -55,13 +55,19 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
     links = profile.get("links", {})
     full_name = _get_name(profile)
 
+    # Build full name from profile
+    name_dict = profile.get("name", {})
+    if isinstance(name_dict, dict):
+        full_name = f"{name_dict.get('first', '')} {name_dict.get('last', '')}".strip()
+    else:
+        # Fallback for legacy string format
+        full_name = str(name_dict)
+
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
-        leftMargin=0.85 * inch,
-        rightMargin=0.85 * inch,
-        topMargin=0.75 * inch,
-        bottomMargin=0.75 * inch,
+        leftMargin=0.85*inch, rightMargin=0.85*inch,
+        topMargin=0.75*inch, bottomMargin=0.75*inch,
         title=f"{full_name} — Cover Letter — {config.get('company', '')}",
         author=full_name,
     )
