@@ -34,6 +34,14 @@ class Handler(SimpleHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
         out = os.path.join(SAVE_DIR, name)
+        # Validate resolved path stays within SAVE_DIR (defense in depth)
+        out_real = os.path.realpath(out)
+        save_dir_real = os.path.realpath(SAVE_DIR)
+        if not out_real.startswith(save_dir_real + os.sep):
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(b"Invalid filename")
+            return
         with open(out, "wb") as f:
             f.write(body)
         print(f"  saved {len(body)} bytes → {out}")
