@@ -2,9 +2,9 @@
   "name": "career-agent",
   "version": "1.0.0",
   "description": "Agentic job application workflow. Generates tailored CV + cover letter PDFs per role and fills ATS forms via browser automation. Handoff to user for EEO fields and Submit.",
-  "author": "YOUR_GITHUB_USERNAME",
-  "homepage": "https://YOUR_USERNAME.github.io/career-agent",
-  "repository": "https://github.com/YOUR_USERNAME/career-agent",
+  "author": "nextwebb",
+  "homepage": "https://nextwebb.github.io/career-agent",
+  "repository": "https://github.com/nextwebb/career-agent",
   "license": "MIT",
   "targets": ["cowork", "claude-code"],
   "requires": {
@@ -68,6 +68,31 @@
           "required": false
         }
       }
+    },
+    {
+      "name": "track",
+      "path": "skills/track/SKILL.md",
+      "description": "Track and update job application status. View your full pipeline grouped by status, add notes, and mark applications as applied/screen/interview/offer/rejected.",
+      "triggers": [
+        "track application",
+        "update status",
+        "show my pipeline",
+        "mark as applied",
+        "application status",
+        "what have I applied to"
+      ],
+      "args": {
+        "role_id": {
+          "type": "string",
+          "description": "The role_id to update or view",
+          "required": false
+        },
+        "status": {
+          "type": "string",
+          "description": "New status: draft | applied | screen | interview | offer | rejected | withdrawn",
+          "required": false
+        }
+      }
     }
   ],
   "mcpServers": {
@@ -86,7 +111,8 @@
     "dataFiles": {
       "profile.json": "Your personal data — gitignored, never committed",
       "roles/*.json": "Your role configs — gitignored, never committed",
-      "generated/": "Output PDFs — gitignored"
+      "generated/": "Output PDFs — gitignored",
+      "tracker.json": "Application pipeline — gitignored, stays local"
     }
   }
 }

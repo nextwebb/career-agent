@@ -7,13 +7,15 @@ Agentic job application workflow. Generates tailored CVs and fills ATS forms via
 - `/generate-cv <role_id>` — Build ATS-optimised CV + cover letter PDFs for a role
 - `/apply <role_id>` — Fill the ATS form, upload PDFs, answer questions, hand off to user for EEO + Submit
 - `/new-role [url]` — Scaffold a new role config interactively
+- `/track [role_id] [status]` — View pipeline, update application status, add notes
 
 ## Key files
 
 - `profile.json` — User's personal data (gitignored, never committed)
 - `roles/<role_id>.json` — Per-role config with CV variant, cover letter, custom answers
 - `src/cv_builder.py` — reportlab Platypus PDF engine (single-column, Helvetica, ATS-safe)
-- `src/generate_application.py` — CLI PDF generator: `python src/generate_application.py <role_id>`
+- `src/generate_application.py` — CLI PDF generator
+- `src/tracker.py` — Application pipeline tracker: `python src/tracker.py --list`: `python src/generate_application.py <role_id>`
 - `generated/` — Output PDFs (gitignored)
 
 ## ATS platforms supported
