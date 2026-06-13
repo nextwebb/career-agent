@@ -25,6 +25,7 @@ Thumbs.db
 
 # Demo recordings (may contain PII)
 *.gif
+!demo.gif
 
 # Claude Code local settings
 .claude/
