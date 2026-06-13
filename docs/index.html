@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Career Agent | Autonomous Job Application Agent</title>
+<meta name="description" content="Agentic job application workflow. Generates tailored CVs and fills ATS forms via browser automation. One command generates PDFs, Claude fills the form."/>
+<meta property="og:title" content="Career Agent | Autonomous Job Application Agent"/>
+<meta property="og:description" content="Agentic job application workflow. Generates tailored CVs and fills ATS forms via browser automation."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://nextwebb.github.io/career-agent/"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Career Agent"/>
+<meta name="twitter:description" content="Agentic job application workflow for Claude Code and Cowork."/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@400&amp;family=Geist:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "error": "#ffb4ab",
+                        "secondary": "#89ceff",
+                        "inverse-surface": "#e4e1ed",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "on-secondary-container": "#00344e",
+                        "inverse-on-surface": "#303038",
+                        "on-surface": "#e4e1ed",
+                        "secondary-container": "#00a2e6",
+                        "secondary-fixed": "#c9e6ff",
+                        "tertiary-container": "#d97721",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "outline": "#908fa0",
+                        "bg-base": "#020617",
+                        "on-primary-container": "#0d0096",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#494bd6",
+                        "primary-fixed": "#e1e0ff",
+                        "syntax-comment": "#64748b",
+                        "status-warning": "#f59e0b",
+                        "on-tertiary-fixed": "#301400",
+                        "border-subtle": "#1e293b",
+                        "syntax-string": "#2dd4bf",
+                        "background": "#13131b",
+                        "surface-container-high": "#292932",
+                        "status-success": "#22c55e",
+                        "primary-container": "#8083ff",
+                        "on-tertiary-container": "#452000",
+                        "surface-container-highest": "#34343d",
+                        "on-primary-fixed": "#07006c",
+                        "on-secondary-fixed": "#001e2f",
+                        "primary": "#c0c1ff",
+                        "surface-container": "#1f1f27",
+                        "on-surface-variant": "#c7c4d7",
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "on-primary": "#1000a9",
+                        "on-background": "#e4e1ed",
+                        "surface-variant": "#34343d",
+                        "surface-container-low": "#1b1b23",
+                        "tertiary-fixed": "#ffdcc5",
+                        "bg-surface": "#0f172a",
+                        "on-tertiary": "#4f2500",
+                        "surface": "#13131b",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "error-container": "#93000a",
+                        "on-secondary": "#00344d",
+                        "surface-dim": "#13131b",
+                        "outline-variant": "#464554",
+                        "surface-bright": "#393841",
+                        "syntax-keyword": "#818cf8",
+                        "tertiary": "#ffb783",
+                        "secondary-fixed-dim": "#89ceff",
+                        "surface-container-lowest": "#0d0d15",
+                        "surface-tint": "#c0c1ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "section-gap": "80px",
+                        "container-max": "1200px",
+                        "gutter": "24px",
+                        "component-padding": "16px",
+                        "sidebar-width": "280px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-xl": ["Geist"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "code-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Light Mode Overrides */
+        :root {
+            --primary-accent: #6366f1;
+        }
+        
+        html.light {
+            --surface-bright: #ffffff;
+            --surface-dim: #f4f4f5;
+            --on-surface: #0f172a;
+            --on-surface-variant: #475569;
+            --border-subtle: #e2e8f0;
+            --bg-base: #f8fafc;
+            --surface-container: #ffffff;
+            --surface-container-low: #f8fafc;
+            --surface-container-high: #f1f5f9;
+            --surface-container-highest: #e2e8f0;
+            --surface-container-lowest: #f1f5f9;
+        }
+
+        html.light body { 
+            background-color: var(--bg-base);
+            color: var(--on-surface);
+        }
+        html.light header { background-color: rgba(255, 255, 255, 0.8); border-color: var(--border-subtle); }
+        html.light aside { background-color: var(--surface-container-low); border-color: var(--border-subtle); }
+        html.light main { background-color: transparent; }
+        html.light .bg-surface-container { background-color: var(--surface-container); border-color: var(--border-subtle); }
+        html.light .bg-surface-container-low { background-color: var(--surface-container-low); border-color: var(--border-subtle); }
+        html.light .bg-surface-container-high { background-color: var(--surface-container-high); border-color: var(--border-subtle); }
+        html.light .bg-surface-container-highest { background-color: var(--surface-container-highest); border-color: var(--border-subtle); }
+        html.light .bg-surface-container-lowest { background-color: var(--surface-container-lowest); border-color: var(--border-subtle); }
+        html.light .border-border-subtle { border-color: var(--border-subtle); }
+        html.light .text-on-surface { color: var(--on-surface); }
+        html.light .text-on-surface-variant { color: var(--on-surface-variant); }
+        html.light .text-primary { color: var(--primary-accent); }
+        html.light .border-primary { border-color: var(--primary-accent); }
+        html.light footer { border-color: var(--border-subtle); background-color: var(--bg-base); }
+        html.light .bg-bg-base { background-color: var(--bg-base); }
+
+        body { @apply bg-bg-base text-on-surface font-body-md; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { @apply bg-surface-container-lowest; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-surface-container-highest rounded-full; }
+        
+        .active-tab-indicator {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="antialiased overflow-x-hidden transition-colors duration-300">
+<!-- TopNavBar -->
+<header class="bg-background/80 backdrop-blur-md font-body-md text-body-md docked full-width top-0 sticky z-50 border-b border-border-subtle">
+<div class="flex justify-between items-center h-16 px-gutter max-w-container-max mx-auto">
+<div class="flex items-center gap-8">
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface">Career Agent</span>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="text-primary font-bold border-b-2 border-primary pb-1" href="#">Quick start</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors" href="https://github.com/nextwebb/career-agent">GitHub</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors" href="https://github.com/nextwebb/career-agent#quick-start">Install</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<!-- Theme Toggle -->
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface flex items-center justify-center" id="theme-toggle">
+<span class="material-symbols-outlined block dark:hidden">dark_mode</span>
+<span class="material-symbols-outlined hidden dark:block">light_mode</span>
+</button>
+<div class="hidden sm:flex items-center bg-surface-container px-3 py-1 rounded-lg border border-border-subtle gap-2 text-label-caps font-label-caps text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span>1.2k</span>
+</div>
+<button class="md:hidden text-on-surface" id="mobile-menu-toggle">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="hidden md:block">
+<span class="material-symbols-outlined text-primary cursor-pointer hover:scale-110 transition-transform">star</span>
+</div>
+</div>
+</div>
+</header>
+<div class="max-w-container-max mx-auto flex">
+<!-- SideNavBar -->
+<aside class="w-sidebar-width h-[calc(100vh-4rem)] sticky top-16 left-0 border-r border-border-subtle hidden lg:flex flex-col py-8 gap-4 bg-surface-container-low overflow-y-auto custom-scrollbar xl:w-[320px]">
+<div class="px-6 mb-4">
+<h3 class="text-on-surface font-bold text-headline-lg-mobile font-headline-lg-mobile">Documentation</h3>
+<p class="text-on-surface-variant text-sm">v1.0.4-beta</p>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 py-3 text-primary border-l-2 border-primary pl-4 font-bold bg-surface-container-high/50 group translate-x-1 transition-all" href="#hero">
+<span class="material-symbols-outlined" data-icon="rocket_launch">rocket_launch</span>
+<span>Getting Started</span>
+</a>
+<a class="flex items-center gap-3 py-3 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-high transition-all" href="#skills">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span>Skills</span>
+</a>
+<a class="flex items-center gap-3 py-3 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-high transition-all" href="#schema">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Config</span>
+</a>
+<a class="flex items-center gap-3 py-3 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-high transition-all" href="#platforms">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span>Platforms</span>
+</a>
+<a class="flex items-center gap-3 py-3 text-on-surface-variant pl-4 hover:text-on-surface hover:bg-surface-container-high transition-all" href="#faq">
+<span class="material-symbols-outlined" data-icon="quiz">quiz</span>
+<span>FAQ</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 min-w-0 px-gutter py-12 lg:py-20 custom-scrollbar overflow-x-hidden">
+<!-- Hero Section -->
+<section class="mb-section-gap relative" id="hero">
+<div class="max-w-3xl mb-12">
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-6">
+                    Job applications, <br/><span class="text-primary">done by an agent.</span>
+</h1>
+<p class="text-on-surface-variant font-body-md text-body-md max-w-xl">
+                    One command generates a tailored CV + cover letter PDF. Claude fills the ATS form via browser automation. You review and click Submit.
+                </p>
+</div>
+<!-- Terminal Animation -->
+<div class="relative rounded-xl overflow-hidden border border-border-subtle bg-surface-container shadow-2xl hover:border-primary/30">
+<div class="bg-surface-container-highest px-4 py-3 flex items-center gap-2 border-b border-border-subtle">
+<div class="flex gap-1.5">
+<div class="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+<div class="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+<div class="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+</div>
+<span class="text-code-sm font-code-sm text-on-surface-variant ml-4 opacity-50">zsh — agent-v1.0.4 — 80x24</span>
+</div>
+<div class="h-[400px] relative p-6 font-code-sm text-code-sm">
+<div class="absolute inset-0 bg-primary/5 pointer-events-none"></div>
+<div class="relative z-10">
+<span class="text-syntax-keyword">$</span> /source Germany backend<br/>
+<span class="text-on-surface-variant opacity-70">[info] Searching for backend roles in Germany...</span><br/>
+<span class="text-on-surface-variant opacity-70">[info] Found 42 matching roles</span><br/>
+<span class="text-syntax-string">[success] Saved to roles/</span><br/><br/>
+<span class="text-syntax-keyword">$</span> /generate-cv stripe_backend_2026<br/>
+<span class="text-on-surface-variant opacity-70">[info] Building CV variant C with reportlab...</span><br/>
+<span class="text-syntax-string">[success] generated/stripe_backend_2026_CV.pdf</span><br/>
+<span class="text-syntax-string">[success] generated/stripe_backend_2026_CoverLetter.pdf</span><br/><br/>
+<span class="text-syntax-keyword">$</span> _
+                    </div>
+</div>
+</div>
+</section>
+<section class="mb-section-gap" id="demo">
+<div class="max-w-container-max mx-auto">
+<div class="flex flex-col items-center text-center mb-12">
+<span class="text-label-caps font-label-caps text-primary tracking-wider uppercase mb-2">Demo</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Watch it in action</h2>
+</div>
+<div class="relative max-w-4xl mx-auto">
+<!-- Glow Effect -->
+<div class="absolute -inset-4 bg-primary/10 blur-xl rounded-full z-0"></div>
+<!-- Terminal Window Frame -->
+<div class="relative z-10 rounded-xl overflow-hidden border border-border-subtle bg-surface-container shadow-2xl">
+<div class="bg-surface-container-highest px-4 py-3 flex items-center gap-2 border-b border-border-subtle">
+<div class="flex gap-1.5">
+<div class="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+<div class="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+<div class="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+</div>
+<span class="text-code-sm font-code-sm text-on-surface-variant ml-4 opacity-50">demo.mp4 — 1280x720</span>
+</div>
+<div class="aspect-video bg-surface-container-lowest flex items-center justify-center group cursor-pointer" onclick="window.open('https://github.com/nextwebb/career-agent#quick-start', '_blank')">
+<div class="flex flex-col items-center gap-4">
+<div class="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-4xl">code</span>
+</div>
+<p class="text-on-surface-variant font-code-sm">View Quick Start Guide on GitHub</p>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-8 max-w-xl mx-auto text-center">
+<p class="text-on-surface-variant text-body-md">
+                        The agent handles the heavy lifting of form filling and document generation, allowing you to focus on the final review.
+                    </p>
+</div>
+</div>
+</section>
+<!-- Pipeline Section -->
+<section class="mb-section-gap" id="how-it-works">
+<div class="max-w-container-max mx-auto">
+<div class="flex flex-col items-center text-center mb-12">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-2">How it works</h2>
+<p class="text-on-surface-variant font-body-md">From job search to submitted application in three steps.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+<div class="bg-surface-container-low p-8 rounded-xl border border-outline-variant/20 flex flex-col gap-4 hover:bg-surface-container-high transition-colors">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">search</span>
+</div>
+<div>
+<h3 class="text-on-surface font-bold text-lg mb-2">1. Search &amp; Source</h3>
+<p class="text-sm text-on-surface-variant">The agent crawls company career pages and LinkedIn to find roles that match your specific profile and skill variants.</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-8 rounded-xl border border-outline-variant/20 flex flex-col gap-4 hover:bg-surface-container-high transition-colors">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<div>
+<h3 class="text-on-surface font-bold text-lg mb-2">2. Tailor &amp; Generate</h3>
+<p class="text-sm text-on-surface-variant">Claude analyzes the job description to generate a role-specific CV and cover letter, emphasizing your most relevant experience.</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-8 rounded-xl border border-outline-variant/20 flex flex-col gap-4 hover:bg-surface-container-high transition-colors">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div>
+<h3 class="text-on-surface font-bold text-lg mb-2">3. Review &amp; Submit</h3>
+<p class="text-sm text-on-surface-variant">The agent fills the ATS form automatically. You do a final review of the EEO fields and click submit. Claude never submits without you.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="mb-section-gap" id="pipeline">
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+<div class="hidden md:block absolute top-12 left-0 right-0 h-px bg-border-subtle z-0"></div>
+<div class="relative z-10 flex flex-col items-center text-center p-4">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">0</div>
+<h4 class="text-on-surface font-bold">/source</h4>
+<p class="text-xs text-on-surface-variant mt-2">Scrape LinkedIn URLs</p>
+</div>
+<div class="relative z-10 flex flex-col items-center text-center p-4">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">1</div>
+<h4 class="text-on-surface font-bold">/new-role</h4>
+<p class="text-xs text-on-surface-variant mt-2">Analyze JD nuances</p>
+</div>
+<div class="relative z-10 flex flex-col items-center text-center p-4">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">2</div>
+<h4 class="text-on-surface font-bold">/generate-cv</h4>
+<p class="text-xs text-on-surface-variant mt-2">reportlab PDF generation</p>
+</div>
+<div class="relative z-10 flex flex-col items-center text-center p-4">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">3</div>
+<h4 class="text-on-surface font-bold">/apply</h4>
+<p class="text-xs text-on-surface-variant mt-2">Automated Form Filling</p>
+</div>
+<div class="relative z-10 flex flex-col items-center text-center p-4">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">4</div>
+<h4 class="text-on-surface font-bold">/track</h4>
+<p class="text-xs text-on-surface-variant mt-2">Pipeline status tracker</p>
+</div>
+</div>
+</section>
+<!-- Skills Section -->
+<section class="mb-section-gap" id="skills">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-8">Agent Skills</h2>
+<div class="bg-surface-container rounded-xl border border-border-subtle overflow-hidden">
+<div class="flex border-b border-border-subtle bg-surface-container-low overflow-x-auto no-scrollbar" id="skills-tabs">
+<button class="px-6 py-4 text-primary font-bold border-b-2 border-primary whitespace-nowrap" data-tab="source">/source</button>
+<button class="px-6 py-4 text-on-surface-variant hover:text-on-surface whitespace-nowrap" data-tab="role">/new-role</button>
+<button class="px-6 py-4 text-on-surface-variant hover:text-on-surface whitespace-nowrap" data-tab="cv">/generate-cv</button>
+<button class="px-6 py-4 text-on-surface-variant hover:text-on-surface whitespace-nowrap" data-tab="apply">/apply</button>
+<button class="px-6 py-4 text-on-surface-variant hover:text-on-surface whitespace-nowrap" data-tab="track">/track</button>
+</div>
+<div class="p-8" id="skills-content">
+<div id="content-source">
+<h3 class="text-on-surface font-bold text-xl mb-4">Market Intelligence</h3>
+<p class="text-on-surface-variant mb-6">Find verified open roles from your CV/LinkedIn/profile.json with optional company docs. Filters by country and role type.</p>
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-border-subtle font-code-sm text-code-sm">
+<span class="text-syntax-keyword">/source</span> Germany backend
+                        </div>
+<div class="mt-6 flex gap-4 p-4 bg-surface-container-highest/30 rounded-lg">
+<span class="material-symbols-outlined text-status-warning">info</span>
+<p class="text-sm italic text-on-surface-variant">Quirk: Crawls company career pages and LinkedIn to find matching roles.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Schema Section -->
+<section class="mb-section-gap" id="schema">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-8">Configuration</h2>
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-center mb-4">
+<span class="font-bold text-on-surface-variant">profile.json</span>
+<button class="text-xs bg-surface-container-high px-3 py-1 rounded hover:bg-surface-container-highest transition-colors">Copy</button>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-border-subtle font-code-sm text-code-sm h-full overflow-x-auto bg-opacity-50">
+<pre><span class="text-syntax-keyword">{</span>
+  <span class="text-syntax-string">"full_name"</span>: <span class="text-syntax-string">"Devin Professional"</span>,
+  <span class="text-syntax-string">"contact"</span>: <span class="text-syntax-keyword">{</span>
+    <span class="text-syntax-string">"email"</span>: <span class="text-syntax-string">"dev@example.com"</span>,
+    <span class="text-syntax-string">"phone"</span>: <span class="text-syntax-string">"+1-555-0199"</span>
+  <span class="text-syntax-keyword">}</span>,
+  <span class="text-syntax-string">"experience"</span>: <span class="text-syntax-keyword">[...]</span>
+<span class="text-syntax-keyword">}</span></pre>
+</div>
+</div>
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-center mb-4">
+<span class="font-bold text-on-surface-variant">role.json</span>
+<button class="text-xs bg-surface-container-high px-3 py-1 rounded hover:bg-surface-container-highest transition-colors">Copy</button>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-border-subtle font-code-sm text-code-sm h-full overflow-x-auto bg-opacity-50">
+<pre><span class="text-syntax-keyword">{</span>
+  <span class="text-syntax-string">"role_id"</span>: <span class="text-syntax-string">"staff-eng-99"</span>,
+  <span class="text-syntax-string">"keywords"</span>: <span class="text-syntax-keyword">[</span><span class="text-syntax-string">"Rust"</span>, <span class="text-syntax-string">"Kubernetes"</span><span class="text-syntax-keyword">]</span>,
+  <span class="text-syntax-string">"ats_type"</span>: <span class="text-syntax-string">"greenhouse"</span>
+<span class="text-syntax-keyword">}</span></pre>
+</div>
+</div>
+</div>
+</section>
+<!-- Platforms Section -->
+<section class="mb-section-gap" id="platforms">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-8">Supported Platforms</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface-container p-6 rounded-xl border border-border-subtle hover:border-primary/50 transition-colors group shadow-lg">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+<img alt="Greenhouse" class="w-8" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAShklZRLhOnX29A9oV9Zk3798ixLZse445b57ulJrP4Z_2DHp-zuVMSwqP8RCiDZy-srWZDbKBb0tkf9TQlvJRqaOjZAF6AB8FFCPDReMoRQreMnxS0DWnahymYWEqc0PphjPRUYrwjn9DwhrQiw80v6IIndIb68FeVKmxS0azz31tR0Lc_FUsUCHtBStch9eqjBPSjdHPzx8gX0JFQsgOmKEIPOyaNUwTqhtnLWZ6XIQzMn73p7xUE72HtJk0plFXybH3Sf2VXkT-"/>
+</div>
+<span class="px-2 py-1 rounded bg-status-success/20 text-status-success text-[10px] font-bold uppercase tracking-wider">Verified</span>
+</div>
+<h3 class="text-on-surface font-bold text-lg mb-2">Greenhouse</h3>
+<p class="text-sm text-on-surface-variant mb-4">Handles Greenhouse iframes and custom multi-page questions automatically.</p>
+<div class="pt-4 border-t border-border-subtle">
+<span class="text-xs text-on-surface-variant italic">Quirk: Best for custom EEO forms.</span>
+</div>
+</div>
+<div class="bg-surface-container p-6 rounded-xl border border-border-subtle hover:border-primary/50 transition-colors group shadow-lg">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+<img alt="Lever" class="w-8" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSROuLjP4UtSllo8OcziHpVhL_NGv8Vj5-HSuCg-VZ3Nsl1AizPENApVInQYtd0ScWJA1miV_cj18B_DjgvuN57DlQhA0jA9yGZlntngMcCxIq2GPYkzgJqNC9vtmIc42QmQblKi8GlgEzyvkUkLfzo5W6xfZiEXPo8DGA_IX-9idot6aJF7Eb7_JfvVeyRi0CrxuSjhwreFajdo_v4FM1kUROXPYEulxZG6kfwqidyPGwaCoz28udsuKx5PqsqUlSMT2VFtQNpDi_"/>
+</div>
+<span class="px-2 py-1 rounded bg-status-success/20 text-status-success text-[10px] font-bold uppercase tracking-wider">Verified</span>
+</div>
+<h3 class="text-on-surface font-bold text-lg mb-2">Lever</h3>
+<p class="text-sm text-on-surface-variant mb-4">Streamlined single-page support with automatic LinkedIn profile parsing.</p>
+<div class="pt-4 border-t border-border-subtle">
+<span class="text-xs text-on-surface-variant italic">Quirk: Supports 'Apply with LinkedIn' bypass.</span>
+</div>
+</div>
+<div class="bg-surface-container p-6 rounded-xl border border-border-subtle hover:border-primary/50 transition-colors group shadow-lg">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+<img alt="Workable" class="w-8" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZl9REX5hLkz-g1pWcmPbfr1KF72wqMV1ETG8eMHlNPMzOJE8h1dLVkbjulPSrOjc459Qw9YqqF1I8yuBEIBckNbF4rAi6FXem6BXUvEw8vV-HNz8pqiq2z5aLkkPCwEcqEAwsq7tIRgsvu9u7yqQ-Ziq8FDI82QjcVnqDSun6WtkLbBNvWElt9QJo_3AEYfKMJXBMI5VMVRzw1VZe45TZyf_LAFmi2J1Ioe7yvrjf-PYF4tHn5PXPM4_ebV0YoIz5Qiq7ff010K35"/>
+</div>
+<span class="px-2 py-1 rounded bg-status-success/20 text-status-success text-[10px] font-bold uppercase tracking-wider">Verified</span>
+</div>
+<h3 class="text-on-surface font-bold text-lg mb-2">Workable</h3>
+<p class="text-sm text-on-surface-variant mb-4">Full coverage for document uploads and multi-choice qualification questions.</p>
+<div class="pt-4 border-t border-border-subtle">
+<span class="text-xs text-on-surface-variant italic">Quirk: Managed retry logic for slow uploads.</span>
+</div>
+</div>
+</div>
+</section>
+<!-- FAQ Section -->
+<section class="mb-section-gap max-w-3xl" id="faq">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-8">Common Questions</h2>
+<div class="space-y-4">
+<div class="faq-item group">
+<button class="w-full text-left flex justify-between items-center p-4 bg-surface-container rounded-lg border border-border-subtle hover:bg-surface-container-high transition-all">
+<span class="font-bold text-on-surface">Is my data private?</span>
+<span class="material-symbols-outlined text-on-surface-variant transition-transform group-[.active]:rotate-180">expand_more</span>
+</button>
+<div class="hidden faq-answer p-6 bg-surface-container-low border-x border-b border-border-subtle rounded-b-lg text-on-surface-variant text-sm">
+                        Yes. Career Agent runs locally. Your profile.json and role history stay on your machine.
+                    </div>
+</div>
+<div class="faq-item group">
+<button class="w-full text-left flex justify-between items-center p-4 bg-surface-container rounded-lg border border-border-subtle hover:bg-surface-container-high transition-all">
+<span class="font-bold text-on-surface">How does it handle EEO questions?</span>
+<span class="material-symbols-outlined text-on-surface-variant transition-transform group-[.active]:rotate-180">expand_more</span>
+</button>
+<div class="hidden faq-answer p-6 bg-surface-container-low border-x border-b border-border-subtle rounded-b-lg text-on-surface-variant text-sm">
+                        Claude never fills EEO/voluntary self-identification fields (gender, race, veteran status, disability). This is a deliberate design boundary - the agent hands off to you for these fields.
+                    </div>
+</div>
+<div class="faq-item group">
+<button class="w-full text-left flex justify-between items-center p-4 bg-surface-container rounded-lg border border-border-subtle hover:bg-surface-container-high transition-all">
+<span class="font-bold text-on-surface">Does it click 'Submit' for me?</span>
+<span class="material-symbols-outlined text-on-surface-variant transition-transform group-[.active]:rotate-180">expand_more</span>
+</button>
+<div class="hidden faq-answer p-6 bg-surface-container-low border-x border-b border-border-subtle rounded-b-lg text-on-surface-variant text-sm">
+                        No. The agent stops at the final confirmation page. You must review the generated PDF and the form fields, then click Submit yourself.
+                    </div>
+</div>
+<div class="faq-item group">
+<button class="w-full text-left flex justify-between items-center p-4 bg-surface-container rounded-lg border border-border-subtle hover:bg-surface-container-high transition-all">
+<span class="font-bold text-on-surface">Can it detect duplicate roles?</span>
+<span class="material-symbols-outlined text-on-surface-variant transition-transform group-[.active]:rotate-180">expand_more</span>
+</button>
+<div class="hidden faq-answer p-6 bg-surface-container-low border-x border-b border-border-subtle rounded-b-lg text-on-surface-variant text-sm">
+                        Yes, the local SQLite database tracks job IDs to prevent applying to the same role twice.
+                    </div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- Footer -->
+<footer class="bg-bg-base font-body-md text-body-md full-width py-12 border-t border-border-subtle transition-colors duration-300">
+<div class="max-w-container-max mx-auto flex flex-col md:flex-row justify-between items-center px-gutter">
+<div class="flex flex-col mb-6 md:mb-0">
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface mb-2">Career Agent</span>
+<p class="text-on-surface-variant opacity-80">© 2026 Career Agent. Built with precision.</p>
+</div>
+<div class="flex gap-8">
+<a class="text-on-surface-variant hover:text-primary underline transition-all opacity-80 hover:opacity-100" href="https://github.com/nextwebb/career-agent">GitHub</a>
+<a class="text-on-surface-variant hover:text-primary underline transition-all opacity-80 hover:opacity-100" href="https://github.com/nextwebb/career-agent/blob/main/README.md">Docs</a>
+<a class="text-on-surface-variant hover:text-primary underline transition-all opacity-80 hover:opacity-100" href="https://github.com/nextwebb/career-agent/blob/main/LICENSE">MIT License</a>
+</div>
+</div>
+</footer>
+<script>
+    // Theme Switcher Logic
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+    
+    // Check local storage or system preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        htmlElement.className = savedTheme;
+    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+        htmlElement.classList.add('light');
+        htmlElement.classList.remove('dark');
+    }
+
+    themeToggle.addEventListener('click', () => {
+        if (htmlElement.classList.contains('dark')) {
+            htmlElement.classList.remove('dark');
+            htmlElement.classList.add('light');
+            localStorage.setItem('theme', 'light');
+        } else {
+            htmlElement.classList.remove('light');
+            htmlElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        }
+    });
+
+    // Skills Tab Logic
+    const skillsTabs = document.querySelectorAll('#skills-tabs button');
+    const skillsContent = document.getElementById('skills-content');
+    
+    const contents = {
+        'source': {
+            title: 'Market Intelligence',
+            text: 'Find verified open roles from your CV/LinkedIn/profile.json with optional company docs. Filters by country and role type.',
+            code: '/source Germany backend',
+            quirk: 'Crawls company career pages and LinkedIn to find matching roles.'
+        },
+        'role': {
+            title: 'Nuance Detection',
+            text: 'Scaffold a new role config interactively by analyzing the job description and your profile to create tailored CV variants and cover letters.',
+            code: '/new-role https://stripe.com/jobs/listing/...',
+            quirk: 'Interactively prompts for company, title, ATS platform, and CV variant selection.'
+        },
+        'cv': {
+            title: 'PDF Generation',
+            text: 'Generates ATS-optimized PDF using reportlab Platypus. Single-column layout with Helvetica font, clickable links, and tailored bullet points.',
+            code: '/generate-cv stripe_backend_2026',
+            quirk: 'Requires reportlab: pip install reportlab'
+        },
+        'apply': {
+            title: 'The Form Filler',
+            text: 'Opens the job URL in Chrome, fills every required field, uploads PDFs, answers custom questions, then hands off to you for EEO fields and Submit.',
+            code: '/apply stripe_backend_2026',
+            quirk: 'Claude never clicks Submit. You review and submit yourself.'
+        },
+        'track': {
+            title: 'Pipeline Tracker',
+            text: 'View your application pipeline, update application status, and add notes. Track which roles you\'ve applied to and their current status.',
+            code: '/track stripe_backend_2026 "phone_screen"',
+            quirk: 'Stores application history in tracker.json (gitignored).'
+        }
+    };
+
+    skillsTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            skillsTabs.forEach(t => {
+                t.classList.remove('text-primary', 'font-bold', 'border-b-2', 'border-primary');
+                t.classList.add('text-on-surface-variant');
+            });
+            tab.classList.add('text-primary', 'font-bold', 'border-b-2', 'border-primary');
+            tab.classList.remove('text-on-surface-variant');
+
+            const data = contents[tab.dataset.tab];
+            skillsContent.innerHTML = `
+                <div class="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <h3 class="text-on-surface font-bold text-xl mb-4">${data.title}</h3>
+                    <p class="text-on-surface-variant mb-6">${data.text}</p>
+                    <div class="bg-surface-container-lowest p-4 rounded-lg border border-border-subtle font-code-sm text-code-sm">
+                        <span class="text-syntax-keyword">${data.code.split(' ')[0]}</span> ${data.code.substring(data.code.indexOf(' '))}
+                    </div>
+                    <div class="mt-6 flex gap-4 p-4 bg-surface-container-highest/30 rounded-lg">
+                        <span class="material-symbols-outlined text-status-warning">info</span>
+                        <p class="text-sm italic text-on-surface-variant">Quirk: ${data.quirk}</p>
+                    </div>
+                </div>
+            `;
+        });
+    });
+
+    // FAQ Accordion Logic
+    document.querySelectorAll('.faq-item button').forEach(button => {
+        button.addEventListener('click', () => {
+            const item = button.closest('.faq-item');
+            const answer = item.querySelector('.faq-answer');
+            const isActive = item.classList.contains('active');
+            
+            document.querySelectorAll('.faq-item').forEach(other => {
+                other.classList.remove('active');
+                other.querySelector('.faq-answer').classList.add('hidden');
+            });
+
+            if (!isActive) {
+                item.classList.add('active');
+                answer.classList.remove('hidden');
+            }
+        });
+    });
+
+    // Mobile Menu Toggle
+    const menuBtn = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.querySelector('aside');
+    menuBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('hidden');
+        sidebar.classList.toggle('fixed');
+        sidebar.classList.toggle('z-40');
+        sidebar.classList.toggle('inset-0');
+        sidebar.classList.toggle('w-full');
+        sidebar.classList.toggle('bg-background');
+    });
+</script>
+</body></html>
