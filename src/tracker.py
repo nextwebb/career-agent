@@ -13,10 +13,13 @@ Usage:
     python src/tracker.py --note stripe_backend "Recruiter called, technical screen Thu"
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 TRACKER_PATH = Path(__file__).parent.parent / "tracker.json"
 ROLES_DIR = Path(__file__).parent.parent / "roles"
@@ -24,11 +27,11 @@ ROLES_DIR = Path(__file__).parent.parent / "roles"
 STATUSES = ["draft", "applied", "screen", "interview", "offer", "rejected", "withdrawn"]
 
 
-def load() -> list:
+def load() -> list[Any]:
     if not TRACKER_PATH.exists():
         return []
     with open(TRACKER_PATH, encoding="utf-8") as f:
-        return json.load(f)
+        return json.load(f)  # type: ignore[no-any-return]
 
 
 def save(entries: list) -> None:
@@ -112,7 +115,7 @@ STATUS_ICONS = {
 }
 
 
-def list_entries(filter_status: str = None) -> None:
+def list_entries(filter_status: str | None = None) -> None:
     entries = load()
     if not entries:
         print("  No applications tracked yet. Run --add <role_id>")
@@ -123,7 +126,7 @@ def list_entries(filter_status: str = None) -> None:
 
     # Group by status
     order = ["offer", "interview", "screen", "applied", "draft", "rejected", "withdrawn"]
-    grouped = {s: [] for s in order}
+    grouped: dict[str, list[Any]] = {s: [] for s in order}
     for e in entries:
         grouped.get(e["status"], grouped["draft"]).append(e)
 

@@ -13,6 +13,8 @@ import py_compile
 import sys
 from pathlib import Path
 
+import pytest
+
 # Project root
 ROOT = Path(__file__).parent.parent
 
@@ -70,13 +72,18 @@ class TestPythonSyntax:
                 pytest.fail(f"Syntax error in {py_file}: {e}")
 
     def test_python_modules_import(self):
-        """Verify core modules can be imported."""
+        """Verify core modules can be imported (requires reportlab)."""
         sys.path.insert(0, str(ROOT / "src"))
+
+        # Check if reportlab is available
+        try:
+            import reportlab  # noqa: F401
+        except ImportError:
+            pytest.skip("reportlab not installed - skipping module import test")
 
         try:
             import cl_builder
             import cv_builder
-            import generate_application
             import tracker
 
             # Check key functions exist

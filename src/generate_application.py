@@ -46,7 +46,7 @@ def load_profile() -> dict:
         print("Then fill in your personal details.")
         sys.exit(1)
     with open(PROFILE_PATH, encoding="utf-8") as f:
-        return json.load(f)
+        return json.load(f)  # type: ignore[no-any-return]
 
 
 def load_role(role_id: str) -> dict:
@@ -60,7 +60,7 @@ def load_role(role_id: str) -> dict:
             print("No role configs found. Add one to roles/")
         sys.exit(1)
     with open(config_path, encoding="utf-8") as f:
-        return json.load(f)
+        return json.load(f)  # type: ignore[no-any-return]
 
 
 def generate(profile: dict, role_id: str, open_url: bool = False) -> tuple[str, str]:
