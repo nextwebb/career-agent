@@ -7,23 +7,35 @@ Usage:
     build_cv(profile, config, "/path/to/output.pdf")
 """
 
-import datetime
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable, KeepTogether
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.units import inch
 from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import HRFlowable, KeepTogether, Paragraph, SimpleDocTemplate, Spacer
 
-
-DARK   = colors.HexColor("#1a1a2e")
-GREY   = colors.HexColor("#555566")
-LGREY  = colors.HexColor("#888899")
+DARK = colors.HexColor("#1a1a2e")
+GREY = colors.HexColor("#555566")
+LGREY = colors.HexColor("#888899")
 ACCENT = colors.HexColor("#2563eb")
 
 
+def _get_name(profile: dict) -> str:
+    """Extract full name from profile, handling both string and dict formats."""
+    name = profile["name"]
+    if isinstance(name, dict):
+        return f"{name.get('first', '')} {name.get('last', '')}".strip()
+    return str(name)
+
+
 def _s(name, **kw):
-    base = dict(fontName="Helvetica", fontSize=9.5, leading=13.5,
-                textColor=DARK, spaceAfter=0, spaceBefore=0)
+    base = dict(
+        fontName="Helvetica",
+        fontSize=9.5,
+        leading=13.5,
+        textColor=DARK,
+        spaceAfter=0,
+        spaceBefore=0,
+    )
     base.update(kw)
     return ParagraphStyle(name, **base)
 
@@ -51,34 +63,61 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         experience      list[{title, company_line, client_line?, bullets: list[str]}]
         skills          list[{label, items}]
     """
+    full_name = _get_name(profile)
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
-        leftMargin=0.7*inch, rightMargin=0.7*inch,
-        topMargin=0.6*inch, bottomMargin=0.6*inch,
-        title=f"{profile['name']} — {config.get('company', 'CV')}",
-        author=profile["name"],
+        leftMargin=0.7 * inch,
+        rightMargin=0.7 * inch,
+        topMargin=0.6 * inch,
+        bottomMargin=0.6 * inch,
+        title=f"{full_name} — {config.get('company', 'CV')}",
+        author=full_name,
     )
 
-    NAME      = _s("name",  fontName="Helvetica-Bold", fontSize=20, leading=24, textColor=DARK, spaceAfter=1)
-    ROLETITLE = _s("role",  fontSize=11, textColor=GREY, spaceAfter=1)
-    OPENNESS  = _s("open",  fontSize=9, textColor=LGREY, fontName="Helvetica-Oblique", spaceAfter=2)
-    CONTACT   = _s("con",   fontSize=8.5, textColor=LGREY, spaceAfter=0)
-    SEC_HEAD  = _s("sec",   fontName="Helvetica-Bold", fontSize=10, textColor=DARK,
-                   spaceBefore=9, spaceAfter=2, textTransform="uppercase", letterSpacing=0.8)
-    JOB_TITLE = _s("jt",   fontName="Helvetica-Bold", fontSize=9.5, textColor=DARK, spaceAfter=0, spaceBefore=5)
-    COMPANY   = _s("co",   fontName="Helvetica-Oblique", fontSize=9, textColor=GREY, spaceAfter=3)
-    CLIENT    = _s("cl",   fontName="Helvetica-Oblique", fontSize=8.5, textColor=LGREY, spaceAfter=3)
-    BULLET    = _s("bul",  leftIndent=11, firstLineIndent=-9, spaceAfter=1.8)
-    IMPACT_H  = _s("imph", fontName="Helvetica-Bold", fontSize=9.5, textColor=ACCENT, spaceAfter=1, spaceBefore=3)
-    IMPACT_B  = _s("impb", fontSize=9, textColor=GREY, spaceAfter=4, leading=13)
-    SUMMARY   = _s("sum",  fontSize=9.5, leading=14, spaceAfter=0)
-    EDU       = _s("edu",  spaceAfter=2)
-    SK        = _s("sk",   spaceAfter=3, leading=13)
+    NAME = _s(
+        "name", fontName="Helvetica-Bold", fontSize=20, leading=24, textColor=DARK, spaceAfter=1
+    )
+    ROLETITLE = _s("role", fontSize=11, textColor=GREY, spaceAfter=1)
+    OPENNESS = _s("open", fontSize=9, textColor=LGREY, fontName="Helvetica-Oblique", spaceAfter=2)
+    CONTACT = _s("con", fontSize=8.5, textColor=LGREY, spaceAfter=0)
+    SEC_HEAD = _s(
+        "sec",
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        textColor=DARK,
+        spaceBefore=9,
+        spaceAfter=2,
+        textTransform="uppercase",
+        letterSpacing=0.8,
+    )
+    JOB_TITLE = _s(
+        "jt", fontName="Helvetica-Bold", fontSize=9.5, textColor=DARK, spaceAfter=0, spaceBefore=5
+    )
+    COMPANY = _s("co", fontName="Helvetica-Oblique", fontSize=9, textColor=GREY, spaceAfter=3)
+    CLIENT = _s("cl", fontName="Helvetica-Oblique", fontSize=8.5, textColor=LGREY, spaceAfter=3)
+    BULLET = _s("bul", leftIndent=11, firstLineIndent=-9, spaceAfter=1.8)
+    IMPACT_H = _s(
+        "imph",
+        fontName="Helvetica-Bold",
+        fontSize=9.5,
+        textColor=ACCENT,
+        spaceAfter=1,
+        spaceBefore=3,
+    )
+    IMPACT_B = _s("impb", fontSize=9, textColor=GREY, spaceAfter=4, leading=13)
+    SUMMARY = _s("sum", fontSize=9.5, leading=14, spaceAfter=0)
+    EDU = _s("edu", spaceAfter=2)
+    SK = _s("sk", spaceAfter=3, leading=13)
 
     def rule():
-        return HRFlowable(width="100%", thickness=0.4,
-                          color=colors.HexColor("#d1d5db"), spaceAfter=5, spaceBefore=0)
+        return HRFlowable(
+            width="100%",
+            thickness=0.4,
+            color=colors.HexColor("#d1d5db"),
+            spaceAfter=5,
+            spaceBefore=0,
+        )
 
     def section(title):
         return [Paragraph(title, SEC_HEAD), rule()]
@@ -100,13 +139,9 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
             f'<a href="mailto:{profile["email"]}" color="#2563eb">{profile["email"]}</a>'
         )
     if links.get("linkedin"):
-        contact_parts.append(
-            f'<a href="{links["linkedin"]}" color="#2563eb">LinkedIn</a>'
-        )
+        contact_parts.append(f'<a href="{links["linkedin"]}" color="#2563eb">LinkedIn</a>')
     if links.get("github"):
-        contact_parts.append(
-            f'<a href="{links["github"]}" color="#2563eb">GitHub</a>'
-        )
+        contact_parts.append(f'<a href="{links["github"]}" color="#2563eb">GitHub</a>')
     if links.get("blog") or links.get("website"):
         url = links.get("blog") or links.get("website")
         label = url.replace("https://", "").replace("http://", "")
@@ -118,10 +153,12 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
 
     # ── Header ───────────────────────────────────────────────────────────────
     story += [
-        Paragraph(profile["name"], NAME),
+        Paragraph(full_name, NAME),
         Paragraph(config["headline"], ROLETITLE),
         Paragraph(
-            config.get("openness", "Open to fully remote roles globally and relocation for the right team."),
+            config.get(
+                "openness", "Open to fully remote roles globally and relocation for the right team."
+            ),
             OPENNESS,
         ),
         Paragraph(contact_line, CONTACT),
@@ -135,10 +172,14 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     # ── Selected Impact ──────────────────────────────────────────────────────
     story += section("Selected Impact")
     for item in config["impact_statements"]:
-        story.append(KeepTogether([
-            Paragraph(f'<b><font color="#2563eb">{item["title"]}</font></b>', IMPACT_H),
-            Paragraph(item["body"], IMPACT_B),
-        ]))
+        story.append(
+            KeepTogether(
+                [
+                    Paragraph(f'<b><font color="#2563eb">{item["title"]}</font></b>', IMPACT_H),
+                    Paragraph(item["body"], IMPACT_B),
+                ]
+            )
+        )
     story.append(sp(2))
 
     # ── Experience ───────────────────────────────────────────────────────────
@@ -171,7 +212,13 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     # ── Education ────────────────────────────────────────────────────────────
     story += section("Education")
     for edu in profile.get("education", []):
-        story.append(Paragraph(edu, EDU))
+        # Handle both string and dict formats
+        if isinstance(edu, dict):
+            parts = [edu.get("degree", ""), edu.get("institution", ""), edu.get("year", "")]
+            edu_str = " — ".join(p for p in parts if p)
+        else:
+            edu_str = str(edu)
+        story.append(Paragraph(edu_str, EDU))
 
     doc.build(story)
     print(f"  ✓ CV PDF → {output_path}")
