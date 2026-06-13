@@ -80,7 +80,13 @@ def generate(profile: dict, role_id: str, open_url: bool = False) -> tuple[str, 
     # Fall back to profile defaults if still missing
     config.setdefault("headline", profile.get("headline", ""))
     config.setdefault("summary", profile.get("summary", ""))
-    config.setdefault("impact_statements", profile.get("impact_statements", []))
+
+    # Convert impact_statements from dict to list if needed
+    impact = profile.get("impact_statements", [])
+    if isinstance(impact, dict):
+        impact = list(impact.values())
+    config.setdefault("impact_statements", impact)
+
     config.setdefault("experience", profile.get("experience", []))
     config.setdefault("skills", profile.get("skills", []))
 
