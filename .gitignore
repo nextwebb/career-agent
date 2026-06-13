@@ -22,3 +22,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Demo recordings (may contain PII)
+*.gif
+
+# Claude Code local settings
+.claude/

@@ -8,6 +8,7 @@ Agentic job application workflow. Generates tailored CVs and fills ATS forms via
 - `/apply <role_id>` — Fill the ATS form, upload PDFs, answer questions, hand off to user for EEO + Submit
 - `/new-role [url]` — Scaffold a new role config interactively
 - `/track [role_id] [status]` — View pipeline, update application status, add notes
+- `/source [country] [role_type]` — Find verified open roles from your CV/LinkedIn/profile.json + optional company docs
 
 ## Key files
 

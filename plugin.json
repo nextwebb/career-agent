@@ -6,13 +6,47 @@
   "homepage": "https://nextwebb.github.io/career-agent",
   "repository": "https://github.com/nextwebb/career-agent",
   "license": "MIT",
-  "targets": ["cowork", "claude-code"],
+  "targets": [
+    "cowork",
+    "claude-code"
+  ],
   "requires": {
     "python": ">=3.10",
-    "pip": ["reportlab>=4.0"],
-    "mcp": ["claude-in-chrome"]
+    "pip": [
+      "reportlab>=4.0"
+    ],
+    "mcp": [
+      "claude-in-chrome"
+    ]
   },
   "skills": [
+    {
+      "name": "source",
+      "path": "skills/source/SKILL.md",
+      "description": "Find verified currently-open roles matching your profile. Accepts profile.json, uploaded CV PDF, LinkedIn PDF export, or pasted resume. Returns 20+ ranked roles with fit scores, CV variant suggestions, sponsorship signals, and cover letter angles.",
+      "triggers": [
+        "find me jobs",
+        "source jobs",
+        "find roles",
+        "what jobs match my profile",
+        "search for jobs",
+        "find backend roles",
+        "find Python roles",
+        "find AI roles"
+      ],
+      "args": {
+        "country": {
+          "type": "string",
+          "description": "Target country or region (e.g. UK, EU, remote)",
+          "required": false
+        },
+        "role_type": {
+          "type": "string",
+          "description": "Role focus (e.g. backend, data platform, AI infrastructure)",
+          "required": false
+        }
+      }
+    },
     {
       "name": "apply",
       "path": "skills/apply/SKILL.md",
@@ -103,16 +137,16 @@
   },
   "setup": {
     "steps": [
-      "Copy profile.example.json → profile.json and fill in your details",
-      "Copy roles.example/example_role.json → roles/<role_id>.json for each role",
+      "Copy profile.example.json \u2192 profile.json and fill in your details",
+      "Copy roles.example/example_role.json \u2192 roles/<role_id>.json for each role",
       "Run: pip install reportlab",
       "Connect Claude in Chrome extension"
     ],
     "dataFiles": {
-      "profile.json": "Your personal data — gitignored, never committed",
-      "roles/*.json": "Your role configs — gitignored, never committed",
-      "generated/": "Output PDFs — gitignored",
-      "tracker.json": "Application pipeline — gitignored, stays local"
+      "profile.json": "Your personal data \u2014 gitignored, never committed",
+      "roles/*.json": "Your role configs \u2014 gitignored, never committed",
+      "generated/": "Output PDFs \u2014 gitignored",
+      "tracker.json": "Application pipeline \u2014 gitignored, stays local"
     }
   }
 }
