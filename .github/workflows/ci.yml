@@ -1,0 +1,162 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Ruff
+        run: pip install ruff==0.6.0
+
+      - name: Run Ruff linter
+        run: ruff check .
+
+      - name: Check code formatting
+        run: ruff format --check .
+
+  type-check:
+    name: Type Checking
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install mypy==1.11.0
+          pip install -r requirements.txt
+
+      - name: Run mypy
+        run: mypy src/ --install-types --non-interactive
+
+  security-lint:
+    name: Security Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install bandit
+        run: pip install bandit[toml]==1.7.9
+
+      - name: Run bandit security scan
+        run: bandit -r src/ -c pyproject.toml
+
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install test dependencies
+        run: pip install pytest==8.3.0
+
+      - name: Run smoke tests
+        run: pytest tests/smoke_test.py -v
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create test profile and role
+        run: |
+          cp profile.example.json profile.json
+          mkdir -p roles
+          cp roles.example/example_role.json roles/example_role.json
+
+      - name: Test PDF Generation
+        run: bash tests/integration_test.sh
+
+      - name: Upload PDF artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-pdfs-py${{ matrix.python-version }}
+          path: generated/*.pdf
+          retention-days: 7
+
+  validate-configs:
+    name: Validate Configuration Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate JSON files
+        run: |
+          for file in plugin.json profile.example.json roles.example/*.json .claude-plugin/*.json; do
+            if [ -f "$file" ]; then
+              echo "Validating $file..."
+              python -m json.tool "$file" > /dev/null
+            fi
+          done
+
+      - name: Validate SKILL.md frontmatter
+        run: |
+          for skill in skills/*/SKILL.md; do
+            if [ -f "$skill" ]; then
+              echo "Checking $skill..."
+              head -n 1 "$skill" | grep -q "^#" || (echo "ERROR: $skill missing title" && exit 1)
+            fi
+          done
+
+  all-checks:
+    name: All Checks Passed
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, security-lint, smoke-tests, integration-test, validate-configs]
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ]; then
+            echo "One or more checks failed"
+            exit 1
+          fi
+          echo "All checks passed!"

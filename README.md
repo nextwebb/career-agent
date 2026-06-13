@@ -1,5 +1,10 @@
 # career-agent
 
+[![CI](https://github.com/nextwebb/career-agent/workflows/CI/badge.svg)](https://github.com/nextwebb/career-agent/actions/workflows/ci.yml)
+[![Security](https://github.com/nextwebb/career-agent/workflows/Security/badge.svg)](https://github.com/nextwebb/career-agent/actions/workflows/security.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **Agentic job application workflow for Claude Code and Cowork.**
 
 One command generates a tailored CV + cover letter PDF per role. Claude fills the ATS form. You review and click Submit.
@@ -35,6 +40,18 @@ Claude never submits on your behalf. That boundary is intentional.
 | Human-in-loop handoff | ✅ EEO + Submit | N/A | N/A |
 | Profile data local | ✅ gitignored | varies | varies |
 | Cowork + Claude Code | ✅ both | ❌ | ❌ |
+
+---
+
+## Testing & Quality
+
+- **CI/CD**: GitHub Actions with comprehensive testing on every PR
+- **Security**: CodeQL + Trivy + bandit + safety scanning (daily + on push)
+- **Code Quality**: Ruff linting + mypy type checking
+- **Tests**: Smoke tests (structure/syntax) + integration tests (real PDF generation)
+- **Python Support**: 3.10, 3.11, 3.12
+
+All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_PRINCIPLES.md) for detailed standards.
 
 ---
 
@@ -280,7 +297,17 @@ Each platform needs:
 - A `src/ats/<platform>.py` helper (optional — for complex flows)
 - Notes in the `apply` skill about platform-specific quirks (hidden file inputs, React comboboxes, cross-origin iframes, etc.)
 
-Open an issue before starting to avoid duplication.
+**Before contributing:**
+1. Read [ENGINEERING_PRINCIPLES.md](ENGINEERING_PRINCIPLES.md) for coding standards
+2. Install pre-commit hooks: `pip install pre-commit && pre-commit install`
+3. Run tests locally: `pytest tests/ && bash tests/integration_test.sh`
+4. Open an issue before starting to avoid duplication
+
+**CI Requirements:**
+- All code must pass Ruff linting + mypy type checking
+- Security scans (bandit) must pass
+- Smoke tests + integration tests must pass
+- Conventional commit message format required
 
 ---
 
