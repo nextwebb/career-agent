@@ -29,6 +29,15 @@ import argparse
 import webbrowser
 from pathlib import Path
 
+# Check for reportlab early
+try:
+    import reportlab
+except ImportError:
+    print("ERROR: reportlab is not installed.")
+    print("Install it with:  pip install -r requirements.txt")
+    print("Or directly:      pip install reportlab")
+    sys.exit(1)
+
 SCRIPT_DIR  = Path(__file__).parent.parent   # repo root
 ROLES_DIR   = SCRIPT_DIR / "roles"
 OUTPUT_DIR  = SCRIPT_DIR / "generated"
@@ -50,14 +59,18 @@ def load_profile() -> dict:
 
 
 def load_role(role_id: str) -> dict:
+    # Ensure roles directory exists
+    ROLES_DIR.mkdir(exist_ok=True)
+
     config_path = ROLES_DIR / f"{role_id}.json"
     if not config_path.exists():
-        available = [f.stem for f in sorted(ROLES_DIR.glob("*.json"))]
+        available = [f.stem for f in sorted(ROLES_DIR.glob("*.json"))] if ROLES_DIR.exists() else []
         print(f"ERROR: No config found for role '{role_id}'")
         if available:
             print(f"Available roles: {', '.join(available)}")
         else:
             print("No role configs found. Add one to roles/")
+            print("Example: cp roles.example/example_role.json roles/my_role.json")
         sys.exit(1)
     with open(config_path, encoding="utf-8") as f:
         return json.load(f)
@@ -88,6 +101,9 @@ def generate(profile: dict, role_id: str, open_url: bool = False) -> tuple[str, 
 
 
 def list_roles():
+    # Ensure roles directory exists
+    ROLES_DIR.mkdir(exist_ok=True)
+
     roles = sorted(ROLES_DIR.glob("*.json"))
     if not roles:
         print("No role configs found in ./roles/")

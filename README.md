@@ -101,9 +101,16 @@ Then use the skills:
 ```bash
 git clone https://github.com/nextwebb/career-agent
 cd career-agent
-cp profile.example.json profile.json      # fill in your details
-cp roles.example/example_role.json roles/my_role.json  # fill in the role
-pip install reportlab
+
+# Install dependencies and verify
+pip install -r requirements.txt
+python -c "import reportlab; print('✅ reportlab installed successfully')"
+
+# Set up your profile
+cp profile.example.json profile.json      # then fill in your details
+
+# Create your first role config
+cp roles.example/example_role.json roles/my_role.json  # then fill in the role
 ```
 
 Then in Claude Code or Cowork:
