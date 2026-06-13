@@ -212,7 +212,13 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     # ── Education ────────────────────────────────────────────────────────────
     story += section("Education")
     for edu in profile.get("education", []):
-        story.append(Paragraph(edu, EDU))
+        # Handle both string and dict formats
+        if isinstance(edu, dict):
+            parts = [edu.get("degree", ""), edu.get("institution", ""), edu.get("year", "")]
+            edu_str = " — ".join(p for p in parts if p)
+        else:
+            edu_str = str(edu)
+        story.append(Paragraph(edu_str, EDU))
 
     doc.build(story)
     print(f"  ✓ CV PDF → {output_path}")
