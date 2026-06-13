@@ -1,152 +1,27 @@
 {
   "name": "career-agent",
   "version": "1.0.0",
-  "description": "Agentic job application workflow. Generates tailored CV + cover letter PDFs per role and fills ATS forms via browser automation. Handoff to user for EEO fields and Submit.",
-  "author": "nextwebb",
+  "description": "Agentic job application workflow. Generates tailored CV + cover letter PDFs per role and fills ATS forms via browser automation.",
+  "author": {
+    "name": "nextwebb"
+  },
   "homepage": "https://nextwebb.github.io/career-agent",
   "repository": "https://github.com/nextwebb/career-agent",
   "license": "MIT",
-  "targets": [
-    "cowork",
-    "claude-code"
+  "keywords": [
+    "jobs",
+    "career",
+    "cv",
+    "resume",
+    "ats",
+    "applications",
+    "automation"
   ],
-  "requires": {
-    "python": ">=3.10",
-    "pip": [
-      "reportlab>=4.0"
-    ],
-    "mcp": [
-      "claude-in-chrome"
-    ]
-  },
   "skills": [
-    {
-      "name": "source",
-      "path": "skills/source/SKILL.md",
-      "description": "Find verified currently-open roles matching your profile. Accepts profile.json, uploaded CV PDF, LinkedIn PDF export, or pasted resume. Returns 20+ ranked roles with fit scores, CV variant suggestions, sponsorship signals, and cover letter angles.",
-      "triggers": [
-        "find me jobs",
-        "source jobs",
-        "find roles",
-        "what jobs match my profile",
-        "search for jobs",
-        "find backend roles",
-        "find Python roles",
-        "find AI roles"
-      ],
-      "args": {
-        "country": {
-          "type": "string",
-          "description": "Target country or region (e.g. UK, EU, remote)",
-          "required": false
-        },
-        "role_type": {
-          "type": "string",
-          "description": "Role focus (e.g. backend, data platform, AI infrastructure)",
-          "required": false
-        }
-      }
-    },
-    {
-      "name": "apply",
-      "path": "skills/apply/SKILL.md",
-      "description": "Fill an ATS job application form, upload tailored CV + cover letter, answer custom questions, and hand off to user for EEO fields and Submit.",
-      "triggers": [
-        "apply for",
-        "fill application",
-        "submit application for",
-        "complete the form for"
-      ],
-      "args": {
-        "role_id": {
-          "type": "string",
-          "description": "The role_id from your roles/ config (e.g. stripe_backend_2026)",
-          "required": true
-        }
-      }
-    },
-    {
-      "name": "generate-cv",
-      "path": "skills/generate-cv/SKILL.md",
-      "description": "Generate an ATS-optimised CV PDF and cover letter PDF for a specific role from profile.json and the role config.",
-      "triggers": [
-        "generate cv",
-        "create cv for",
-        "build resume for",
-        "make cv for",
-        "generate application documents"
-      ],
-      "args": {
-        "role_id": {
-          "type": "string",
-          "description": "The role_id from your roles/ config",
-          "required": true
-        }
-      }
-    },
-    {
-      "name": "new-role",
-      "path": "skills/new-role/SKILL.md",
-      "description": "Interactively scaffold a new role JSON config by asking for the JD URL, scraping the job description, and proposing a tailored config with CV variant selection.",
-      "triggers": [
-        "new role",
-        "add role",
-        "create role config",
-        "set up application for",
-        "I want to apply to"
-      ],
-      "args": {
-        "url": {
-          "type": "string",
-          "description": "Job posting URL",
-          "required": false
-        }
-      }
-    },
-    {
-      "name": "track",
-      "path": "skills/track/SKILL.md",
-      "description": "Track and update job application status. View your full pipeline grouped by status, add notes, and mark applications as applied/screen/interview/offer/rejected.",
-      "triggers": [
-        "track application",
-        "update status",
-        "show my pipeline",
-        "mark as applied",
-        "application status",
-        "what have I applied to"
-      ],
-      "args": {
-        "role_id": {
-          "type": "string",
-          "description": "The role_id to update or view",
-          "required": false
-        },
-        "status": {
-          "type": "string",
-          "description": "New status: draft | applied | screen | interview | offer | rejected | withdrawn",
-          "required": false
-        }
-      }
-    }
-  ],
-  "mcpServers": {
-    "claude-in-chrome": {
-      "description": "Required for browser-based form filling. Install the Claude in Chrome extension and connect it to Cowork or Claude Code.",
-      "installUrl": "https://docs.claude.ai/claude-in-chrome"
-    }
-  },
-  "setup": {
-    "steps": [
-      "Copy profile.example.json \u2192 profile.json and fill in your details",
-      "Copy roles.example/example_role.json \u2192 roles/<role_id>.json for each role",
-      "Run: pip install reportlab",
-      "Connect Claude in Chrome extension"
-    ],
-    "dataFiles": {
-      "profile.json": "Your personal data \u2014 gitignored, never committed",
-      "roles/*.json": "Your role configs \u2014 gitignored, never committed",
-      "generated/": "Output PDFs \u2014 gitignored",
-      "tracker.json": "Application pipeline \u2014 gitignored, stays local"
-    }
-  }
+    "skills/source",
+    "skills/new-role",
+    "skills/generate-cv",
+    "skills/apply",
+    "skills/track"
+  ]
 }
