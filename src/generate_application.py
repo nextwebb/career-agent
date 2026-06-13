@@ -67,6 +67,23 @@ def generate(profile: dict, role_id: str, open_url: bool = False) -> tuple[str, 
     config = load_role(role_id)
     OUTPUT_DIR.mkdir(exist_ok=True)
 
+    # Merge profile variant data into config for CV generation
+    variant = config.get("variant", "")
+    if variant and "variants" in profile:
+        variant_data = profile["variants"].get(variant, {})
+        # Add variant-specific fields if not in role config
+        if "headline" not in config and "headline" in variant_data:
+            config["headline"] = variant_data["headline"]
+        if "summary" not in config and "summary" in variant_data:
+            config["summary"] = variant_data["summary"]
+
+    # Fall back to profile defaults if still missing
+    config.setdefault("headline", profile.get("headline", ""))
+    config.setdefault("summary", profile.get("summary", ""))
+    config.setdefault("impact_statements", profile.get("impact_statements", []))
+    config.setdefault("experience", profile.get("experience", []))
+    config.setdefault("skills", profile.get("skills", []))
+
     prefix = config["output_prefix"]
     cv_path = str(OUTPUT_DIR / f"{prefix}_CV.pdf")
     cl_path = str(OUTPUT_DIR / f"{prefix}_CoverLetter.pdf")
