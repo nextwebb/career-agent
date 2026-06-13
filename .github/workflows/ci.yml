@@ -81,8 +81,10 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install test dependencies
-        run: pip install pytest==8.3.0
+      - name: Install dependencies
+        run: |
+          pip install pytest==8.3.0
+          pip install -r requirements.txt
 
       - name: Run smoke tests
         run: pytest tests/smoke_test.py -v

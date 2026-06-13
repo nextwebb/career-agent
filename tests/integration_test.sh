@@ -48,7 +48,25 @@ fi
 mkdir -p roles
 if [ ! -f "roles/example_role.json" ]; then
     echo "   Creating test role config..."
-    cp roles.example/example_role.json roles/example_role.json
+    cat > roles/example_role.json <<'EOF'
+{
+  "role_id": "test_role",
+  "company": "Test Company",
+  "title": "Software Engineer",
+  "url": "https://example.com/jobs/test",
+  "ats_platform": "greenhouse",
+  "variant": "A",
+  "output_prefix": "test_role",
+  "cover_letter": {
+    "salutation": "Dear Hiring Team,",
+    "paragraphs": [
+      "Test opening paragraph.",
+      "Test experience paragraph."
+    ],
+    "closing": "Best regards,"
+  }
+}
+EOF
 else
     echo "   ✓ roles/example_role.json already exists"
 fi

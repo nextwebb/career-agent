@@ -146,7 +146,17 @@ class TestJSONConfigs:
         if marketplace_file.exists():
             with open(marketplace_file, encoding="utf-8") as f:
                 data = json.load(f)
-            assert "repository" in data, "Missing repository field in marketplace.json"
+            # Check that repository exists (either at root or in plugins array)
+            has_root_repo = "repository" in data
+            has_plugin_repos = (
+                "plugins" in data
+                and isinstance(data["plugins"], list)
+                and len(data["plugins"]) > 0
+                and "repository" in data["plugins"][0]
+            )
+            assert (
+                has_root_repo or has_plugin_repos
+            ), "Missing repository field in marketplace.json"
 
 
 class TestSKILLMarkdown:
