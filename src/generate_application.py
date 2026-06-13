@@ -37,6 +37,7 @@ PROFILE_PATH = SCRIPT_DIR / "profile.json"
 sys.path.insert(0, str(Path(__file__).parent))
 from cv_builder import build_cv
 from cl_builder import build_cover_letter
+from validation import validate_and_report, validate_profile, validate_role_config, ValidationError
 
 
 def load_profile() -> dict:
@@ -45,8 +46,27 @@ def load_profile() -> dict:
         print("Run:  cp profile.example.json profile.json")
         print("Then fill in your personal details.")
         sys.exit(1)
-    with open(PROFILE_PATH, encoding="utf-8") as f:
-        return json.load(f)
+
+    try:
+        with open(PROFILE_PATH, encoding="utf-8") as f:
+            profile = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Invalid JSON in profile.json")
+        print(f"  {e}")
+        print("\nCheck for:")
+        print("  - Missing commas between fields")
+        print("  - Unmatched brackets or braces")
+        print("  - Trailing commas before closing braces")
+        sys.exit(1)
+
+    # Validate profile schema
+    try:
+        validate_and_report(profile, validate_profile, "profile", str(PROFILE_PATH))
+    except ValidationError as e:
+        print(f"ERROR: {e}")
+        sys.exit(1)
+
+    return profile
 
 
 def load_role(role_id: str) -> dict:
@@ -58,9 +78,29 @@ def load_role(role_id: str) -> dict:
             print(f"Available roles: {', '.join(available)}")
         else:
             print("No role configs found. Add one to roles/")
+            print("Example: cp roles.example/example_role.json roles/my_role.json")
         sys.exit(1)
-    with open(config_path, encoding="utf-8") as f:
-        return json.load(f)
+
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            config = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Invalid JSON in {config_path}")
+        print(f"  {e}")
+        print("\nCheck for:")
+        print("  - Missing commas between fields")
+        print("  - Unmatched brackets or braces")
+        print("  - Trailing commas before closing braces")
+        sys.exit(1)
+
+    # Validate role config schema
+    try:
+        validate_and_report(config, validate_role_config, "role config", str(config_path))
+    except ValidationError as e:
+        print(f"ERROR: {e}")
+        sys.exit(1)
+
+    return config
 
 
 def generate(profile: dict, role_id: str, open_url: bool = False) -> tuple[str, str]:
