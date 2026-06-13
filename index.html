@@ -3,474 +3,886 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>career-agent — Agentic job application workflow for Claude</title>
-  <meta name="description" content="Generate tailored CV + cover letter PDFs per role. Claude fills the ATS form. You review and click Submit.">
+  <title>career-agent — Agentic job application workflow</title>
+  <meta name="description" content="Five slash commands. Your profile stays local. Claude fills the form. You click Submit.">
+  <meta property="og:title" content="career-agent">
+  <meta property="og:description" content="Agentic job application workflow for Claude Code and Cowork. Source → Apply → Track.">
+  <meta property="og:url" content="https://nextwebb.github.io/career-agent">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0f0f0f;
-      --surface: #1a1a1a;
-      --border: #2a2a2a;
-      --text: #e8e8e8;
-      --muted: #888;
-      --accent: #2563eb;
-      --accent-light: #3b82f6;
-      --green: #22c55e;
-      --red: #ef4444;
-      --code-bg: #111;
+      --bg: #0c0c0e;
+      --surface: #141416;
+      --surface2: #1c1c20;
+      --border: #252529;
+      --border2: #2e2e34;
+      --text: #eaeaf0;
+      --muted: #76767f;
+      --muted2: #9090a0;
+      --accent: #5b6ef5;
+      --accent-dim: rgba(91,110,245,0.12);
+      --accent-border: rgba(91,110,245,0.3);
+      --green: #34d399;
+      --green-dim: rgba(52,211,153,0.12);
+      --red: #f87171;
+      --amber: #fbbf24;
+      --code-bg: #0a0a0c;
+      --sidebar-w: 220px;
     }
+
+    html { scroll-behavior: smooth; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.6;
+      line-height: 1.65;
+      font-size: 15px;
     }
 
-    a { color: var(--accent-light); text-decoration: none; }
+    a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
+    p { color: var(--muted2); }
 
-    /* NAV */
-    nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 2rem;
+    /* ── TOP NAV ── */
+    .topnav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.5rem; height: 52px;
+      background: rgba(12,12,14,0.92);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      background: rgba(15,15,15,0.95);
-      backdrop-filter: blur(8px);
-      z-index: 10;
     }
-    .nav-logo { font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; }
-    .nav-links { display: flex; gap: 1.5rem; font-size: 0.875rem; color: var(--muted); }
-    .nav-links a { color: var(--muted); }
-    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .topnav-left { display: flex; align-items: center; gap: 1.5rem; }
+    .topnav-logo {
+      font-weight: 700; font-size: 0.9rem; letter-spacing: -0.01em;
+      color: var(--text); display: flex; align-items: center; gap: 0.45rem;
+    }
+    .topnav-logo span { color: var(--accent); }
+    .topnav-links { display: flex; gap: 1.25rem; }
+    .topnav-links a { font-size: 0.8125rem; color: var(--muted); }
+    .topnav-links a:hover { color: var(--text); text-decoration: none; }
+    .topnav-right { display: flex; align-items: center; gap: 0.625rem; }
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: opacity 0.15s;
+      display: inline-flex; align-items: center; gap: 0.375rem;
+      padding: 0.375rem 0.875rem; border-radius: 6px;
+      font-size: 0.8125rem; font-weight: 500; cursor: pointer;
+      transition: opacity 0.15s, background 0.15s; text-decoration: none;
     }
     .btn:hover { opacity: 0.85; text-decoration: none; }
     .btn-primary { background: var(--accent); color: #fff; }
-    .btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+    .star-count {
+      font-size: 0.75rem; color: var(--muted);
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 4px; padding: 0.2rem 0.5rem;
+    }
 
-    /* HERO */
-    .hero {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 6rem 2rem 4rem;
-      text-align: center;
+    /* ── LAYOUT ── */
+    .layout { display: flex; margin-top: 52px; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w); flex-shrink: 0;
+      position: sticky; top: 52px; height: calc(100vh - 52px);
+      overflow-y: auto; border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
     }
-    .badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      background: rgba(37,99,235,0.15);
-      border: 1px solid rgba(37,99,235,0.3);
-      border-radius: 999px;
-      font-size: 0.75rem;
-      color: var(--accent-light);
-      margin-bottom: 1.5rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+    .sidebar-section { margin-bottom: 1.5rem; }
+    .sidebar-heading {
+      font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--muted); padding: 0 1.25rem 0.4rem;
     }
+    .sidebar-link {
+      display: block; padding: 0.3rem 1.25rem; font-size: 0.8125rem;
+      color: var(--muted2); transition: color 0.1s, background 0.1s;
+    }
+    .sidebar-link:hover { color: var(--text); background: var(--surface); text-decoration: none; }
+    .sidebar-link.active { color: var(--accent); background: var(--accent-dim); }
+
+    /* ── MAIN ── */
+    .main { flex: 1; min-width: 0; max-width: 860px; padding: 0 2.5rem 6rem; }
+
+    /* ── HERO ── */
+    .hero { padding: 4.5rem 0 3rem; border-bottom: 1px solid var(--border); }
+    .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.5rem; }
+    .badge-pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 999px;
+      border: 1px solid var(--border2); color: var(--muted2); background: var(--surface);
+    }
+    .badge-pill.accent { border-color: var(--accent-border); color: var(--accent); background: var(--accent-dim); }
+    .badge-pill.green { border-color: rgba(52,211,153,0.3); color: var(--green); background: var(--green-dim); }
     h1 {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-      margin-bottom: 1.25rem;
+      font-size: clamp(2rem, 4.5vw, 3rem); font-weight: 800;
+      letter-spacing: -0.035em; line-height: 1.1; margin-bottom: 1rem; color: var(--text);
     }
-    h1 span { color: var(--accent-light); }
-    .hero-sub {
-      font-size: 1.125rem;
-      color: var(--muted);
-      max-width: 520px;
-      margin: 0 auto 2.5rem;
-    }
-    .hero-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    h1 em { font-style: normal; color: var(--accent); }
+    .hero-sub { font-size: 1.0625rem; color: var(--muted2); max-width: 560px; margin-bottom: 2rem; line-height: 1.65; }
+    .hero-actions { display: flex; gap: 0.625rem; flex-wrap: wrap; margin-bottom: 2.5rem; }
 
-    /* FLOW */
-    .flow {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      flex-wrap: wrap;
-      padding: 2rem;
-      max-width: 900px;
-      margin: 0 auto 4rem;
+    /* ── TERMINAL ── */
+    .terminal {
+      background: var(--code-bg); border: 1px solid var(--border2);
+      border-radius: 10px; overflow: hidden; max-width: 640px;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     }
-    .flow-step {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1rem 1.25rem;
-      font-size: 0.875rem;
-      text-align: center;
-      min-width: 130px;
-    }
-    .flow-step .icon { font-size: 1.5rem; margin-bottom: 0.4rem; }
-    .flow-step .label { color: var(--muted); font-size: 0.75rem; margin-top: 0.2rem; }
-    .flow-arrow {
-      color: var(--border);
-      font-size: 1.25rem;
-      padding: 0 0.5rem;
-    }
-    .flow-step.you { border-color: var(--accent); }
-    .flow-step.you .icon::after { content: " ✋"; font-size: 0.9rem; }
-
-    /* SECTION */
-    section {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 3rem 2rem;
-      border-top: 1px solid var(--border);
-    }
-    h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 1.5rem;
-    }
-    h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: var(--text);
-    }
-
-    /* FEATURES GRID */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
-    }
-    .feature {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.25rem;
-    }
-    .feature-icon { font-size: 1.25rem; margin-bottom: 0.75rem; }
-    .feature p { font-size: 0.875rem; color: var(--muted); margin-top: 0.25rem; }
-
-    /* COMPARE TABLE */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-    }
-    th, td {
-      padding: 0.625rem 0.875rem;
-      text-align: left;
+    .terminal-bar {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.625rem 0.875rem; background: var(--surface2);
       border-bottom: 1px solid var(--border);
     }
-    th { color: var(--muted); font-weight: 500; }
-    td:first-child { font-weight: 500; }
-    .yes { color: var(--green); }
-    .no { color: var(--red); }
+    .tdot { width: 10px; height: 10px; border-radius: 50%; }
+    .tdot-r { background: #ff5f57; } .tdot-y { background: #febc2e; } .tdot-g { background: #28c840; }
+    .terminal-title { font-size: 0.7rem; color: var(--muted); margin-left: auto; }
+    .terminal-body { padding: 1rem 1.25rem; font-size: 0.8125rem; line-height: 1.9; }
+    .t-prompt { color: var(--muted); } .t-skill { color: var(--accent); font-weight: 600; }
+    .t-arg { color: var(--amber); } .t-output { color: var(--muted2); }
+    .t-success { color: var(--green); }
+    .t-cursor { display: inline-block; width: 8px; height: 13px; background: var(--accent); vertical-align: middle; animation: blink 1s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
 
-    /* CODE BLOCK */
+    /* ── PIPELINE ── */
+    .pipeline { display: flex; align-items: flex-start; gap: 0; margin: 2.5rem 0 0; overflow-x: auto; padding-bottom: 0.5rem; }
+    .pipe-step { text-align: center; min-width: 110px; flex-shrink: 0; }
+    .pipe-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--surface2); border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.125rem; margin: 0 auto 0.4rem;
+    }
+    .pipe-step.you .pipe-icon { border-color: var(--accent-border); background: var(--accent-dim); }
+    .pipe-cmd { font-size: 0.7rem; font-family: monospace; color: var(--accent); font-weight: 600; }
+    .pipe-label { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; }
+    .pipe-arrow { padding: 0 0.4rem; color: var(--border2); font-size: 1rem; margin-top: 13px; flex-shrink: 0; }
+
+    /* ── SECTIONS ── */
+    .doc-section { padding: 2.75rem 0; border-bottom: 1px solid var(--border); }
+    .doc-section:last-child { border-bottom: none; }
+    h2 { font-size: 1.375rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; color: var(--text); }
+    .section-sub { color: var(--muted); font-size: 0.875rem; margin-bottom: 1.75rem; }
+    h3 { font-size: 0.9375rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    h4 { font-size: 0.8125rem; font-weight: 600; margin: 1.25rem 0 0.4rem; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── CODE ── */
+    .code-block { position: relative; margin: 0.875rem 0; }
     pre {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.25rem;
-      overflow-x: auto;
-      font-size: 0.8125rem;
-      line-height: 1.7;
-      margin: 1rem 0;
+      background: var(--code-bg); border: 1px solid var(--border2); border-radius: 8px;
+      padding: 1rem 1.25rem; overflow-x: auto; font-size: 0.8rem; line-height: 1.75;
+      font-family: 'SF Mono', 'Fira Code', monospace;
     }
-    code { font-family: 'SF Mono', 'Fira Code', monospace; }
-    .comment { color: #555; }
-    .cmd { color: var(--accent-light); }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8rem; }
+    .ic { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; font-size: 0.8rem; color: var(--muted2); font-family: monospace; }
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 0.5rem;
+      background: var(--surface2); border: 1px solid var(--border2); border-radius: 5px;
+      color: var(--muted); font-size: 0.7rem; padding: 0.2rem 0.5rem; cursor: pointer;
+      transition: color 0.15s; font-family: -apple-system, sans-serif;
+    }
+    .copy-btn:hover { color: var(--text); }
+    .copy-btn.copied { color: var(--green); }
+    .c-comment { color: #4a4a60; } .c-cmd { color: #a3e6ff; } .c-str { color: #f4bf75; }
+    .c-key { color: #a3e6ff; } .c-skill { color: var(--accent); font-weight: 600; }
 
-    /* PLATFORMS */
-    .platforms {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      margin-top: 1rem;
-    }
-    .platform-badge {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.4rem 0.75rem;
-      font-size: 0.8125rem;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-    .platform-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+    /* ── FEATURE GRID ── */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.875rem; margin-top: 1.25rem; }
+    .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.125rem; transition: border-color 0.15s; }
+    .feature-card:hover { border-color: var(--border2); }
+    .feature-card .fi { font-size: 1.25rem; margin-bottom: 0.625rem; }
+    .feature-card h3 { margin: 0 0 0.25rem; font-size: 0.875rem; }
+    .feature-card p { font-size: 0.8125rem; margin: 0; }
 
-    /* HANDOFF BOX */
-    .handoff {
-      background: rgba(37,99,235,0.08);
-      border: 1px solid rgba(37,99,235,0.25);
-      border-radius: 8px;
-      padding: 1.25rem 1.5rem;
+    /* ── TABS ── */
+    .tabs { display: flex; gap: 0.375rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .tab-btn {
+      padding: 0.3rem 0.75rem; border-radius: 6px; font-size: 0.8rem;
+      font-family: monospace; font-weight: 600; cursor: pointer;
+      background: var(--surface2); border: 1px solid var(--border2); color: var(--muted);
+      transition: all 0.15s;
     }
-    .handoff h3 { color: var(--accent-light); margin-bottom: 0.75rem; }
-    .handoff ul { list-style: none; }
-    .handoff li { font-size: 0.875rem; color: var(--muted); padding: 0.2rem 0; }
-    .handoff li::before { content: "✅ "; }
-    .handoff li.never::before { content: "🚫 "; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .skill-header { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .skill-header .skill-name { font-family: monospace; font-size: 1.125rem; font-weight: 700; color: var(--accent); }
+    .skill-header p { font-size: 0.875rem; margin-top: 0.3rem; }
+    .arg-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
+    .arg-table th { color: var(--muted); font-weight: 500; padding: 0.35rem 0.625rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .arg-table td { padding: 0.4rem 0.625rem; border-bottom: 1px solid var(--border); color: var(--muted2); vertical-align: top; }
+    .arg-table td:first-child { font-family: monospace; color: var(--text); font-size: 0.8rem; }
+    .arg-table tr:last-child td { border-bottom: none; }
 
-    /* INSTALL */
-    .install-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .tab {
-      padding: 0.375rem 0.875rem;
-      border-radius: 6px;
-      font-size: 0.8125rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      cursor: pointer;
-    }
-    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    /* ── COMPARE ── */
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    .compare-table th { color: var(--muted); font-weight: 500; padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border2); }
+    .compare-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--muted2); }
+    .compare-table td:first-child { font-weight: 500; color: var(--text); }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .yes { color: var(--green); } .no { color: var(--red); }
 
-    /* FOOTER */
-    footer {
-      text-align: center;
-      padding: 3rem 2rem;
-      border-top: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 0.8125rem;
-    }
+    /* ── PLATFORM CARDS ── */
+    .platform-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+    .platform-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+    .platform-card h3 { font-size: 0.875rem; margin: 0 0 0.25rem; display: flex; align-items: center; gap: 0.4rem; }
+    .platform-card p { font-size: 0.8rem; margin: 0; }
+    .sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .sdot.planned { background: var(--muted); }
+    .quirk-list { list-style: none; margin-top: 0.5rem; }
+    .quirk-list li { font-size: 0.75rem; color: var(--muted); padding: 0.1rem 0; }
+    .quirk-list li::before { content: "→ "; color: var(--border2); }
+
+    /* ── HANDOFF ── */
+    .handoff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+    .handoff-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.125rem; }
+    .handoff-card.does { border-color: rgba(52,211,153,0.2); }
+    .handoff-card.doesnt { border-color: rgba(248,113,113,0.2); }
+    .handoff-card h3 { font-size: 0.8125rem; margin-bottom: 0.625rem; display: flex; align-items: center; gap: 0.4rem; }
+    .handoff-card.does h3 { color: var(--green); } .handoff-card.doesnt h3 { color: var(--red); }
+    .handoff-list { list-style: none; }
+    .handoff-list li { font-size: 0.8rem; color: var(--muted2); padding: 0.2rem 0; }
+
+    /* ── INSTALL STEPS ── */
+    .step-list { counter-reset: step; display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
+    .step { display: flex; gap: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; align-items: flex-start; }
+    .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-dim); border: 1px solid var(--accent-border); color: var(--accent); font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .step-body h3 { font-size: 0.875rem; margin: 0 0 0.2rem; }
+    .step-body p { font-size: 0.8125rem; margin: 0; }
+
+    /* ── FAQ ── */
+    .faq-item { border-bottom: 1px solid var(--border); padding: 1rem 0; }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q { font-size: 0.9375rem; font-weight: 600; color: var(--text); cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+    .faq-q .chevron { color: var(--muted); font-size: 0.75rem; transition: transform 0.2s; }
+    .faq-item.open .chevron { transform: rotate(180deg); }
+    .faq-a { font-size: 0.875rem; color: var(--muted2); margin-top: 0.625rem; display: none; line-height: 1.65; }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ── SCHEMA ── */
+    .schema-block { background: var(--code-bg); border: 1px solid var(--border2); border-radius: 8px; overflow: hidden; margin: 0.875rem 0; }
+    .schema-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; background: var(--surface2); border-bottom: 1px solid var(--border); font-size: 0.75rem; color: var(--muted); }
+    .schema-header .filename { font-family: monospace; color: var(--muted2); }
+    .schema-pre { padding: 1rem 1.25rem; font-size: 0.78rem; line-height: 1.75; font-family: monospace; overflow-x: auto; white-space: pre; }
+
+    /* ── CALLOUT ── */
+    .callout { background: var(--accent-dim); border: 1px solid var(--accent-border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 0.875rem 1.125rem; font-size: 0.875rem; color: var(--muted2); margin: 1rem 0; }
+    .callout strong { color: var(--text); }
+    .callout.warn { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.3); border-left-color: var(--amber); }
+
+    /* ── FOOTER ── */
+    footer { border-top: 1px solid var(--border); padding: 2rem 2.5rem; display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 0.8125rem; flex-wrap: wrap; gap: 0.75rem; }
     footer a { color: var(--muted); }
+    footer a:hover { color: var(--text); }
+
+    /* ── MOBILE ── */
+    .menu-btn { display: none; background: none; border: none; color: var(--muted2); font-size: 1.25rem; cursor: pointer; padding: 0.25rem; }
+    @media (max-width: 768px) {
+      .sidebar { display: none; position: fixed; top: 52px; left: 0; bottom: 0; z-index: 90; background: var(--bg); transform: translateX(-100%); transition: transform 0.25s; }
+      .sidebar.open { display: block; transform: translateX(0); }
+      .menu-btn { display: block; }
+      .main { padding: 0 1.25rem 4rem; }
+      .topnav-links { display: none; }
+      .handoff-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; align-items: flex-start; }
+    }
   </style>
 </head>
 <body>
 
-<nav>
-  <div class="nav-logo">career-agent</div>
-  <div class="nav-links">
-    <a href="#quickstart">Quick start</a>
-    <a href="#platforms">Platforms</a>
-    <a href="#install">Install</a>
-    <a href="https://github.com/nextwebb/career-agent">GitHub</a>
+<nav class="topnav">
+  <div class="topnav-left">
+    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    <div class="topnav-logo">🤖 <span>career-agent</span></div>
+    <div class="topnav-links">
+      <a href="#skills">Skills</a>
+      <a href="#quickstart">Quick start</a>
+      <a href="#profile">Profile schema</a>
+      <a href="#ats">ATS platforms</a>
+      <a href="#contributing">Contributing</a>
+    </div>
   </div>
-  <a href="https://github.com/nextwebb/career-agent" class="btn btn-primary">
-    ★ Star on GitHub
-  </a>
+  <div class="topnav-right">
+    <span class="star-count" id="starCount">★ —</span>
+    <a href="https://github.com/nextwebb/career-agent" class="btn btn-ghost" target="_blank">GitHub</a>
+    <a href="#quickstart" class="btn btn-primary">Get started →</a>
+  </div>
 </nav>
 
-<div class="hero">
-  <div class="badge">Claude Code + Cowork Plugin</div>
-  <h1>Job applications,<br><span>done by an agent</span></h1>
-  <p class="hero-sub">
-    One command generates a tailored CV + cover letter PDF per role.
-    Claude fills the ATS form. You review and click Submit.
-  </p>
-  <div class="hero-actions">
-    <a href="https://github.com/nextwebb/career-agent" class="btn btn-primary">Get started</a>
-    <a href="https://github.com/nextwebb/career-agent#readme" class="btn btn-ghost">Read the docs</a>
-  </div>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Getting started</div>
+      <a class="sidebar-link" href="#overview">Overview</a>
+      <a class="sidebar-link" href="#quickstart">Quick start</a>
+      <a class="sidebar-link" href="#install">Installation</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Skills</div>
+      <a class="sidebar-link" href="#skills">/source</a>
+      <a class="sidebar-link" href="#skills">/new-role</a>
+      <a class="sidebar-link" href="#skills">/generate-cv</a>
+      <a class="sidebar-link" href="#skills">/apply</a>
+      <a class="sidebar-link" href="#skills">/track</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Reference</div>
+      <a class="sidebar-link" href="#profile">Profile schema</a>
+      <a class="sidebar-link" href="#role-config">Role config</a>
+      <a class="sidebar-link" href="#ats">ATS platforms</a>
+      <a class="sidebar-link" href="#design">Human-in-the-loop</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Project</div>
+      <a class="sidebar-link" href="#compare">Comparison</a>
+      <a class="sidebar-link" href="#contributing">Contributing</a>
+      <a class="sidebar-link" href="#faq">FAQ</a>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- HERO -->
+    <section class="hero" id="overview">
+      <div class="badges">
+        <span class="badge-pill accent">Claude Code + Cowork plugin</span>
+        <span class="badge-pill green">MIT License</span>
+        <span class="badge-pill">Python 3.10+</span>
+        <span class="badge-pill">v1.0.0</span>
+      </div>
+      <h1>Five commands.<br><em>End-to-end</em> job applications.</h1>
+      <p class="hero-sub">Source verified roles → scaffold a config → generate a tailored CV PDF → fill the ATS form → track your pipeline. Your profile stays local. Claude does the work. You click Submit.</p>
+      <div class="hero-actions">
+        <a href="#quickstart" class="btn btn-primary">Get started →</a>
+        <a href="https://github.com/nextwebb/career-agent" class="btn btn-ghost" target="_blank">★ View on GitHub</a>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="tdot tdot-r"></div><div class="tdot tdot-y"></div><div class="tdot tdot-g"></div>
+          <span class="terminal-title">career-agent · Claude Code</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-prompt">$ </span><span class="t-skill">/source</span> <span class="t-arg">UK backend</span>
+<span class="t-output">  Found 23 verified roles. Top: Monzo — Senior Backend Engineer</span>
+<span class="t-output">  Fit: 91/100 · Sponsorship: Confirmed in JD · Variant: C</span>
+<br>
+<span class="t-prompt">$ </span><span class="t-skill">/new-role</span> <span class="t-arg">https://boards.greenhouse.io/monzo/jobs/6123456</span>
+<span class="t-output">  ✔ Scraped JD · Config: roles/monzo_backend_2026.json</span>
+<br>
+<span class="t-prompt">$ </span><span class="t-skill">/generate-cv</span> <span class="t-arg">monzo_backend_2026</span>
+<span class="t-output">  ✔ generated/monzo_backend_2026_CV.pdf</span>
+<span class="t-output">  ✔ generated/monzo_backend_2026_CL.pdf</span>
+<br>
+<span class="t-prompt">$ </span><span class="t-skill">/apply</span> <span class="t-arg">monzo_backend_2026</span>
+<span class="t-output">  ✔ Name, email, phone, location · CV + CL uploaded</span>
+<span class="t-success">  ⟶ Handed off: EEO fields + Submit</span>
+<br>
+<span class="t-prompt">$ </span><span class="t-skill">/track</span> <span class="t-arg">monzo_backend_2026 applied</span>
+<span class="t-success">  ✔ Status → applied</span>
+<span class="t-cursor"></span>
+        </div>
+      </div>
+
+      <div class="pipeline">
+        <div class="pipe-step"><div class="pipe-icon">🔍</div><div class="pipe-cmd">/source</div><div class="pipe-label">Find roles</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-icon">📝</div><div class="pipe-cmd">/new-role</div><div class="pipe-label">Scaffold config</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-icon">📄</div><div class="pipe-cmd">/generate-cv</div><div class="pipe-label">Build PDFs</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-icon">🤖</div><div class="pipe-cmd">/apply</div><div class="pipe-label">Fill ATS form</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step you"><div class="pipe-icon">✋</div><div class="pipe-cmd">You</div><div class="pipe-label">EEO + Submit</div></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><div class="pipe-icon">📊</div><div class="pipe-cmd">/track</div><div class="pipe-label">Log status</div></div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="doc-section" id="features">
+      <h2>What it does</h2>
+      <p class="section-sub">Built as a Claude Code and Cowork plugin. Works from your terminal or desktop.</p>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fi">🔍</div><h3>Verified role sourcing</h3><p>Acts as a senior technical recruiter. Finds roles, verifies each on the company careers page, and ranks by fit score, sponsorship signal, and compensation.</p></div>
+        <div class="feature-card"><div class="fi">📄</div><h3>Tailored CVs, not templates</h3><p>A/B/C variant system orders your experience differently per role type — AI/LLM, data platform, or backend APIs. Each role gets its own PDF built for that JD.</p></div>
+        <div class="feature-card"><div class="fi">🌐</div><h3>Multi-ATS form filling</h3><p>DOM-based filling via Claude in Chrome — not pixel clicking. Handles hidden file inputs, React comboboxes, and cross-origin iframes on Greenhouse, Lever, Workable.</p></div>
+        <div class="feature-card"><div class="fi">✉️</div><h3>Per-role cover letters</h3><p>Cover letter paragraphs live in the role config. Generated as a matching PDF or pasted as text where the platform requires it.</p></div>
+        <div class="feature-card"><div class="fi">🔒</div><h3>Profile data stays local</h3><p><code class="ic">profile.json</code>, <code class="ic">roles/</code>, <code class="ic">tracker.json</code> are all gitignored. Your personal data never touches the repo.</p></div>
+        <div class="feature-card"><div class="fi">📊</div><h3>Application pipeline tracker</h3><p>Track every application from draft through offer. Add notes after calls. View your pipeline grouped by status.</p></div>
+      </div>
+    </section>
+
+    <!-- QUICK START -->
+    <section class="doc-section" id="quickstart">
+      <h2>Quick start</h2>
+      <p class="section-sub">From zero to a filled ATS form in under 10 minutes.</p>
+      <div class="step-list">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Clone and install</h3>
+            <div class="code-block">
+              <pre><code><span class="c-cmd">git clone</span> https://github.com/nextwebb/career-agent
+<span class="c-cmd">cd</span> career-agent
+<span class="c-cmd">pip install</span> reportlab</code></pre>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Set up your profile</h3>
+            <div class="code-block">
+              <pre><code><span class="c-cmd">cp</span> profile.example.json profile.json
+<span class="c-comment"># Fill in your name, email, phone, skills, experience</span></code></pre>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Connect Claude in Chrome</h3>
+            <p>Install the <a href="https://chrome.google.com/webstore" target="_blank">Claude in Chrome extension</a> and connect it to Cowork or Claude Code. Required for <code class="ic">/apply</code>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Run the pipeline</h3>
+            <div class="code-block">
+              <pre><code><span class="c-skill">/source</span> UK backend
+<span class="c-skill">/new-role</span> https://boards.greenhouse.io/company/jobs/123
+<span class="c-skill">/generate-cv</span> company_role_2026
+<span class="c-skill">/apply</span> company_role_2026
+<span class="c-skill">/track</span> company_role_2026 applied</code></pre>
+              <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SKILLS REFERENCE -->
+    <section class="doc-section" id="skills">
+      <h2>Skills reference</h2>
+      <p class="section-sub">All five slash commands — arguments, behaviour, and examples.</p>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('source', this)">/source</button>
+        <button class="tab-btn" onclick="switchTab('new-role', this)">/new-role</button>
+        <button class="tab-btn" onclick="switchTab('generate-cv', this)">/generate-cv</button>
+        <button class="tab-btn" onclick="switchTab('apply', this)">/apply</button>
+        <button class="tab-btn" onclick="switchTab('track', this)">/track</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-source">
+        <div class="skill-header">
+          <div class="skill-name">/source</div>
+          <p>Find verified, currently-open roles matching your profile. Returns 20+ ranked roles with fit scores, CV variant suggestions, sponsorship signals, and cover letter angles.</p>
+        </div>
+        <h4>Usage</h4>
+        <div class="code-block">
+          <pre><code><span class="c-skill">/source</span>                      <span class="c-comment"># all defaults</span>
+<span class="c-skill">/source</span> <span class="c-str">UK</span>                    <span class="c-comment"># UK roles</span>
+<span class="c-skill">/source</span> <span class="c-str">remote backend</span>       <span class="c-comment"># remote + backend filter</span>
+<span class="c-skill">/source</span> <span class="c-str">EU "data platform"</span>    <span class="c-comment"># quoted multi-word type</span></code></pre>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+        <h4>Arguments</h4>
+        <table class="arg-table">
+          <thead><tr><th>Argument</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>[country]</td><td>string</td><td>Target country or region (UK, EU, US, remote, Canada…)</td></tr>
+            <tr><td>[role_type]</td><td>string</td><td>Role focus (backend, data platform, AI infrastructure, LLM evaluation)</td></tr>
+          </tbody>
+        </table>
+        <h4>Profile inputs accepted</h4>
+        <p style="font-size:0.8125rem;">Reads <code class="ic">profile.json</code> automatically. Also accepts: LinkedIn PDF export, CV PDF/DOCX, or pasted resume text.</p>
+        <div class="callout">
+          <strong>Evidence standard:</strong> Only verified open roles count. Fabricated URLs, expired postings, and unconfirmed sponsorship claims are flagged explicitly.
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-new-role">
+        <div class="skill-header">
+          <div class="skill-name">/new-role</div>
+          <p>Scaffold a new role JSON config by scraping the job description and proposing a tailored config with CV variant selection.</p>
+        </div>
+        <h4>Usage</h4>
+        <div class="code-block">
+          <pre><code><span class="c-skill">/new-role</span> <span class="c-str">https://boards.greenhouse.io/company/jobs/123</span>
+<span class="c-skill">/new-role</span>  <span class="c-comment"># interactive — Claude asks for the URL</span></code></pre>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+        <h4>What it produces</h4>
+        <p style="font-size:0.8125rem;">A <code class="ic">roles/&lt;role_id&gt;.json</code> pre-filled with company, title, ATS platform detected, recommended CV variant, cover letter angle, and a custom_answers scaffold.</p>
+        <div class="callout warn">
+          <strong>JD reading checks:</strong> Some job posts hide instructions (e.g. "include the word FLAMINGO"). The skill flags these so you can add them to <code class="ic">custom_answers</code>.
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-generate-cv">
+        <div class="skill-header">
+          <div class="skill-name">/generate-cv</div>
+          <p>Build an ATS-optimised CV PDF and matching cover letter PDF. Uses <code class="ic">reportlab</code> Platypus — single-column, no tables or images, passes ATS parsers reliably.</p>
+        </div>
+        <h4>Usage</h4>
+        <div class="code-block">
+          <pre><code><span class="c-skill">/generate-cv</span> <span class="c-str">monzo_backend_2026</span>
+
+<span class="c-comment"># Or via CLI:</span>
+python src/generate_application.py --role monzo_backend_2026
+python src/generate_application.py --all     <span class="c-comment"># all roles</span>
+python src/generate_application.py --list    <span class="c-comment"># list roles</span></code></pre>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+        <h4>CV variant system</h4>
+        <table class="arg-table">
+          <thead><tr><th>Variant</th><th>Focus</th><th>Best for</th></tr></thead>
+          <tbody>
+            <tr><td>A</td><td>AI / LLM / Evaluation</td><td>AI infrastructure, RLHF, evaluation roles</td></tr>
+            <tr><td>B</td><td>Data Platform / Pipelines</td><td>Data engineering, Airflow, ETL, analytics infra</td></tr>
+            <tr><td>C</td><td>Senior Backend / APIs</td><td>Backend, distributed systems, fintech, platforms</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tab-panel" id="tab-apply">
+        <div class="skill-header">
+          <div class="skill-name">/apply</div>
+          <p>Open the job URL in Chrome, fill every required field, upload CV and cover letter PDFs, answer custom questions, then hand off for EEO fields and Submit. Requires Claude in Chrome.</p>
+        </div>
+        <h4>Usage</h4>
+        <div class="code-block">
+          <pre><code><span class="c-skill">/apply</span> <span class="c-str">monzo_backend_2026</span></code></pre>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+        <p style="font-size:0.8125rem; margin-top:0.5rem;">Fills: name, email, phone, location, LinkedIn, GitHub, work authorisation, salary expectations, pronouns, relocation availability, "how did you hear", and all <code class="ic">custom_answers</code> from the role config.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-track">
+        <div class="skill-header">
+          <div class="skill-name">/track</div>
+          <p>View and update your application pipeline. Wraps <code class="ic">src/tracker.py</code>. All data stays in <code class="ic">tracker.json</code> (gitignored).</p>
+        </div>
+        <h4>Usage</h4>
+        <div class="code-block">
+          <pre><code><span class="c-skill">/track</span>                                        <span class="c-comment"># full pipeline</span>
+<span class="c-skill">/track</span> <span class="c-str">monzo_backend_2026</span>                    <span class="c-comment"># detail for one role</span>
+<span class="c-skill">/track</span> <span class="c-str">monzo_backend_2026 applied</span>             <span class="c-comment"># update status</span>
+<span class="c-skill">/track</span> <span class="c-str">monzo_backend_2026 "Screen Thursday 3pm"</span></code></pre>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+        <h4>Valid statuses</h4>
+        <table class="arg-table">
+          <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>draft</td><td>Config created, not yet applied (auto-set by /new-role)</td></tr>
+            <tr><td>applied</td><td>Application submitted</td></tr>
+            <tr><td>screen</td><td>Recruiter screen scheduled or completed</td></tr>
+            <tr><td>interview</td><td>Technical or panel interview</td></tr>
+            <tr><td>offer</td><td>Offer received</td></tr>
+            <tr><td>rejected</td><td>Rejected at any stage</td></tr>
+            <tr><td>withdrawn</td><td>Withdrawn by candidate</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PROFILE SCHEMA -->
+    <section class="doc-section" id="profile">
+      <h2>Profile schema</h2>
+      <p class="section-sub"><code class="ic">profile.json</code> is your personal data store. Gitignored. Never committed. Copy <code class="ic">profile.example.json</code> to get started.</p>
+      <div class="schema-block">
+        <div class="schema-header">
+          <span class="filename">profile.json</span>
+          <button class="copy-btn" style="position:static;margin:0;" onclick="copyEl('profileSchema',this)">copy</button>
+        </div>
+        <div class="schema-pre" id="profileSchema">{
+  <span class="c-key">"name"</span>:     { <span class="c-key">"first"</span>: <span class="c-str">"Jane"</span>, <span class="c-key">"last"</span>: <span class="c-str">"Doe"</span> },
+  <span class="c-key">"email"</span>:     <span class="c-str">"jane@example.com"</span>,
+  <span class="c-key">"phone"</span>:     { <span class="c-key">"country_code"</span>: <span class="c-str">"+44"</span>, <span class="c-key">"number"</span>: <span class="c-str">"7000000000"</span> },
+  <span class="c-key">"location"</span>:  <span class="c-str">"Lagos, Nigeria"</span>,
+  <span class="c-key">"relocation"</span>: <span class="c-str">"Open to EU/UK with visa sponsorship"</span>,
+  <span class="c-key">"links"</span>: {
+    <span class="c-key">"linkedin"</span>: <span class="c-str">"https://linkedin.com/in/janedoe"</span>,
+    <span class="c-key">"github"</span>:   <span class="c-str">"https://github.com/janedoe"</span>,
+    <span class="c-key">"website"</span>:  <span class="c-str">"https://janedoe.dev"</span>
+  },
+  <span class="c-key">"headline"</span>: <span class="c-str">"Senior Software Engineer — Python · Distributed Systems · AI"</span>,
+  <span class="c-key">"summary"</span>:  <span class="c-str">"7+ years building production Python services..."</span>,
+  <span class="c-key">"skills"</span>: {
+    <span class="c-key">"languages"</span>: [<span class="c-str">"Python"</span>, <span class="c-str">"Go"</span>, <span class="c-str">"TypeScript"</span>],
+    <span class="c-key">"cloud"</span>:     [<span class="c-str">"AWS"</span>, <span class="c-str">"GCP"</span>],
+    <span class="c-key">"backend"</span>:   [<span class="c-str">"FastAPI"</span>, <span class="c-str">"Django"</span>, <span class="c-str">"Kafka"</span>, <span class="c-str">"PostgreSQL"</span>],
+    <span class="c-key">"ai_llm"</span>:    [<span class="c-str">"LangChain"</span>, <span class="c-str">"OpenAI API"</span>, <span class="c-str">"RLHF"</span>]
+  },
+  <span class="c-key">"experience"</span>: [
+    {
+      <span class="c-key">"company"</span>: <span class="c-str">"Acme Corp"</span>,
+      <span class="c-key">"title"</span>:   <span class="c-str">"Senior Software Engineer"</span>,
+      <span class="c-key">"start"</span>:   <span class="c-str">"2022-01"</span>,
+      <span class="c-key">"end"</span>:     <span class="c-str">"present"</span>,
+      <span class="c-key">"bullets"</span>: {
+        <span class="c-key">"A"</span>: [<span class="c-str">"Built LLM evaluation pipeline..."</span>],
+        <span class="c-key">"B"</span>: [<span class="c-str">"Designed Airflow DAG architecture..."</span>],
+        <span class="c-key">"C"</span>: [<span class="c-str">"Led migration of monolith to microservices..."</span>]
+      }
+    }
+  ],
+  <span class="c-key">"education"</span>: [{ <span class="c-key">"institution"</span>: <span class="c-str">"University of Example"</span>, <span class="c-key">"degree"</span>: <span class="c-str">"BSc Computer Science"</span>, <span class="c-key">"year"</span>: <span class="c-str">"2017"</span> }],
+  <span class="c-key">"certifications"</span>: [<span class="c-str">"AWS Solutions Architect Associate"</span>],
+  <span class="c-key">"salary"</span>: { <span class="c-key">"expectation"</span>: <span class="c-str">"£90,000–£120,000"</span> }
+}</div>
+      </div>
+    </section>
+
+    <!-- ROLE CONFIG -->
+    <section class="doc-section" id="role-config">
+      <h2>Role config schema</h2>
+      <p class="section-sub">One JSON file per role in <code class="ic">roles/</code> (gitignored). Create with <code class="ic">/new-role</code> or copy from <code class="ic">roles.example/example_role.json</code>.</p>
+      <div class="schema-block">
+        <div class="schema-header">
+          <span class="filename">roles/monzo_backend_2026.json</span>
+          <button class="copy-btn" style="position:static;margin:0;" onclick="copyEl('roleSchema',this)">copy</button>
+        </div>
+        <div class="schema-pre" id="roleSchema">{
+  <span class="c-key">"role_id"</span>:      <span class="c-str">"monzo_backend_2026"</span>,
+  <span class="c-key">"company"</span>:      <span class="c-str">"Monzo"</span>,
+  <span class="c-key">"title"</span>:        <span class="c-str">"Senior Backend Engineer"</span>,
+  <span class="c-key">"url"</span>:          <span class="c-str">"https://boards.greenhouse.io/monzo/jobs/..."</span>,
+  <span class="c-key">"ats_platform"</span>: <span class="c-str">"greenhouse"</span>,
+  <span class="c-key">"variant"</span>:      <span class="c-str">"C"</span>,
+  <span class="c-key">"cover_letter"</span>: {
+    <span class="c-key">"paragraphs"</span>: [
+      <span class="c-str">"Monzo's mission to make money work for everyone..."</span>,
+      <span class="c-str">"My background in high-throughput payment systems..."</span>,
+      <span class="c-str">"I've built resilient Kafka consumers handling 50k events/s..."</span>,
+      <span class="c-str">"I'd welcome a conversation about this role."</span>
+    ]
+  },
+  <span class="c-key">"custom_answers"</span>: {
+    <span class="c-key">"why_company"</span>:   <span class="c-str">"Real-time financial infrastructure at this scale..."</span>,
+    <span class="c-key">"hear_about_us"</span>: <span class="c-str">"LinkedIn"</span>,
+    <span class="c-key">"work_auth_uk"</span>:  <span class="c-str">"No — require visa sponsorship"</span>
+  }
+}</div>
+      </div>
+    </section>
+
+    <!-- ATS PLATFORMS -->
+    <section class="doc-section" id="ats">
+      <h2>ATS platform support</h2>
+      <p class="section-sub">Tested platforms with documented DOM quirks.</p>
+      <div class="platform-grid">
+        <div class="platform-card"><h3><div class="sdot"></div>Greenhouse (direct)</h3><p>Standard job board URL.</p><ul class="quirk-list"><li>File inputs are hidden — requires JS to expose before upload</li><li>React comboboxes: click toggle, type to filter, click option</li></ul></div>
+        <div class="platform-card"><h3><div class="sdot"></div>Greenhouse (iframe)</h3><p>Embedded on company page.</p><ul class="quirk-list"><li>Extract embed src, navigate as top-level page</li><li>Same quirks as direct once loaded</li></ul></div>
+        <div class="platform-card"><h3><div class="sdot"></div>Lever</h3><p>Clean DOM, visible file inputs.</p><ul class="quirk-list"><li>No cover letter file upload — paste as text</li></ul></div>
+        <div class="platform-card"><h3><div class="sdot"></div>Workable</h3><p>File inputs visible by default.</p><ul class="quirk-list"><li>React inputs: left_click then type (form_input alone won't trigger state)</li></ul></div>
+        <div class="platform-card"><h3><div class="sdot planned"></div>Ashby</h3><p>Planned. PRs welcome.</p></div>
+        <div class="platform-card"><h3><div class="sdot planned"></div>SmartRecruiters</h3><p>Planned. PRs welcome.</p></div>
+      </div>
+      <div class="callout warn" style="margin-top:1.25rem;">
+        <strong>CAPTCHAs:</strong> The workflow stops before Submit where CAPTCHAs appear. Bypassing bot detection is not implemented and won't be.
+      </div>
+    </section>
+
+    <!-- HUMAN IN THE LOOP -->
+    <section class="doc-section" id="design">
+      <h2>Human-in-the-loop design</h2>
+      <p class="section-sub">The boundary between agent and human is explicit and intentional.</p>
+      <div class="handoff-grid">
+        <div class="handoff-card does">
+          <h3>✅ Claude does</h3>
+          <ul class="handoff-list">
+            <li>Fills name, email, phone, location</li>
+            <li>Uploads CV and cover letter PDFs</li>
+            <li>Answers work authorisation questions</li>
+            <li>Fills salary expectations</li>
+            <li>Answers "how did you hear"</li>
+            <li>Pastes cover letter text (no upload)</li>
+            <li>Answers custom_answers fields</li>
+            <li>Reports exactly what was filled</li>
+          </ul>
+        </div>
+        <div class="handoff-card doesnt">
+          <h3>🚫 Claude never does</h3>
+          <ul class="handoff-list">
+            <li>Click Submit or irreversible buttons</li>
+            <li>Fill EEO / voluntary self-identification</li>
+            <li>Enter passwords or credentials</li>
+            <li>Solve or bypass CAPTCHAs</li>
+            <li>Accept terms or consent banners</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTALL -->
+    <section class="doc-section" id="install">
+      <h2>Installation</h2>
+      <p class="section-sub">Cowork desktop plugin or Claude Code CLI skill.</p>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('cowork-i', this)">Cowork</button>
+        <button class="tab-btn" onclick="switchTab('code-i', this)">Claude Code</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-cowork-i">
+        <div class="step-list">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><h3>Clone the repo</h3><div class="code-block"><pre><code><span class="c-cmd">git clone</span> https://github.com/nextwebb/career-agent</code></pre><button class="copy-btn" onclick="copyCode(this)">copy</button></div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><h3>Install the plugin</h3><p>Cowork → Settings → Plugins → <strong>Install from folder</strong> → select the <code class="ic">career-agent</code> root.</p></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><h3>Skills appear automatically</h3><p>Type <code class="ic">/source</code>, <code class="ic">/new-role</code>, <code class="ic">/generate-cv</code>, <code class="ic">/apply</code>, <code class="ic">/track</code> in any conversation.</p></div></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-code-i">
+        <div class="code-block">
+          <pre><code><span class="c-comment"># Copy skills to Claude Code skills directory</span>
+<span class="c-cmd">cp -r</span> skills ~/.claude/skills/career-agent
+
+<span class="c-comment"># Reference in your CLAUDE.md:</span>
+@~/.claude/skills/career-agent/source/SKILL.md
+@~/.claude/skills/career-agent/apply/SKILL.md
+
+<span class="c-comment"># Or run in any session:</span>
+/career-agent:apply monzo_backend_2026</code></pre>
+          <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPARE -->
+    <section class="doc-section" id="compare">
+      <h2>How it compares</h2>
+      <table class="compare-table">
+        <thead><tr><th>Feature</th><th>career-agent</th><th>job-application-quality</th><th>career-ops</th></tr></thead>
+        <tbody>
+          <tr><td>Verified role sourcing</td><td class="yes">✅ /source</td><td class="no">❌</td><td class="no">❌</td></tr>
+          <tr><td>ATS form filling</td><td class="yes">✅ Greenhouse, Lever, Workable</td><td class="no">❌</td><td class="no">❌</td></tr>
+          <tr><td>Tailored CV PDF per role</td><td class="yes">✅ reportlab</td><td class="yes">✅ basic</td><td class="no">❌</td></tr>
+          <tr><td>CV variant system (A/B/C)</td><td class="yes">✅</td><td class="no">❌</td><td class="no">❌</td></tr>
+          <tr><td>Per-role cover letter PDF</td><td class="yes">✅</td><td class="no">❌</td><td class="no">❌</td></tr>
+          <tr><td>Pipeline tracker</td><td class="yes">✅ /track</td><td class="no">❌</td><td class="yes">✅</td></tr>
+          <tr><td>Profile data local + gitignored</td><td class="yes">✅</td><td>varies</td><td>varies</td></tr>
+          <tr><td>Human-in-the-loop handoff</td><td class="yes">✅ explicit design</td><td>N/A</td><td>N/A</td></tr>
+          <tr><td>Cowork + Claude Code plugin</td><td class="yes">✅ both</td><td class="no">❌</td><td class="no">❌</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- CONTRIBUTING -->
+    <section class="doc-section" id="contributing">
+      <h2>Contributing</h2>
+      <p class="section-sub">Most wanted: ATS platform support and CV builder improvements.</p>
+
+      <h3>Add an ATS platform</h3>
+      <p style="font-size:0.8125rem; margin-bottom:0.5rem;">Target platforms: Ashby, SmartRecruiters, Taleo, iCIMS, BambooHR, Rippling.</p>
+      <p style="font-size:0.8125rem; margin-bottom:0.75rem;">Add notes to <code class="ic">skills/apply/SKILL.md</code> covering: file input behaviour, dropdown/select quirks, React state triggers, iframe handling.</p>
+      <div class="callout">Open an issue before starting to avoid duplication. Tag it with the platform name.</div>
+
+      <h3>Development setup</h3>
+      <div class="code-block">
+        <pre><code><span class="c-cmd">git clone</span> https://github.com/nextwebb/career-agent
+<span class="c-cmd">cd</span> career-agent && <span class="c-cmd">pip install</span> reportlab
+<span class="c-cmd">cp</span> profile.example.json profile.json
+<span class="c-cmd">cp</span> roles.example/example_role.json roles/test_role.json
+python src/generate_application.py --role test_role --open</code></pre>
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="doc-section" id="faq">
+      <h2>FAQ</h2>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Does Claude submit my application? <span class="chevron">▼</span></div><div class="faq-a">No. Claude fills all fields it can verify, uploads your documents, then stops. You review and click Submit. This is intentional — you own the final action.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Does it work without Claude in Chrome? <span class="chevron">▼</span></div><div class="faq-a"><code class="ic">/source</code>, <code class="ic">/new-role</code>, <code class="ic">/generate-cv</code>, and <code class="ic">/track</code> work without it. Only <code class="ic">/apply</code> requires the Claude in Chrome extension.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Will my profile.json end up on GitHub? <span class="chevron">▼</span></div><div class="faq-a"><code class="ic">profile.json</code>, <code class="ic">roles/</code>, <code class="ic">tracker.json</code>, and <code class="ic">generated/</code> are all in <code class="ic">.gitignore</code>. They cannot be committed.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">What if my ATS platform isn't supported? <span class="chevron">▼</span></div><div class="faq-a">You can still use <code class="ic">/generate-cv</code> for tailored PDFs and <code class="ic">/track</code> to log it. Claude can attempt unsupported forms without pre-loaded quirk workarounds — it just won't have platform-specific playbooks. Open an issue to add support.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Does it handle CAPTCHAs? <span class="chevron">▼</span></div><div class="faq-a">No. The workflow stops before Submit, where CAPTCHAs appear. Bypassing bot detection is not implemented by design.</div></div>
+      <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Can I adapt this for my own profile privately? <span class="chevron">▼</span></div><div class="faq-a">Yes — that's the primary use case. Clone the repo, fill in <code class="ic">profile.json</code>, and your data stays entirely local. The repo contains only the generic tooling.</div></div>
+    </section>
+
+  </main>
 </div>
-
-<div style="max-width:900px; margin:0 auto 2rem; padding:0 2rem;">
-  <img
-    src="demo.gif"
-    alt="career-agent filling a real Greenhouse application form — fields, CV upload, cover letter, handoff"
-    style="width:100%; border-radius:10px; border:1px solid #2a2a2a;"
-  />
-</div>
-
-<div class="flow">
-  <div class="flow-step">
-    <div class="icon">📄</div>
-    <div><strong>Role config</strong></div>
-    <div class="label">roles/my_role.json</div>
-  </div>
-  <div class="flow-arrow">→</div>
-  <div class="flow-step">
-    <div class="icon">🖨️</div>
-    <div><strong>PDF generation</strong></div>
-    <div class="label">/generate-cv</div>
-  </div>
-  <div class="flow-arrow">→</div>
-  <div class="flow-step">
-    <div class="icon">🤖</div>
-    <div><strong>Form filling</strong></div>
-    <div class="label">/apply</div>
-  </div>
-  <div class="flow-arrow">→</div>
-  <div class="flow-step you">
-    <div class="icon">👤</div>
-    <div><strong>You</strong></div>
-    <div class="label">EEO + Submit</div>
-  </div>
-</div>
-
-<section id="features">
-  <h2>What it does</h2>
-  <div class="features">
-    <div class="feature">
-      <div class="feature-icon">📋</div>
-      <h3>Tailored CVs, not templates</h3>
-      <p>A/B/C variant system orders your experience differently per role type. Each application gets a PDF built for that specific JD.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">🌐</div>
-      <h3>Multi-ATS browser automation</h3>
-      <p>Claude fills Greenhouse, Lever, and Workable forms via DOM — not pixel clicking. Handles hidden file inputs, React comboboxes, and cross-origin iframes.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">✉️</div>
-      <h3>Per-role cover letters</h3>
-      <p>Role config holds your cover letter paragraphs. Generated as a matching PDF, or pasted as text where the platform requires it.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">🔒</div>
-      <h3>Your data stays local</h3>
-      <p>profile.json and roles/ are gitignored. Your personal data, phone number, and salary expectations never leave your machine.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">✋</div>
-      <h3>You own the Submit button</h3>
-      <p>Claude fills, you verify and submit. EEO/voluntary fields are always yours. No surprises.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">🧩</div>
-      <h3>Cowork + Claude Code</h3>
-      <p>Install as a Cowork desktop plugin or a Claude Code CLI skill. Same workflow, two surfaces.</p>
-    </div>
-  </div>
-</section>
-
-<section id="compare">
-  <h2>How it compares</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Feature</th>
-        <th>career-agent</th>
-        <th>job-application-quality</th>
-        <th>career-ops</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>ATS form filling (browser)</td>
-        <td class="yes">✅ Greenhouse, Lever, Workable</td>
-        <td class="no">❌</td>
-        <td class="no">❌</td>
-      </tr>
-      <tr>
-        <td>Tailored PDF per role</td>
-        <td class="yes">✅</td>
-        <td class="yes">✅ basic</td>
-        <td class="no">❌</td>
-      </tr>
-      <tr>
-        <td>CV variant system</td>
-        <td class="yes">✅ A/B/C by role type</td>
-        <td class="no">❌</td>
-        <td class="no">❌</td>
-      </tr>
-      <tr>
-        <td>Per-role cover letters</td>
-        <td class="yes">✅</td>
-        <td class="no">❌</td>
-        <td class="no">❌</td>
-      </tr>
-      <tr>
-        <td>Profile data local + gitignored</td>
-        <td class="yes">✅</td>
-        <td>varies</td>
-        <td>varies</td>
-      </tr>
-      <tr>
-        <td>Cowork + Claude Code plugin</td>
-        <td class="yes">✅ both</td>
-        <td class="no">❌</td>
-        <td class="no">❌</td>
-      </tr>
-    </tbody>
-  </table>
-</section>
-
-<section id="quickstart">
-  <h2>Quick start</h2>
-  <pre><code><span class="comment"># Clone and configure</span>
-<span class="cmd">git clone</span> https://github.com/nextwebb/career-agent
-<span class="cmd">cd</span> career-agent
-<span class="cmd">cp</span> profile.example.json profile.json      <span class="comment"># fill in your details</span>
-<span class="cmd">cp</span> roles.example/example_role.json roles/stripe_backend.json
-<span class="cmd">pip install</span> reportlab
-
-<span class="comment"># In Claude Code or Cowork</span>
-/generate-cv stripe_backend
-/apply stripe_backend</code></pre>
-  <p style="font-size:0.875rem; color:var(--muted); margin-top:0.75rem;">
-    Claude generates your PDFs, opens the job URL, fills the form, uploads your CV, and hands off to you for EEO fields and Submit.
-  </p>
-</section>
-
-<section id="platforms">
-  <h2>ATS platform support</h2>
-  <p style="color:var(--muted); font-size:0.875rem; margin-bottom:0.5rem;">Tested and working:</p>
-  <div class="platforms">
-    <div class="platform-badge"><div class="dot"></div>Greenhouse (direct)</div>
-    <div class="platform-badge"><div class="dot"></div>Greenhouse (iframe embed)</div>
-    <div class="platform-badge"><div class="dot"></div>Lever</div>
-    <div class="platform-badge"><div class="dot"></div>Workable</div>
-  </div>
-  <p style="color:var(--muted); font-size:0.875rem; margin-top:1.25rem;">
-    Want to add Ashby, SmartRecruiters, Taleo, or iCIMS? See <a href="https://github.com/nextwebb/career-agent/blob/main/README.md#contributing">contributing guide</a>.
-  </p>
-</section>
-
-<section id="handoff">
-  <h2>Human-in-the-loop design</h2>
-  <div class="handoff">
-    <h3>Clear boundary between agent and human</h3>
-    <ul>
-      <li>Fills all required fields verifiable from your profile and role config</li>
-      <li>Uploads CV and cover letter PDFs</li>
-      <li>Answers custom questions (work authorisation, cities, "how did you hear")</li>
-      <li>Reports exactly what was filled and what remains</li>
-      <li class="never">Never clicks Submit or irreversible confirmation buttons</li>
-      <li class="never">Never fills EEO/voluntary self-identification fields</li>
-      <li class="never">Never enters passwords or credentials</li>
-    </ul>
-  </div>
-</section>
-
-<section id="install">
-  <h2>Install</h2>
-  <div class="install-tabs">
-    <div class="tab active">Cowork</div>
-    <div class="tab">Claude Code</div>
-  </div>
-  <pre><code><span class="comment"># Cowork (desktop app)</span>
-<span class="comment"># Settings → Plugins → Install from folder → select repo root</span>
-<span class="comment"># Skills appear as /generate-cv, /apply, /new-role</span></code></pre>
-  <pre><code><span class="comment"># Claude Code (CLI)</span>
-<span class="cmd">cp -r</span> skills ~/.claude/skills/career-agent
-
-<span class="comment"># Then in any session:</span>
-/career-agent:apply stripe_backend</code></pre>
-</section>
 
 <footer>
-  <p>
-    <a href="https://github.com/nextwebb/career-agent">GitHub</a> ·
-    <a href="https://github.com/nextwebb/career-agent/issues">Issues</a> ·
-    MIT License
-  </p>
-  <p style="margin-top:0.5rem;">Built with <a href="https://claude.ai">Claude</a> + <a href="https://claude.ai/code">Claude Code</a></p>
+  <div><a href="https://github.com/nextwebb/career-agent">GitHub</a> · <a href="https://github.com/nextwebb/career-agent/issues">Issues</a> · <a href="https://github.com/nextwebb/career-agent/blob/main/LICENSE">MIT License</a></div>
+  <div>Built with <a href="https://claude.ai/code" target="_blank">Claude Code</a> · <a href="https://claude.ai" target="_blank">Cowork</a></div>
 </footer>
+
+<script>
+  // Live star count
+  fetch('https://api.github.com/repos/nextwebb/career-agent')
+    .then(r => r.json())
+    .then(d => { if (d.stargazers_count !== undefined) document.getElementById('starCount').textContent = '★ ' + d.stargazers_count; })
+    .catch(() => {});
+
+  // Sidebar active link on scroll
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+        const m = document.querySelector('.sidebar-link[href="#' + e.target.id + '"]');
+        if (m) m.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-52px 0px -60% 0px' });
+  document.querySelectorAll('[id]').forEach(s => obs.observe(s));
+
+  // Tab switching — works for any tab group on the page
+  function switchTab(name, btn) {
+    const panel = document.getElementById('tab-' + name);
+    if (!panel) return;
+    const grp = btn.closest('.tabs');
+    let el = grp.nextElementSibling;
+    while (el && el.classList && (el.classList.contains('tab-panel') || el.classList.contains('skill-header'))) {
+      if (el.classList.contains('tab-panel')) el.classList.remove('active');
+      el = el.nextElementSibling;
+    }
+    // actually just hide/show within the parent section
+    panel.closest('.doc-section, .main').querySelectorAll('.tab-panel').forEach(p => {
+      if (grp.nextElementSibling === p || p.id.startsWith('tab-' + name.split('-')[0]) || grp.parentNode.contains(p)) {
+        // only hide panels that share this tab group — use dataset
+      }
+    });
+    // simpler approach: toggle within same sibling group
+    let sibling = grp.nextElementSibling;
+    while (sibling && sibling.classList && sibling.classList.contains('tab-panel')) {
+      sibling.classList.remove('active');
+      sibling = sibling.nextElementSibling;
+    }
+    panel.classList.add('active');
+    grp.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // Copy code blocks
+  function copyCode(btn) {
+    const pre = btn.previousElementSibling;
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.textContent = 'copied!'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+
+  function copyEl(id, btn) {
+    navigator.clipboard.writeText(document.getElementById(id).innerText).then(() => {
+      btn.textContent = 'copied!'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+
+  // FAQ accordion
+  function toggleFaq(q) { q.closest('.faq-item').classList.toggle('open'); }
+
+  // Mobile sidebar
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+</script>
 
 </body>
 </html>
