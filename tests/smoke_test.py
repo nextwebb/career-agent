@@ -218,9 +218,9 @@ class TestRequirementsTxt:
 
         for line in lines:
             # Should have version constraint
-            assert any(op in line for op in ["==", ">=", "~=", "<="]), (
-                f"Requirement '{line}' should specify version constraint"
-            )
+            assert any(
+                op in line for op in ["==", ">=", "~=", "<="]
+            ), f"Requirement '{line}' should specify version constraint"
 
 
 class TestReadmeAndDocs:
