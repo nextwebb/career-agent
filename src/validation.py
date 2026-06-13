@@ -162,13 +162,16 @@ def validate_role_config(data: dict, strict: bool = False) -> Tuple[bool, List[s
 
     # Validate ATS platform
     if "ats_platform" in data:
-        valid_platforms = {"greenhouse", "lever", "workable"}
-        platform = data["ats_platform"].lower()
-        if platform not in valid_platforms:
-            errors.append(
-                f"Unknown ATS platform '{data['ats_platform']}'. "
-                f"Supported platforms: {', '.join(sorted(valid_platforms))}"
-            )
+        if not isinstance(data["ats_platform"], str):
+            errors.append("'ats_platform' must be a string")
+        else:
+            valid_platforms = {"greenhouse", "lever", "workable", "unknown"}
+            platform = data["ats_platform"].lower()
+            if platform not in valid_platforms:
+                errors.append(
+                    f"Unknown ATS platform '{data['ats_platform']}'. "
+                    f"Supported platforms: {', '.join(sorted(valid_platforms))}"
+                )
 
     # Validate URL format
     if "url" in data:
