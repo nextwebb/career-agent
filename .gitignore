@@ -1,7 +1,9 @@
 # User data — never commit these
 profile.json
-roles/
-generated/
+roles/*
+!roles/.gitkeep
+generated/*
+!generated/.gitkeep
 tracker.json
 
 # Python
