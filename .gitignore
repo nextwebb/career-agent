@@ -29,3 +29,6 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/
+demo-form.html
+save_server.py
+frames/
