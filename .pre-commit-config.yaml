@@ -1,0 +1,67 @@
+# Pre-commit hooks for career-agent
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+        exclude: '\.json$'
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+        exclude: '\.pdf$'
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.0
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix]
+      # Run the formatter
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [reportlab>=4.0]
+        args: [--install-types, --non-interactive]
+        exclude: '^tests/'
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.9
+    hooks:
+      - id: bandit
+        args: ["-c", "pyproject.toml"]
+        additional_dependencies: ["bandit[toml]"]
+        exclude: '^tests/'
+
+  # Prevent committing sensitive files
+  - repo: local
+    hooks:
+      - id: prevent-profile-commit
+        name: Prevent profile.json commit
+        entry: 'ERROR: Do not commit profile.json (contains PII)'
+        language: fail
+        files: '^profile\.json$'
+
+      - id: prevent-roles-commit
+        name: Prevent roles/ directory commit
+        entry: 'ERROR: Do not commit roles/ (contains PII)'
+        language: fail
+        files: '^roles/.*\.json$'
+        exclude: '^roles\.example/'
+
+      - id: prevent-tracker-commit
+        name: Prevent tracker.json commit
+        entry: 'ERROR: Do not commit tracker.json (contains PII)'
+        language: fail
+        files: '^tracker\.json$'
