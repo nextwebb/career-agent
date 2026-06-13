@@ -154,9 +154,7 @@ class TestJSONConfigs:
                 and len(data["plugins"]) > 0
                 and "repository" in data["plugins"][0]
             )
-            assert (
-                has_root_repo or has_plugin_repos
-            ), "Missing repository field in marketplace.json"
+            assert has_root_repo or has_plugin_repos, "Missing repository field in marketplace.json"
 
 
 class TestSKILLMarkdown:
