@@ -46,7 +46,57 @@ Claude never submits on your behalf. That boundary is intentional.
 
 ---
 
-## Quick start
+## Install as Plugin
+
+### Option 1: Via Marketplace (Recommended)
+
+```bash
+# Add the marketplace
+claude plugin marketplace add nextwebb/career-agent
+
+# Install the plugin
+claude plugin install career-agent
+```
+
+Or in Claude Code:
+
+```
+/plugin marketplace add nextwebb/career-agent
+/plugin install career-agent
+```
+
+### Option 2: Direct Install
+
+```bash
+claude plugin install github:nextwebb/career-agent
+```
+
+Or:
+
+```
+/plugin install github:nextwebb/career-agent
+```
+
+After installation, complete setup:
+
+```bash
+cp profile.example.json profile.json      # fill in your details
+pip install reportlab
+```
+
+Then use the skills:
+
+```
+/source Germany backend      # Find matching roles
+/new-role                    # Create role config
+/generate-cv <role_id>       # Generate PDFs
+/apply <role_id>             # Fill ATS form
+/track                       # View pipeline
+```
+
+---
+
+## Quick start (Manual Setup)
 
 ```bash
 git clone https://github.com/nextwebb/career-agent
