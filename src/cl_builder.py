@@ -66,8 +66,10 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
-        leftMargin=0.85*inch, rightMargin=0.85*inch,
-        topMargin=0.75*inch, bottomMargin=0.75*inch,
+        leftMargin=0.85 * inch,
+        rightMargin=0.85 * inch,
+        topMargin=0.75 * inch,
+        bottomMargin=0.75 * inch,
         title=f"{full_name} — Cover Letter — {config.get('company', '')}",
         author=full_name,
     )

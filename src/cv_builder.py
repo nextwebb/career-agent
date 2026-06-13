@@ -67,8 +67,10 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
-        leftMargin=0.7*inch, rightMargin=0.7*inch,
-        topMargin=0.6*inch, bottomMargin=0.6*inch,
+        leftMargin=0.7 * inch,
+        rightMargin=0.7 * inch,
+        topMargin=0.6 * inch,
+        bottomMargin=0.6 * inch,
         title=f"{full_name} — {config.get('company', 'CV')}",
         author=full_name,
     )

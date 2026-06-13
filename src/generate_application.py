@@ -39,9 +39,9 @@ if importlib.util.find_spec("reportlab") is None:
     print("Or directly:      pip install reportlab")
     sys.exit(1)
 
-SCRIPT_DIR  = Path(__file__).parent.parent   # repo root
-ROLES_DIR   = SCRIPT_DIR / "roles"
-OUTPUT_DIR  = SCRIPT_DIR / "generated"
+SCRIPT_DIR = Path(__file__).parent.parent  # repo root
+ROLES_DIR = SCRIPT_DIR / "roles"
+OUTPUT_DIR = SCRIPT_DIR / "generated"
 PROFILE_PATH = SCRIPT_DIR / "profile.json"
 
 sys.path.insert(0, str(Path(__file__).parent))

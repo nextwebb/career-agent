@@ -9,6 +9,7 @@ from collections.abc import Callable
 
 class ValidationError(Exception):
     """Raised when validation fails."""
+
     pass
 
 
@@ -101,9 +102,7 @@ def validate_profile(data: dict, strict: bool = False) -> tuple[bool, list[str]]
             valid_variants = {"A", "B", "C"}
             for variant_key in data["variants"]:
                 if variant_key not in valid_variants:
-                    errors.append(
-                        f"Unknown variant '{variant_key}'. Valid variants: A, B, C"
-                    )
+                    errors.append(f"Unknown variant '{variant_key}'. Valid variants: A, B, C")
 
     # Validate impact_statements if present
     if "impact_statements" in data:
@@ -154,9 +153,7 @@ def validate_role_config(data: dict, strict: bool = False) -> tuple[bool, list[s
     if "variant" in data:
         valid_variants = {"A", "B", "C"}
         if data["variant"] not in valid_variants:
-            errors.append(
-                f"Invalid variant '{data['variant']}'. Must be one of: A, B, C"
-            )
+            errors.append(f"Invalid variant '{data['variant']}'. Must be one of: A, B, C")
 
     # Validate ATS platform
     if "ats_platform" in data:
@@ -211,7 +208,7 @@ def validate_and_report(
     data: dict,
     validator_func: Callable[[dict, bool], tuple[bool, list[str]]],
     config_type: str,
-    filepath: str | None = None
+    filepath: str | None = None,
 ) -> None:
     """
     Validate data and raise ValidationError with formatted message if invalid.
@@ -233,5 +230,7 @@ def validate_and_report(
         for i, err in enumerate(errors, 1):
             error_msg += f"  {i}. {err}\n"
 
-        error_msg += f"\nRefer to {config_type.replace(' ', '_')}.example.json for the correct schema."
+        error_msg += (
+            f"\nRefer to {config_type.replace(' ', '_')}.example.json for the correct schema."
+        )
         raise ValidationError(error_msg)
