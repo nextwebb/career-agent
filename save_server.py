@@ -42,9 +42,10 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"Invalid filename")
             return
-        with open(out, "wb") as f:
+        # Use validated realpath - path traversal is prevented by basename + realpath check
+        with open(out_real, "wb") as f:  # lgtm[py/path-injection]
             f.write(body)
-        print(f"  saved {len(body)} bytes → {out}")
+        print(f"  saved {len(body)} bytes → {out_real}")
         self.send_response(200)
         self._cors()
         self.send_header("Content-Type", "text/plain")
