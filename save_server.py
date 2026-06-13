@@ -27,7 +27,9 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             return
         params = parse_qs(parsed.query)
-        name = params.get("name", ["frame.jpg"])[0]
+        raw_name = params.get("name", ["frame.jpg"])[0]
+        # Sanitize filename to prevent path traversal (strip directory components)
+        name = os.path.basename(raw_name)
         os.makedirs(SAVE_DIR, exist_ok=True)
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
