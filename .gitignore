@@ -17,6 +17,9 @@ build/
 .venv/
 venv/
 .env
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 
 # OS
 .DS_Store
@@ -33,6 +36,13 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/
+
+# Dev artifacts (already removed — prevent re-adding)
 demo-form.html
 save_server.py
 frames/
+
+# Node (for upcoming npx distribution — issue #22)
+node_modules/
+npm-debug.log*
+package-lock.json
