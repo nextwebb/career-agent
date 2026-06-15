@@ -10,7 +10,10 @@
     {
       "name": "career-agent",
       "displayName": "Career Agent",
-      "source": "./",
+      "source": {
+        "source": "npm",
+        "package": "@nextwebb/career-agent"
+      },
       "description": "Agentic job application workflow. Generates tailored CV + cover letter PDFs per role and fills ATS forms via browser automation. Handoff to user for EEO fields and Submit.",
       "author": {
         "name": "nextwebb",

@@ -41,7 +41,7 @@ For each job in `profile.experience`, check if the role config has `experience_o
 Run:
 
 ```bash
-python src/generate_application.py --role <role_id>
+python "${CLAUDE_PLUGIN_ROOT}/src/generate_application.py" --role <role_id>
 ```
 
 The script reads `profile.json` + `roles/<role_id>.json` and writes:
