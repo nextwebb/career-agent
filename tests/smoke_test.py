@@ -188,16 +188,20 @@ class TestSKILLMarkdown:
     """Validate SKILL.md files have proper structure."""
 
     def test_skill_md_files_have_titles(self):
-        """Check that all SKILL.md files start with a markdown title."""
+        """Check that all SKILL.md files have a markdown title (after optional frontmatter)."""
         skills_dir = ROOT / "skills"
         skill_files = list(skills_dir.glob("*/SKILL.md"))
 
         assert len(skill_files) >= 5, "Expected at least 5 skill files"
 
         for skill_file in skill_files:
-            with open(skill_file, encoding="utf-8") as f:
-                first_line = f.readline().strip()
-            assert first_line.startswith("#"), f"{skill_file.name} missing markdown title"
+            lines = skill_file.read_text(encoding="utf-8").splitlines()
+            # Skip YAML frontmatter block (--- ... ---)
+            if lines and lines[0].strip() == "---":
+                end = next((i for i, l in enumerate(lines[1:], 1) if l.strip() == "---"), None)
+                lines = lines[end + 1 :] if end is not None else lines[1:]
+            heading = next((l for l in lines if l.strip()), "")
+            assert heading.startswith("#"), f"{skill_file.name} missing markdown title"
 
     def test_skill_md_files_have_content(self):
         """Verify SKILL.md files are not empty."""

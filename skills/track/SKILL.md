@@ -1,3 +1,7 @@
+---
+description: View and update your job application pipeline; log statuses and add notes across all active roles
+---
+
 # track
 
 Track and update job application status across all active roles.

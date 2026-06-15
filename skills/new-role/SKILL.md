@@ -1,3 +1,7 @@
+---
+description: Scaffold a role config by fetching and analysing a job posting, detecting the ATS platform, and pre-filling roles/<role_id>.json
+---
+
 # new-role
 
 Scaffold a new role config file interactively. Inspects the job posting, detects the ATS platform, pre-fills what it can, and saves a ready-to-edit `roles/<role_id>.json`.

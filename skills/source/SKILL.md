@@ -1,3 +1,7 @@
+---
+description: Find verified open roles matching your profile, ranked by fit score with sponsorship and relocation signals
+---
+
 # source
 
 Find verified, currently-open roles that match your profile. Uses your CV, LinkedIn export, or profile.json as the candidate baseline. Optionally reads uploaded company/sponsorship documents as a starting source list.
