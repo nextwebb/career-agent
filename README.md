@@ -72,14 +72,14 @@ All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_P
 claude plugin marketplace add nextwebb/career-agent
 
 # Install the plugin
-claude plugin install career-agent
+claude plugin install career-agent@career-agent
 ```
 
 Or in Claude Code:
 
 ```
 /plugin marketplace add nextwebb/career-agent
-/plugin install career-agent
+/plugin install career-agent@career-agent
 ```
 
 ### Option 2: Direct Install
@@ -293,6 +293,59 @@ career-agent/
 ├── tracker.json                     # gitignored — application pipeline
 └── profile.json                     # gitignored — your profile data
 ```
+
+---
+
+## Troubleshooting
+
+### Plugin installation fails with schema errors
+
+```
+Failed to add marketplace: Invalid schema
+Failed to install plugin: Plugin has an invalid manifest file
+```
+
+Clear the cached marketplace clone and reinstall:
+
+```bash
+claude plugin marketplace remove career-agent
+rm -rf ~/.claude/plugins/marketplaces/career-agent
+claude plugin marketplace add nextwebb/career-agent
+claude plugin install career-agent@career-agent
+```
+
+### Cached plugin not picking up latest changes
+
+Plugin caches persist at `~/.claude/plugins/cache/`. The Claude CLI skips updates when the resolved version is unchanged, so `claude plugin update` only works if the version in `plugin.json` has been bumped. If the version was bumped, force a refresh:
+
+```bash
+claude plugin update career-agent@career-agent
+```
+
+If the version was **not** bumped (e.g. you are developing locally against a pinned `1.0.0`), clear and reinstall entirely:
+
+```bash
+claude plugin marketplace remove career-agent
+rm -rf ~/.claude/plugins/marketplaces/career-agent ~/.claude/plugins/cache/*career-agent*
+claude plugin marketplace add nextwebb/career-agent
+claude plugin install career-agent@career-agent
+```
+
+Cache locations:
+- `~/.claude/plugins/marketplaces/<name>/` — marketplace clone
+- `~/.claude/plugins/cache/<marketplace>/<plugin>/` — installed plugin
+
+### PDF generation fails
+
+Ensure `reportlab` is installed and use the correct flag syntax:
+
+```bash
+pip install reportlab
+python src/generate_application.py --role <role_id>   # correct
+python src/generate_application.py <role_id>           # wrong — positional args not accepted
+```
+
+The `generated/` output directory is created automatically on first run.
 
 ---
 
