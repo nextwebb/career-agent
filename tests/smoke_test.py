@@ -20,7 +20,7 @@ ROOT = Path(__file__).parent.parent
 
 
 # Canonical skill names — single source of truth used by both structure and manifest tests.
-EXPECTED_SKILLS = ["apply", "generate-cv", "new-role", "source", "track"]
+EXPECTED_SKILLS = ["apply", "generate-cv", "new-role", "setup-profile", "source", "track"]
 
 
 class TestProjectStructure:

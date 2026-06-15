@@ -4,6 +4,7 @@ Agentic job application workflow. Generates tailored CVs and fills ATS forms via
 
 ## Skills
 
+- `/setup-profile` — Build profile.json from your CV or LinkedIn PDF — extracts work history, generates 3 CV variants, writes per-job bullets automatically
 - `/generate-cv <role_id>` — Build ATS-optimised CV + cover letter PDFs for a role
 - `/apply <role_id>` — Fill the ATS form, upload PDFs, answer questions, hand off to user for EEO + Submit
 - `/new-role [url]` — Scaffold a new role config interactively
