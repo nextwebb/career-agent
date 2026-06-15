@@ -110,16 +110,37 @@ class TestJSONConfigs:
         with open(plugin_file, encoding="utf-8") as f:
             data = json.load(f)
 
-        # Validate required fields
         required_fields = ["name", "version", "description", "skills"]
         for field in required_fields:
             assert field in data, f"Missing required field in plugin.json: {field}"
 
         assert data["name"] == "career-agent", "Incorrect plugin name"
-        expected = {"./skills/" + s for s in EXPECTED_SKILLS}
+        # Per the Claude Code marketplace spec, skills points to the parent directory
+        # containing <name>/SKILL.md subdirectories, not individual skill dirs.
+        assert set(data["skills"]) == {"./skills"}, (
+            f"plugin.json skills must be ['./skills'] (parent dir per marketplace spec).\n"
+            f"  got: {sorted(data['skills'])}"
+        )
+
+    def test_claude_plugin_json_valid(self):
+        """Verify .claude-plugin/plugin.json is the canonical marketplace manifest."""
+        plugin_file = ROOT / ".claude-plugin" / "plugin.json"
         assert (
-            set(data["skills"]) == expected
-        ), f"plugin.json skills mismatch.\n  got:      {sorted(data['skills'])}\n  expected: {sorted(expected)}"
+            plugin_file.exists()
+        ), "Missing .claude-plugin/plugin.json (canonical marketplace manifest)"
+
+        with open(plugin_file, encoding="utf-8") as f:
+            data = json.load(f)
+
+        required_fields = ["name", "version", "description", "skills"]
+        for field in required_fields:
+            assert field in data, f"Missing required field in .claude-plugin/plugin.json: {field}"
+
+        assert data["name"] == "career-agent", "Incorrect plugin name in .claude-plugin/plugin.json"
+        assert set(data["skills"]) == {"./skills"}, (
+            f".claude-plugin/plugin.json skills must be ['./skills'].\n"
+            f"  got: {sorted(data['skills'])}"
+        )
 
     def test_profile_example_valid(self):
         """Verify profile.example.json is valid JSON."""
@@ -167,16 +188,22 @@ class TestSKILLMarkdown:
     """Validate SKILL.md files have proper structure."""
 
     def test_skill_md_files_have_titles(self):
-        """Check that all SKILL.md files start with a markdown title."""
+        """Check that all SKILL.md files have a markdown title (after optional frontmatter)."""
         skills_dir = ROOT / "skills"
         skill_files = list(skills_dir.glob("*/SKILL.md"))
 
         assert len(skill_files) >= 5, "Expected at least 5 skill files"
 
         for skill_file in skill_files:
-            with open(skill_file, encoding="utf-8") as f:
-                first_line = f.readline().strip()
-            assert first_line.startswith("#"), f"{skill_file.name} missing markdown title"
+            lines = skill_file.read_text(encoding="utf-8").splitlines()
+            # Skip YAML frontmatter block (--- ... ---)
+            if lines and lines[0].strip() == "---":
+                end = next(
+                    (i for i, line in enumerate(lines[1:], 1) if line.strip() == "---"), None
+                )
+                lines = lines[end + 1 :] if end is not None else lines[1:]
+            heading = next((line for line in lines if line.strip()), "")
+            assert heading.startswith("#"), f"{skill_file.name} missing markdown title"
 
     def test_skill_md_files_have_content(self):
         """Verify SKILL.md files are not empty."""

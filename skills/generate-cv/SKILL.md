@@ -1,3 +1,7 @@
+---
+description: Build ATS-optimised CV and cover letter PDFs tailored to a specific role using reportlab Platypus
+---
+
 # generate-cv
 
 Generate an ATS-optimised CV + cover letter PDF pair for a specific role.

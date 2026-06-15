@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Agentic job application workflow. Generates tailored CV + cover letter PDFs per role and fills ATS forms via browser automation.",
   "author": {
-    "name": "nextwebb"
+    "name": "nextwebb",
+    "email": "nextwebbdevelop45@gmail.com"
   },
   "homepage": "https://nextwebb.github.io/career-agent",
   "repository": "https://github.com/nextwebb/career-agent",

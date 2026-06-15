@@ -145,7 +145,7 @@ jobs:
           for skill in skills/*/SKILL.md; do
             if [ -f "$skill" ]; then
               echo "Checking $skill..."
-              head -n 1 "$skill" | grep -q "^#" || (echo "ERROR: $skill missing title" && exit 1)
+              grep -q "^# " "$skill" || (echo "ERROR: $skill missing title" && exit 1)
             fi
           done
 

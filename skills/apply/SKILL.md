@@ -1,3 +1,7 @@
+---
+description: Fill an ATS form via browser automation, upload PDFs, answer all required fields, then hand off to you for EEO fields and Submit
+---
+
 # apply
 
 Fill an ATS job application form using browser automation. Upload CV + cover letter PDFs, answer all required fields, then hand off to the user for EEO fields and Submit.

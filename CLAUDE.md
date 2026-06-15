@@ -14,6 +14,8 @@ Agentic job application workflow. Generates tailored CVs and fills ATS forms via
 
 - `profile.json` — User's personal data (gitignored, never committed)
 - `roles/<role_id>.json` — Per-role config with CV variant, cover letter, custom answers
+- `.claude-plugin/plugin.json` — Canonical plugin manifest (marketplace spec)
+- `.claude-plugin/marketplace.json` — Marketplace catalog for `/plugin marketplace add nextwebb/career-agent`
 - `src/cv_builder.py` — reportlab Platypus PDF engine (single-column, Helvetica, ATS-safe)
 - `src/generate_application.py` — CLI PDF generator
 - `src/tracker.py` — Application pipeline tracker: `python src/tracker.py --list`: `python src/generate_application.py <role_id>`

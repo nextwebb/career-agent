@@ -1,5 +1,7 @@
 # User data — never commit these
 profile.json
+base_profile.pdf
+sourced/
 roles/*
 !roles/.gitkeep
 generated/*
