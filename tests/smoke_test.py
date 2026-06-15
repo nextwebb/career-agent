@@ -198,9 +198,11 @@ class TestSKILLMarkdown:
             lines = skill_file.read_text(encoding="utf-8").splitlines()
             # Skip YAML frontmatter block (--- ... ---)
             if lines and lines[0].strip() == "---":
-                end = next((i for i, l in enumerate(lines[1:], 1) if l.strip() == "---"), None)
+                end = next(
+                    (i for i, line in enumerate(lines[1:], 1) if line.strip() == "---"), None
+                )
                 lines = lines[end + 1 :] if end is not None else lines[1:]
-            heading = next((l for l in lines if l.strip()), "")
+            heading = next((line for line in lines if line.strip()), "")
             assert heading.startswith("#"), f"{skill_file.name} missing markdown title"
 
     def test_skill_md_files_have_content(self):
