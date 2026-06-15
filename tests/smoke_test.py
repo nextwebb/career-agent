@@ -19,6 +19,10 @@ import pytest
 ROOT = Path(__file__).parent.parent
 
 
+# Canonical skill names — single source of truth used by both structure and manifest tests.
+EXPECTED_SKILLS = ["apply", "generate-cv", "new-role", "source", "track"]
+
+
 class TestProjectStructure:
     """Validate directory structure and required files exist."""
 
@@ -36,9 +40,8 @@ class TestProjectStructure:
     def test_skill_directories_exist(self):
         """Verify all skill directories have SKILL.md files."""
         skills_dir = ROOT / "skills"
-        expected_skills = ["apply", "generate-cv", "new-role", "source", "track"]
 
-        for skill in expected_skills:
+        for skill in EXPECTED_SKILLS:
             skill_dir = skills_dir / skill
             assert skill_dir.exists(), f"Missing skill directory: {skill}"
             skill_md = skill_dir / "SKILL.md"
@@ -113,7 +116,10 @@ class TestJSONConfigs:
             assert field in data, f"Missing required field in plugin.json: {field}"
 
         assert data["name"] == "career-agent", "Incorrect plugin name"
-        assert data["skills"] == "skills", "Skills path should be 'skills'"
+        expected = {"./skills/" + s for s in EXPECTED_SKILLS}
+        assert set(data["skills"]) == expected, (
+            f"plugin.json skills mismatch.\n  got:      {sorted(data['skills'])}\n  expected: {sorted(expected)}"
+        )
 
     def test_profile_example_valid(self):
         """Verify profile.example.json is valid JSON."""

@@ -419,9 +419,17 @@ User says: `/skill-name`, `natural language variant`
   "name": "career-agent",
   "version": "1.0.0",
   "description": "Brief description",
-  "skills": "skills"
+  "skills": [
+    "./skills/source",
+    "./skills/new-role",
+    "./skills/generate-cv",
+    "./skills/apply",
+    "./skills/track"
+  ]
 }
 ```
+
+Each entry is a `./`-prefixed path to a skill subdirectory containing `SKILL.md`. The `./` prefix is required by the Claude CLI validator.
 
 **Version format**: Semantic versioning (major.minor.patch)
 
