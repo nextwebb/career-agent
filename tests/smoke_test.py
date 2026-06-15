@@ -125,7 +125,9 @@ class TestJSONConfigs:
     def test_claude_plugin_json_valid(self):
         """Verify .claude-plugin/plugin.json is the canonical marketplace manifest."""
         plugin_file = ROOT / ".claude-plugin" / "plugin.json"
-        assert plugin_file.exists(), "Missing .claude-plugin/plugin.json (canonical marketplace manifest)"
+        assert (
+            plugin_file.exists()
+        ), "Missing .claude-plugin/plugin.json (canonical marketplace manifest)"
 
         with open(plugin_file, encoding="utf-8") as f:
             data = json.load(f)
