@@ -296,6 +296,59 @@ career-agent/
 
 ---
 
+## Troubleshooting
+
+### Plugin installation fails with schema errors
+
+```
+Failed to add marketplace: Invalid schema
+Failed to install plugin: Plugin has an invalid manifest file
+```
+
+Clear the cached marketplace clone and reinstall:
+
+```bash
+claude plugin marketplace remove career-agent
+rm -rf ~/.claude/plugins/marketplaces/career-agent
+claude plugin marketplace add nextwebb/career-agent
+claude plugin install career-agent@career-agent
+```
+
+### Cached plugin not picking up latest changes
+
+Plugin caches persist at `~/.claude/plugins/cache/`. Force a refresh:
+
+```bash
+claude plugin update career-agent@career-agent
+```
+
+Or clear and reinstall entirely:
+
+```bash
+claude plugin marketplace remove career-agent
+rm -rf ~/.claude/plugins/marketplaces/career-agent ~/.claude/plugins/cache/*career-agent*
+claude plugin marketplace add nextwebb/career-agent
+claude plugin install career-agent@career-agent
+```
+
+Cache locations:
+- `~/.claude/plugins/marketplaces/<name>/` — marketplace clone
+- `~/.claude/plugins/cache/<marketplace>/<plugin>/` — installed plugin
+
+### PDF generation fails
+
+Ensure `reportlab` is installed and use the correct flag syntax:
+
+```bash
+pip install reportlab
+python src/generate_application.py --role <role_id>   # correct
+python src/generate_application.py <role_id>           # wrong — positional args not accepted
+```
+
+The `generated/` output directory is created automatically on first run.
+
+---
+
 ## Contributing
 
 ATS platforms to add: Ashby, SmartRecruiters, Taleo, iCIMS, BambooHR.
