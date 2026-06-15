@@ -5,7 +5,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Agentic job application workflow for Claude Code and Cowork.**
+**Agentic job application workflow for Claude Code.**
 
 One command generates a tailored CV + cover letter PDF per role. Claude fills the ATS form. You review and click Submit.
 
@@ -39,7 +39,7 @@ Claude never submits on your behalf. That boundary is intentional.
 | Cover letter per role | ✅ | ❌ | ❌ |
 | Human-in-loop handoff | ✅ EEO + Submit | N/A | N/A |
 | Profile data local | ✅ gitignored | varies | varies |
-| Cowork + Claude Code | ✅ both | ❌ | ❌ |
+| Claude Code CLI + desktop | ✅ both | ❌ | ❌ |
 
 ---
 
@@ -57,9 +57,9 @@ All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_P
 
 ## Prerequisites
 
-- [Claude Code](https://claude.ai/code) or [Cowork](https://claude.ai) desktop app
+- [Claude Code](https://claude.ai/code) CLI or Claude Code desktop app
 - Python 3.10+ with `reportlab` (`pip install reportlab`)
-- [Claude in Chrome extension](https://chrome.google.com/webstore) connected to Cowork/Claude Code
+- [Claude in Chrome extension](https://chrome.google.com/webstore) connected to Claude Code (CLI or desktop) — **not** the Claude.ai consumer app
 
 ---
 
@@ -130,7 +130,7 @@ cp profile.example.json profile.json      # then fill in your details
 cp roles.example/example_role.json roles/my_role.json  # then fill in the role
 ```
 
-Then in Claude Code or Cowork:
+Then in Claude Code (CLI or desktop app):
 
 ```
 /new-role                    # Interactively create a role config
@@ -224,9 +224,9 @@ The role config picks a variant. The CV builder selects the matching experience 
 
 ## Install as plugin
 
-### Cowork (desktop)
+### Claude Code desktop app
 
-1. Open Cowork → Settings → Plugins
+1. Open Claude Code desktop → Settings → Plugins
 2. Click **Install from folder** → select this repo root
 3. Skills appear as `/source`, `/new-role`, `/generate-cv`, `/apply`, `/track`
 
@@ -267,7 +267,7 @@ This is a deliberate design boundary, not a limitation. The agent flags exactly 
 career-agent/
 ├── README.md
 ├── CLAUDE.md                        # Claude Code context + slash commands
-├── plugin.json                      # Cowork + Claude Code plugin manifest
+├── plugin.json                      # Claude Code plugin manifest
 ├── requirements.txt                 # pip install reportlab
 ├── profile.example.json             # Copy → profile.json (gitignored)
 ├── .gitignore
