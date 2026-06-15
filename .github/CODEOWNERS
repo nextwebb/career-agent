@@ -1,0 +1,4 @@
+# Auto-request Claude and Copilot code review on every PR.
+# Claude reviews via the claude-review.yml workflow (anthropic-ai/claude-code-action).
+# Copilot review requires "Copilot code review" to be enabled in repo Settings → Copilot.
+* @nextwebb @copilot
