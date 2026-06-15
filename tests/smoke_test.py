@@ -117,9 +117,9 @@ class TestJSONConfigs:
 
         assert data["name"] == "career-agent", "Incorrect plugin name"
         expected = {"./skills/" + s for s in EXPECTED_SKILLS}
-        assert set(data["skills"]) == expected, (
-            f"plugin.json skills mismatch.\n  got:      {sorted(data['skills'])}\n  expected: {sorted(expected)}"
-        )
+        assert (
+            set(data["skills"]) == expected
+        ), f"plugin.json skills mismatch.\n  got:      {sorted(data['skills'])}\n  expected: {sorted(expected)}"
 
     def test_profile_example_valid(self):
         """Verify profile.example.json is valid JSON."""
