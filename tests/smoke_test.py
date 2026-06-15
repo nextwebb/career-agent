@@ -110,16 +110,35 @@ class TestJSONConfigs:
         with open(plugin_file, encoding="utf-8") as f:
             data = json.load(f)
 
-        # Validate required fields
         required_fields = ["name", "version", "description", "skills"]
         for field in required_fields:
             assert field in data, f"Missing required field in plugin.json: {field}"
 
         assert data["name"] == "career-agent", "Incorrect plugin name"
-        expected = {"./skills/" + s for s in EXPECTED_SKILLS}
-        assert (
-            set(data["skills"]) == expected
-        ), f"plugin.json skills mismatch.\n  got:      {sorted(data['skills'])}\n  expected: {sorted(expected)}"
+        # Per the Claude Code marketplace spec, skills points to the parent directory
+        # containing <name>/SKILL.md subdirectories, not individual skill dirs.
+        assert set(data["skills"]) == {"./skills"}, (
+            f"plugin.json skills must be ['./skills'] (parent dir per marketplace spec).\n"
+            f"  got: {sorted(data['skills'])}"
+        )
+
+    def test_claude_plugin_json_valid(self):
+        """Verify .claude-plugin/plugin.json is the canonical marketplace manifest."""
+        plugin_file = ROOT / ".claude-plugin" / "plugin.json"
+        assert plugin_file.exists(), "Missing .claude-plugin/plugin.json (canonical marketplace manifest)"
+
+        with open(plugin_file, encoding="utf-8") as f:
+            data = json.load(f)
+
+        required_fields = ["name", "version", "description", "skills"]
+        for field in required_fields:
+            assert field in data, f"Missing required field in .claude-plugin/plugin.json: {field}"
+
+        assert data["name"] == "career-agent", "Incorrect plugin name in .claude-plugin/plugin.json"
+        assert set(data["skills"]) == {"./skills"}, (
+            f".claude-plugin/plugin.json skills must be ['./skills'].\n"
+            f"  got: {sorted(data['skills'])}"
+        )
 
     def test_profile_example_valid(self):
         """Verify profile.example.json is valid JSON."""
