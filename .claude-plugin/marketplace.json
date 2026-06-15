@@ -1,21 +1,20 @@
 {
+  "$schema": "https://code.claude.com/schemas/marketplace.json",
   "name": "career-agent",
   "description": "Career automation plugins for job seekers. Generate tailored CVs and automate ATS form filling with Claude.",
   "owner": {
     "name": "nextwebb",
-    "email": "your-email@example.com"
+    "email": "nextwebbdevelop45@gmail.com"
   },
-  "version": "1.0.0",
-  "homepage": "https://nextwebb.github.io/career-agent",
-  "repository": "https://github.com/nextwebb/career-agent",
   "plugins": [
     {
       "name": "career-agent",
+      "displayName": "Career Agent",
       "source": "./",
       "description": "Agentic job application workflow. Generates tailored CV + cover letter PDFs per role and fills ATS forms via browser automation. Handoff to user for EEO fields and Submit.",
-      "version": "1.0.0",
       "author": {
-        "name": "nextwebb"
+        "name": "nextwebb",
+        "email": "nextwebbdevelop45@gmail.com"
       },
       "homepage": "https://nextwebb.github.io/career-agent",
       "repository": "https://github.com/nextwebb/career-agent",
