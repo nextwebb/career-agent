@@ -490,22 +490,24 @@
 
   <!-- INSTALL -->
   <section class="max-w-narrative-width mx-auto px-gutter mb-section-gap" id="install">
-    <h2 class="font-display text-h2-mobile md:text-h2 text-on-surface mb-4">Get started in one command</h2>
+    <h2 class="font-display text-h2-mobile md:text-h2 text-on-surface mb-4">Get started in three commands</h2>
     <p class="font-body text-body text-on-surface-variant mb-8">
-      Checks Python 3.10+, installs <code class="font-mono text-label text-safety-indigo">reportlab</code>, and creates <code class="font-mono text-label text-safety-indigo">profile.json</code>. Requires Node 18+.
+      Checks Python 3.10+, installs <code class="font-mono text-label text-safety-indigo">reportlab</code>, creates <code class="font-mono text-label text-safety-indigo">profile.json</code>, and installs the plugin. Requires Node 18+.
     </p>
 
     <div class="glass rounded-xl border border-safety-indigo/30 p-6 glow-indigo-sm mb-6">
       <div class="flex justify-between items-center mb-3">
-        <span class="font-mono text-label text-on-surface-variant uppercase tracking-widest">Option 1 &mdash; One command</span>
+        <span class="font-mono text-label text-on-surface-variant uppercase tracking-widest">Install</span>
         <button id="copy-npx"
-                onclick="navigator.clipboard.writeText('npx @nextwebb/career-agent').then(()=>{ this.textContent='Copied'; setTimeout(()=>{ this.innerHTML='<span class=\'material-symbols-outlined text-[15px]\'>content_copy</span> Copy'; },1500) })"
+                onclick="navigator.clipboard.writeText('npx @nextwebb/career-agent\nclaude plugin marketplace add nextwebb/career-agent\nclaude plugin install career-agent').then(()=>{ this.textContent='Copied'; setTimeout(()=>{ this.innerHTML='<span class=\'material-symbols-outlined text-[15px]\'>content_copy</span> Copy'; },1500) })"
                 class="flex items-center gap-1 font-mono text-label text-on-surface-variant hover:text-safety-indigo transition-colors">
           <span class="material-symbols-outlined text-[15px]">content_copy</span> Copy
         </button>
       </div>
-      <div class="font-mono text-terminal text-on-surface text-lg">
-        <span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">npx</span> @nextwebb/career-agent
+      <div class="font-mono text-terminal text-on-surface space-y-2">
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">npx</span> @nextwebb/career-agent</div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">claude</span> plugin marketplace add nextwebb/career-agent</div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">claude</span> plugin install career-agent</div>
       </div>
     </div>
 
