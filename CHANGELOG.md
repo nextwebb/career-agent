@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/nextwebb/career-agent/compare/v1.1.3...v1.1.4) (2026-06-16)
+
+
+### Fixes
+
+* **ci:** deploy GH Pages on every push to main ([#52](https://github.com/nextwebb/career-agent/issues/52)) ([10f6f1d](https://github.com/nextwebb/career-agent/commit/10f6f1da41f98992bd16647591883e24cc5c7495))
+
 ## [1.1.3](https://github.com/nextwebb/career-agent/compare/v1.1.2...v1.1.3) (2026-06-16)
 
 
