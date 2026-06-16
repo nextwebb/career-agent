@@ -41,7 +41,7 @@ function run(cmd, args, opts = {}) {
 header("Checking prerequisites…");
 
 let pythonBin = null;
-for (const candidate of ["python3", "python"]) {
+for (const candidate of ["python3", "python3.12", "python3.11", "python3.10", "python"]) {
   const result = run(candidate, ["--version"]);
   if (result.status === 0) {
     const versionLine = (result.stdout || result.stderr || "").trim();

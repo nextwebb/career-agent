@@ -11,6 +11,7 @@ Run: pytest tests/smoke_test.py -v
 import json
 import os
 import py_compile
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -68,10 +69,7 @@ class TestSetupInstaller:
         path.write_text(textwrap.dedent(content), encoding="utf-8")
         path.chmod(0o755)
 
-    def _run_setup_with_python(self, tmp_path, python_version):
-        bin_dir = tmp_path / "bin"
-        bin_dir.mkdir()
-
+    def _write_python_shim(self, path, python_version):
         python_shim = f"""\
             #!/usr/bin/env sh
             if [ "$1" = "--version" ]; then
@@ -83,8 +81,16 @@ class TestSetupInstaller:
             fi
             exit 0
         """
-        self._write_executable(bin_dir / "python3", python_shim)
-        self._write_executable(bin_dir / "python", python_shim)
+        self._write_executable(path, python_shim)
+
+    def _run_setup_with_python(self, tmp_path, python_version, versioned_python=None):
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+
+        self._write_python_shim(bin_dir / "python3", python_version)
+        self._write_python_shim(bin_dir / "python", python_version)
+        for command, version in (versioned_python or {}).items():
+            self._write_python_shim(bin_dir / command, version)
 
         self._write_executable(
             bin_dir / "claude",
@@ -98,15 +104,18 @@ class TestSetupInstaller:
             """,
         )
 
+        node_bin = shutil.which("node")
+        assert node_bin, "node is required for installer smoke tests"
+
         env = {
             **os.environ,
-            "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+            "PATH": f"{bin_dir}{os.pathsep}/usr/bin{os.pathsep}/bin",
             "HOME": str(tmp_path / "home"),
         }
         env["HOME"] and Path(env["HOME"]).mkdir()
 
         return subprocess.run(
-            ["node", str(ROOT / "bin" / "setup.js")],
+            [node_bin, str(ROOT / "bin" / "setup.js")],
             cwd=tmp_path,
             env=env,
             capture_output=True,
@@ -131,6 +140,20 @@ class TestSetupInstaller:
         output = result.stdout + result.stderr
         assert result.returncode == 0, output
         assert f"Python found: Python {python_version}" in output
+        assert "career-agent is ready!" in output
+        assert (tmp_path / "profile.json").exists()
+
+    def test_setup_accepts_versioned_python_when_default_is_unsupported(self, tmp_path):
+        """Installer should try supported versioned Python executables before failing."""
+        result = self._run_setup_with_python(
+            tmp_path,
+            "3.9.6",
+            versioned_python={"python3.11": "3.11.13"},
+        )
+
+        output = result.stdout + result.stderr
+        assert result.returncode == 0, output
+        assert "Python found: Python 3.11.13" in output
         assert "career-agent is ready!" in output
         assert (tmp_path / "profile.json").exists()
 
