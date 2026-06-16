@@ -335,30 +335,35 @@
 </div>
 </section>
 <section class="mb-section-gap" id="pipeline">
-<div class="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+<div class="grid grid-cols-2 md:grid-cols-6 gap-4 relative">
 <div class="hidden md:block absolute top-12 left-0 right-0 h-px bg-border-subtle z-0"></div>
 <div class="relative z-10 flex flex-col items-center text-center p-4">
 <div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">0</div>
-<h4 class="text-on-surface font-bold">/source</h4>
-<p class="text-xs text-on-surface-variant mt-2">Scrape LinkedIn URLs</p>
+<h4 class="text-on-surface font-bold">/setup-profile</h4>
+<p class="text-xs text-on-surface-variant mt-2">Bootstrap from CV/LinkedIn</p>
 </div>
 <div class="relative z-10 flex flex-col items-center text-center p-4">
 <div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">1</div>
+<h4 class="text-on-surface font-bold">/source</h4>
+<p class="text-xs text-on-surface-variant mt-2">Find matching roles</p>
+</div>
+<div class="relative z-10 flex flex-col items-center text-center p-4">
+<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">2</div>
 <h4 class="text-on-surface font-bold">/new-role</h4>
 <p class="text-xs text-on-surface-variant mt-2">Analyze JD nuances</p>
 </div>
 <div class="relative z-10 flex flex-col items-center text-center p-4">
-<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">2</div>
+<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">3</div>
 <h4 class="text-on-surface font-bold">/generate-cv</h4>
 <p class="text-xs text-on-surface-variant mt-2">reportlab PDF generation</p>
 </div>
 <div class="relative z-10 flex flex-col items-center text-center p-4">
-<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">3</div>
+<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">4</div>
 <h4 class="text-on-surface font-bold">/apply</h4>
 <p class="text-xs text-on-surface-variant mt-2">Automated Form Filling</p>
 </div>
 <div class="relative z-10 flex flex-col items-center text-center p-4">
-<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">4</div>
+<div class="w-16 h-16 rounded-full bg-surface-container border border-primary flex items-center justify-center mb-4 text-primary font-bold shadow-lg shadow-primary/10">5</div>
 <h4 class="text-on-surface font-bold">/track</h4>
 <p class="text-xs text-on-surface-variant mt-2">Pipeline status tracker</p>
 </div>
@@ -369,22 +374,23 @@
 <h2 class="font-headline-lg text-headline-lg text-on-surface mb-8">Agent Skills</h2>
 <div class="bg-surface-container rounded-xl border border-border-subtle overflow-hidden">
 <div class="flex border-b border-border-subtle bg-surface-container-low overflow-x-auto no-scrollbar" id="skills-tabs">
-<button class="px-6 py-4 text-primary font-bold border-b-2 border-primary whitespace-nowrap" data-tab="source">/source</button>
+<button class="px-6 py-4 text-primary font-bold border-b-2 border-primary whitespace-nowrap" data-tab="setup">/setup-profile</button>
+<button class="px-6 py-4 text-on-surface-variant hover:text-on-surface whitespace-nowrap" data-tab="source">/source</button>
 <button class="px-6 py-4 text-on-surface-variant hover:text-on-surface whitespace-nowrap" data-tab="role">/new-role</button>
 <button class="px-6 py-4 text-on-surface-variant hover:text-on-surface whitespace-nowrap" data-tab="cv">/generate-cv</button>
 <button class="px-6 py-4 text-on-surface-variant hover:text-on-surface whitespace-nowrap" data-tab="apply">/apply</button>
 <button class="px-6 py-4 text-on-surface-variant hover:text-on-surface whitespace-nowrap" data-tab="track">/track</button>
 </div>
 <div class="p-8" id="skills-content">
-<div id="content-source">
-<h3 class="text-on-surface font-bold text-xl mb-4">Market Intelligence</h3>
-<p class="text-on-surface-variant mb-6">Find verified open roles from your CV/LinkedIn/profile.json with optional company docs. Filters by country and role type.</p>
+<div id="content-setup">
+<h3 class="text-on-surface font-bold text-xl mb-4">Profile Bootstrap</h3>
+<p class="text-on-surface-variant mb-6">Build profile.json from your CV or LinkedIn PDF. Extracts work history, infers three audience-specific CV variants (AI/LLM, Data Platform, Backend), and writes every bullet four ways — so you are ready to generate tailored applications immediately.</p>
 <div class="bg-surface-container-lowest p-4 rounded-lg border border-border-subtle font-code-sm text-code-sm">
-<span class="text-syntax-keyword">/source</span> Germany backend
+<span class="text-syntax-keyword">/setup-profile</span>
                         </div>
 <div class="mt-6 flex gap-4 p-4 bg-surface-container-highest/30 rounded-lg">
 <span class="material-symbols-outlined text-status-warning">info</span>
-<p class="text-sm italic text-on-surface-variant">Quirk: Crawls company career pages and LinkedIn to find matching roles.</p>
+<p class="text-sm italic text-on-surface-variant">Quirk: Upload or paste your CV/LinkedIn PDF. Claude never invents facts not in the source.</p>
 </div>
 </div>
 </div>
@@ -559,6 +565,12 @@
     const skillsContent = document.getElementById('skills-content');
     
     const contents = {
+        'setup': {
+            title: 'Profile Bootstrap',
+            text: 'Build profile.json from your CV or LinkedIn PDF. Extracts work history, infers three audience-specific CV variants (AI/LLM, Data Platform, Backend), and writes every bullet four ways — so you are ready to generate tailored applications immediately.',
+            code: '/setup-profile',
+            quirk: 'Upload or paste your CV/LinkedIn PDF. Claude never invents facts not in the source.'
+        },
         'source': {
             title: 'Market Intelligence',
             text: 'Find verified open roles from your CV/LinkedIn/profile.json with optional company docs. Filters by country and role type.',
