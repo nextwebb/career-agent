@@ -119,9 +119,9 @@ if (hasErrors) {
 console.log(`
 ${BOLD}Next steps:${RESET}
 
-  1. Install the plugin in Claude Code:
-     Open Claude Code desktop → Settings → Plugins → Install from folder
-     Select the directory where you cloned: https://github.com/nextwebb/career-agent
+  1. Register and install the plugin:
+     ${DIM}claude plugin marketplace add nextwebb/career-agent${RESET}
+     ${DIM}claude plugin install career-agent${RESET}
 
   2. Bootstrap your profile from your CV or LinkedIn PDF:
      ${DIM}/setup-profile${RESET}
