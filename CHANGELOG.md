@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.3](https://github.com/nextwebb/career-agent/compare/v1.1.2...v1.1.3) (2026-06-16)
+
+
+### Fixes
+
+* align install instructions to claude plugin commands ([#48](https://github.com/nextwebb/career-agent/issues/48)) ([8733f5b](https://github.com/nextwebb/career-agent/commit/8733f5b93c3edd37935913d016736c3baaa129ab))
+* **ci:** opt into Node.js 24 for release-please-action ([#50](https://github.com/nextwebb/career-agent/issues/50)) ([3b93674](https://github.com/nextwebb/career-agent/commit/3b936747b1321e60e255f35259fb7eed7527a595))
+
 ## [1.1.1] — 2026-06-16
 
 ### Fixes
