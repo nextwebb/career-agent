@@ -9,6 +9,7 @@
   "files": [
     ".claude-plugin",
     "bin",
+    "docs/assets",
     "skills",
     "src",
     "profile.example.json"

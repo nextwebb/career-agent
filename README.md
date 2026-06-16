@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/nextwebb/career-agent/main/docs/assets/logo.svg" alt="career-agent logo" width="96" height="96">
+</p>
+
 # career-agent
 
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-000?style=flat&logo=anthropic&logoColor=white)](https://claude.ai/code)
