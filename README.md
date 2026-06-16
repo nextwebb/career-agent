@@ -76,37 +76,25 @@ All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_P
 
 ---
 
-## Install as Plugin
+## Install
 
-### Option 1: One command (Recommended)
+### Prerequisites check
 
 ```bash
 npx @nextwebb/career-agent
 ```
 
-This checks Python 3, installs `reportlab`, registers the marketplace, installs the plugin, and creates `profile.json`. Node 18+ required.
+Checks Python 3.10+, installs `reportlab`, and creates `profile.json`. Node 18+ required.
 
-### Option 2: Via Marketplace
+### Install the plugin
 
-```bash
-claude plugin marketplace add nextwebb/career-agent
-claude plugin install career-agent@career-agent
-```
-
-Or in Claude Code:
-
-```
-/plugin marketplace add nextwebb/career-agent
-/plugin install career-agent@career-agent
-```
-
-### Option 3: Direct Install
+Open Claude Code desktop → Settings → Plugins → **Install from folder** → select the cloned repo root.
 
 ```bash
-claude plugin install github:nextwebb/career-agent
+git clone https://github.com/nextwebb/career-agent
 ```
 
-After installation, bootstrap your profile from your CV or LinkedIn PDF:
+Then bootstrap your profile:
 
 ```
 /setup-profile               # Build profile.json from your CV/LinkedIn PDF
@@ -115,30 +103,6 @@ After installation, bootstrap your profile from your CV or LinkedIn PDF:
 /generate-cv <role_id>       # Generate PDFs
 /apply <role_id>             # Fill ATS form
 /track                       # View pipeline
-```
-
----
-
-## Quick start (Manual Setup)
-
-```bash
-git clone https://github.com/nextwebb/career-agent
-cd career-agent
-
-# Install dependencies and verify
-pip install -r requirements.txt
-python -c "import reportlab; print('reportlab installed successfully')"
-```
-
-Then in Claude Code (CLI or desktop app):
-
-```
-/setup-profile               # Build profile.json from your CV or LinkedIn PDF
-/source Germany backend      # Find matching roles
-/new-role                    # Interactively create a role config
-/generate-cv my_role         # Generate tailored PDFs
-/apply my_role               # Fill the ATS form
-/track                       # View your application pipeline
 ```
 
 ---
@@ -232,31 +196,6 @@ The role config picks a variant. The CV builder selects the matching experience 
 
 ---
 
-## Install as plugin
-
-### Claude Code desktop app
-
-1. Open Claude Code desktop → Settings → Plugins
-2. Click **Install from folder** → select this repo root
-3. Skills appear as `/source`, `/new-role`, `/generate-cv`, `/apply`, `/track`
-
-### Claude Code (CLI)
-
-```bash
-# In your project or home directory
-cp -r skills ~/.claude/skills/career-agent
-```
-
-Then in any Claude Code session:
-```
-/career-agent:apply my_role
-```
-
-Or add to your project's `CLAUDE.md`:
-```
-@~/.claude/skills/career-agent/apply/SKILL.md
-```
-
 ---
 
 ## Human-in-the-loop handoff
@@ -323,43 +262,6 @@ If that doesn't help, use the explicit form that bypasses hash resolution:
 ```bash
 npx --package=@nextwebb/career-agent career-agent
 ```
-
-### Plugin installation fails with schema errors
-
-```
-Failed to add marketplace: Invalid schema
-Failed to install plugin: Plugin has an invalid manifest file
-```
-
-Clear the cached marketplace clone and reinstall:
-
-```bash
-claude plugin marketplace remove career-agent
-rm -rf ~/.claude/plugins/marketplaces/career-agent
-claude plugin marketplace add nextwebb/career-agent
-claude plugin install career-agent@career-agent
-```
-
-### Cached plugin not picking up latest changes
-
-Plugin caches persist at `~/.claude/plugins/cache/`. The Claude CLI skips updates when the resolved version is unchanged, so `claude plugin update` only works if the version in `plugin.json` has been bumped. If the version was bumped, force a refresh:
-
-```bash
-claude plugin update career-agent@career-agent
-```
-
-If the version was **not** bumped (e.g. you are developing locally against a pinned `1.0.0`), clear and reinstall entirely:
-
-```bash
-claude plugin marketplace remove career-agent
-rm -rf ~/.claude/plugins/marketplaces/career-agent ~/.claude/plugins/cache/*career-agent*
-claude plugin marketplace add nextwebb/career-agent
-claude plugin install career-agent@career-agent
-```
-
-Cache locations:
-- `~/.claude/plugins/marketplaces/<name>/` — marketplace clone
-- `~/.claude/plugins/cache/<marketplace>/<plugin>/` — installed plugin
 
 ### PDF generation fails
 
