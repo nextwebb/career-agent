@@ -144,18 +144,23 @@ if (hasErrors) {
 console.log(`
 ${BOLD}Next steps:${RESET}
 
-  1. Edit ${BOLD}profile.json${RESET} with your personal details, experience, and skills.
+  1. Bootstrap your profile from your CV or LinkedIn PDF:
+     ${DIM}claude /setup-profile${RESET}
+     (or paste your CV text directly into Claude Code)
 
-  2. Create a role config:
+  2. Find matching roles:
+     ${DIM}claude /source Germany backend${RESET}
+
+  3. Create a role config:
      ${DIM}claude /new-role https://jobs.example.com/senior-engineer-123${RESET}
 
-  3. Generate your CV:
+  4. Generate your CV:
      ${DIM}claude /generate-cv <role_id>${RESET}
 
-  4. Fill the ATS form:
+  5. Fill the ATS form:
      ${DIM}claude /apply <role_id>${RESET}
 
-  5. Track your pipeline:
+  6. Track your pipeline:
      ${DIM}claude /track${RESET}
 
 ${DIM}Run health check any time: npm run doctor${RESET}

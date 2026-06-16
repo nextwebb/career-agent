@@ -13,7 +13,8 @@
     "profile.example.json"
   ],
   "scripts": {
-    "doctor": "node bin/doctor.js"
+    "doctor": "node bin/doctor.js",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "keywords": ["claude-code", "claude-plugin", "career", "jobs", "ats", "resume", "cv", "automation"],
   "author": "nextwebb",

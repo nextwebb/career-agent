@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/nextwebb/career-agent/workflows/CI/badge.svg)](https://github.com/nextwebb/career-agent/actions/workflows/ci.yml)
 [![Security](https://github.com/nextwebb/career-agent/workflows/Security/badge.svg)](https://github.com/nextwebb/career-agent/actions/workflows/security.yml)
+[![npm](https://img.shields.io/npm/v/@nextwebb/career-agent.svg)](https://www.npmjs.com/package/@nextwebb/career-agent)
+[![npm downloads](https://img.shields.io/npm/dm/@nextwebb/career-agent.svg)](https://www.npmjs.com/package/@nextwebb/career-agent)
+[![Node.js 18+](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -19,6 +22,7 @@ Not a template engine. Not a job tracker. An agent that does the work.
 
 ## What it does
 
+0. **`/setup-profile`** — Build `profile.json` from your CV or LinkedIn PDF — extracts work history, generates 3 CV variants, writes per-job bullets automatically
 1. **`/source`** — Find and verify open roles matching your profile from company career pages
 2. **`/new-role`** — Scaffold a new role config interactively by scraping the JD
 3. **`/generate-cv`** — Build ATS-optimised CV + cover letter PDFs tailored to the role
@@ -31,15 +35,17 @@ Claude never submits on your behalf. That boundary is intentional.
 
 ## Why this is different
 
-| | career-agent | job-application-quality | career-ops |
-|---|---|---|---|
-| Browser form filling | ✅ Greenhouse, Lever, Workable | ❌ | ❌ |
-| Per-role tailored PDF | ✅ | ✅ basic | ❌ |
-| CV variant system | ✅ A/B/C by role type | ❌ | ❌ |
-| Cover letter per role | ✅ | ❌ | ❌ |
-| Human-in-loop handoff | ✅ EEO + Submit | N/A | N/A |
-| Profile data local | ✅ gitignored | varies | varies |
-| Claude Code CLI + desktop | ✅ both | ❌ | ❌ |
+| | career-agent | career-ops |
+|---|---|---|
+| Profile bootstrap from CV/LinkedIn | ✅ `/setup-profile` | ❌ manual markdown file |
+| CV variant system (A/B/C by audience) | ✅ per-role | ❌ single template |
+| Per-role cover letter PDF | ✅ | ✅ `/cover` |
+| Browser form filling | ✅ Greenhouse, Lever, Workable | ✅ `/apply` |
+| ATS-safe single-column PDF | ✅ reportlab | ✅ HTML→PDF |
+| Human-in-loop handoff | ✅ EEO + Submit only | ✅ |
+| Profile data local + gitignored | ✅ | ✅ |
+| npx one-command install | ✅ | ✅ |
+| Claude Code CLI + desktop | ✅ both | ✅ + Gemini/OpenCode |
 
 ---
 
@@ -65,13 +71,18 @@ All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_P
 
 ## Install as Plugin
 
-### Option 1: Via Marketplace (Recommended)
+### Option 1: One command (Recommended)
 
 ```bash
-# Add the marketplace
-claude plugin marketplace add nextwebb/career-agent
+npx @nextwebb/career-agent
+```
 
-# Install the plugin
+This checks Python 3, installs `reportlab`, registers the marketplace, installs the plugin, and creates `profile.json`. Node 18+ required.
+
+### Option 2: Via Marketplace
+
+```bash
+claude plugin marketplace add nextwebb/career-agent
 claude plugin install career-agent@career-agent
 ```
 
@@ -82,28 +93,16 @@ Or in Claude Code:
 /plugin install career-agent@career-agent
 ```
 
-### Option 2: Direct Install
+### Option 3: Direct Install
 
 ```bash
 claude plugin install github:nextwebb/career-agent
 ```
 
-Or:
+After installation, bootstrap your profile from your CV or LinkedIn PDF:
 
 ```
-/plugin install github:nextwebb/career-agent
-```
-
-After installation, complete setup:
-
-```bash
-cp profile.example.json profile.json      # fill in your details
-pip install reportlab
-```
-
-Then use the skills:
-
-```
+/setup-profile               # Build profile.json from your CV/LinkedIn PDF
 /source Germany backend      # Find matching roles
 /new-role                    # Create role config
 /generate-cv <role_id>       # Generate PDFs
@@ -121,18 +120,14 @@ cd career-agent
 
 # Install dependencies and verify
 pip install -r requirements.txt
-python -c "import reportlab; print('✅ reportlab installed successfully')"
-
-# Set up your profile
-cp profile.example.json profile.json      # then fill in your details
-
-# Create your first role config
-cp roles.example/example_role.json roles/my_role.json  # then fill in the role
+python -c "import reportlab; print('reportlab installed successfully')"
 ```
 
 Then in Claude Code (CLI or desktop app):
 
 ```
+/setup-profile               # Build profile.json from your CV or LinkedIn PDF
+/source Germany backend      # Find matching roles
 /new-role                    # Interactively create a role config
 /generate-cv my_role         # Generate tailored PDFs
 /apply my_role               # Fill the ATS form
@@ -143,7 +138,15 @@ Then in Claude Code (CLI or desktop app):
 
 ## Profile setup
 
-`profile.json` (gitignored — never committed) holds your personal data:
+The fastest way is to let the agent build it for you:
+
+```
+/setup-profile               # Upload or paste your CV/LinkedIn PDF
+```
+
+Claude extracts your work history, infers three CV variants (AI/LLM, Data Platform, Backend), and writes per-job bullets four ways — ready for `/generate-cv` immediately.
+
+Or create it manually: `profile.json` (gitignored — never committed) holds your personal data:
 
 ```json
 {
@@ -163,7 +166,7 @@ Then in Claude Code (CLI or desktop app):
 }
 ```
 
-See `profile.example.json` for the full schema.
+See `profile.example.json` for the full schema including `variants`, `impact_statements`, and per-job bullet sets.
 
 ---
 
@@ -273,6 +276,7 @@ career-agent/
 ├── .gitignore
 │
 ├── skills/
+│   ├── setup-profile/SKILL.md       # Bootstrap profile.json from CV or LinkedIn PDF
 │   ├── source/SKILL.md              # Find + verify open roles from your profile
 │   ├── new-role/SKILL.md            # Scaffold a new role JSON interactively
 │   ├── generate-cv/SKILL.md         # Build PDF from profile + role config
