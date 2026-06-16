@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Blocks direct pushes to main. Use a PR instead.
+while read local_ref local_sha remote_ref remote_sha; do
+  if [[ "$remote_ref" == "refs/heads/main" ]]; then
+    echo "ERROR: Direct push to main is not allowed."
+    echo "       Open a pull request and merge via GitHub."
+    exit 1
+  fi
+done
+exit 0
