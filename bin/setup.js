@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * setup.js — career-agent one-command installer
+ * setup.js — career-agent prerequisites check
  *
  * Run via: npx @nextwebb/career-agent
  *
@@ -8,9 +8,8 @@
  *   1. Detect Python 3.10+
  *   2. Check/install reportlab
  *   3. Check Claude Code CLI
- *   4. Register marketplace + install plugin
- *   5. Copy profile.example.json → ./profile.json (if missing)
- *   6. Print next steps
+ *   4. Copy profile.example.json → ./profile.json (if missing)
+ *   5. Print next steps
  */
 
 "use strict";
@@ -37,7 +36,7 @@ function run(cmd, args, opts = {}) {
   return spawnSync(cmd, args, { encoding: "utf8", shell: false, ...opts });
 }
 
-// ─── Step 1: Detect Python 3.10+ ──────────────────────────────────────────────
+// ─── Step 1: Detect Python 3.10+ ─────────────────────────────────────────────
 header("Checking prerequisites…");
 
 let pythonBin = null;
@@ -95,33 +94,7 @@ if (hasErrors) {
   process.exit(1);
 }
 
-// ─── Step 4: Register marketplace + install plugin ───────────────────────────
-header("Installing career-agent plugin…");
-
-const marketplaceAdd = run("claude", [
-  "plugin",
-  "marketplace",
-  "add",
-  "nextwebb/career-agent",
-]);
-if (marketplaceAdd.status === 0) {
-  ok("Marketplace source registered");
-} else {
-  // Non-fatal: may already be registered
-  dim("Marketplace source may already be registered — continuing.");
-}
-
-const pluginInstall = run("claude", ["plugin", "install", "career-agent@career-agent"]);
-if (pluginInstall.status === 0) {
-  ok("Plugin installed: career-agent");
-} else {
-  fail("Plugin install failed.");
-  dim((pluginInstall.stderr || pluginInstall.stdout || "").trim());
-  dim("Try manually: claude plugin install career-agent@career-agent");
-  hasErrors = true;
-}
-
-// ─── Step 5: Copy profile.example.json ───────────────────────────────────────
+// ─── Step 4: Copy profile.example.json ───────────────────────────────────────
 header("Setting up profile…");
 
 const profileDest = path.join(process.cwd(), "profile.json");
@@ -136,34 +109,34 @@ if (fs.existsSync(profileDest)) {
   dim("profile.example.json not found in package — create profile.json manually.");
 }
 
-// ─── Step 6: Next steps ──────────────────────────────────────────────────────
+// ─── Step 5: Next steps ──────────────────────────────────────────────────────
 console.log("");
 if (hasErrors) {
   console.log(`${RED}Setup completed with errors. Fix the issues above before proceeding.${RESET}`);
 } else {
-  console.log(`${GREEN}${BOLD}career-agent is ready!${RESET}`);
+  console.log(`${GREEN}${BOLD}Prerequisites met.${RESET}`);
 }
 console.log(`
 ${BOLD}Next steps:${RESET}
 
-  1. Bootstrap your profile from your CV or LinkedIn PDF:
-     ${DIM}claude /setup-profile${RESET}
-     (or paste your CV text directly into Claude Code)
+  1. Install the plugin in Claude Code:
+     Open Claude Code desktop → Settings → Plugins → Install from folder
+     Select the directory where you cloned: https://github.com/nextwebb/career-agent
 
-  2. Find matching roles:
-     ${DIM}claude /source Germany backend${RESET}
+  2. Bootstrap your profile from your CV or LinkedIn PDF:
+     ${DIM}/setup-profile${RESET}
 
-  3. Create a role config:
-     ${DIM}claude /new-role https://jobs.example.com/senior-engineer-123${RESET}
+  3. Find matching roles:
+     ${DIM}/source Germany backend${RESET}
 
-  4. Generate your CV:
-     ${DIM}claude /generate-cv <role_id>${RESET}
+  4. Create a role config:
+     ${DIM}/new-role https://jobs.example.com/senior-engineer-123${RESET}
 
-  5. Fill the ATS form:
-     ${DIM}claude /apply <role_id>${RESET}
+  5. Generate your CV:
+     ${DIM}/generate-cv <role_id>${RESET}
 
-  6. Track your pipeline:
-     ${DIM}claude /track${RESET}
+  6. Fill the ATS form:
+     ${DIM}/apply <role_id>${RESET}
 
 ${DIM}Docs & issues: https://github.com/nextwebb/career-agent${RESET}
 `);
