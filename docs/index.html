@@ -419,11 +419,11 @@
           <h3 class="font-display text-h2-mobile font-bold text-on-surface mb-3">Pipeline Tracker</h3>
           <p class="font-body text-body text-on-surface-variant mb-5">View your application pipeline, update statuses, add notes. Stored in <code class="font-mono text-label text-safety-indigo">tracker.json</code> (gitignored &mdash; stays local).</p>
           <div class="glass rounded-lg border border-obsidian-edge p-4 font-mono text-terminal text-on-surface mb-4">
-            <span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/track</span> <span class="text-on-surface-variant">stripe_backend_2026 "phone_screen"</span>
+            <span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/track</span> <span class="text-on-surface-variant">stripe_backend_2026 "screen"</span>
           </div>
           <div class="flex gap-3 p-4 bg-obsidian-surface rounded-lg border border-obsidian-edge">
             <span class="material-symbols-outlined text-safety-indigo text-[18px] mt-0.5 shrink-0">info</span>
-            <p class="font-body text-body-sm text-on-surface-variant">Statuses: applied, phone_screen, technical, offer, rejected, withdrawn. Run <code class="font-mono text-safety-indigo">/track</code> with no args to view the full pipeline.</p>
+            <p class="font-body text-body-sm text-on-surface-variant">Statuses: draft, applied, screen, interview, offer, rejected, withdrawn. Run <code class="font-mono text-safety-indigo">/track</code> with no args to view the full pipeline.</p>
           </div>
         </div>
 
@@ -554,7 +554,7 @@
           <span class="material-symbols-outlined faq-icon text-on-surface-variant shrink-0">add</span>
         </summary>
         <div class="px-6 pb-5 font-body text-body-sm text-on-surface-variant">
-          Python 3.10+ with <code class="font-mono text-label text-safety-indigo">reportlab</code> for PDF generation (<code class="font-mono text-label text-safety-indigo">pip install reportlab</code>). Node 18+ if you use the <code class="font-mono text-label text-safety-indigo">npx</code> installer. That's it &mdash; no external APIs, no browser extension required for CV generation.
+          Python 3.10+ with <code class="font-mono text-label text-safety-indigo">reportlab</code> for PDF generation (<code class="font-mono text-label text-safety-indigo">pip install reportlab</code>). Node 18+ if you use the <code class="font-mono text-label text-safety-indigo">npx</code> installer. For form filling via <code class="font-mono text-label text-safety-indigo">/apply</code>, you also need the <strong>Claude in Chrome extension</strong> &mdash; all DOM-based ATS automation runs through it. CV generation alone does not require the extension.
         </div>
       </details>
 
