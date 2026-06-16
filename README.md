@@ -1,12 +1,15 @@
 # career-agent
 
+[![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-000?style=flat&logo=anthropic&logoColor=white)](https://claude.ai/code)
 [![CI](https://github.com/nextwebb/career-agent/workflows/CI/badge.svg)](https://github.com/nextwebb/career-agent/actions/workflows/ci.yml)
 [![Security](https://github.com/nextwebb/career-agent/workflows/Security/badge.svg)](https://github.com/nextwebb/career-agent/actions/workflows/security.yml)
-[![npm](https://img.shields.io/npm/v/@nextwebb/career-agent.svg)](https://www.npmjs.com/package/@nextwebb/career-agent)
-[![npm downloads](https://img.shields.io/npm/dm/@nextwebb/career-agent.svg)](https://www.npmjs.com/package/@nextwebb/career-agent)
-[![Node.js 18+](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org/)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm](https://img.shields.io/npm/v/@nextwebb/career-agent?style=flat&logo=npm)](https://www.npmjs.com/package/@nextwebb/career-agent)
+[![npm downloads](https://img.shields.io/npm/dm/@nextwebb/career-agent?style=flat&logo=npm&label=downloads)](https://www.npmjs.com/package/@nextwebb/career-agent)
+[![GitHub Stars](https://img.shields.io/github/stars/nextwebb/career-agent?style=flat&logo=github)](https://github.com/nextwebb/career-agent/stargazers)
+[![Node.js 18+](https://img.shields.io/badge/node-18+-339933?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![Conventional Commits](https://img.shields.io/badge/Conventional_Commits-1.0.0-FE5196?style=flat&logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat)](https://opensource.org/licenses/MIT)
 
 **Agentic job application workflow for Claude Code.**
 
