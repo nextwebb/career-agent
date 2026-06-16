@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Delegates to the pre-commit framework when available.
+# Required because git config core.hooksPath .githooks redirects Git away
+# from .git/hooks, so pre-commit hooks installed there would be bypassed.
+# Running `pre-commit install` after setting core.hooksPath installs here.
+if command -v pre-commit &>/dev/null; then
+  exec pre-commit run --hook-stage pre-commit
+fi
+# pre-commit not installed locally — CI enforces the same checks on push.
+exit 0
