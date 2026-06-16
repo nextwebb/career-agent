@@ -305,6 +305,21 @@ career-agent/
 
 ## Troubleshooting
 
+### `npx @nextwebb/career-agent` fails with "career-agent: command not found"
+
+This is usually a stale shell hash from a prior global install. Clear it and retry:
+
+```bash
+hash -r                        # zsh / bash: clears the command hash table
+npx @nextwebb/career-agent
+```
+
+If that doesn't help, use the explicit form that bypasses hash resolution:
+
+```bash
+npx --package=@nextwebb/career-agent career-agent
+```
+
 ### Plugin installation fails with schema errors
 
 ```
