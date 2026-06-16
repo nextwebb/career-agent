@@ -163,5 +163,5 @@ ${BOLD}Next steps:${RESET}
   6. Track your pipeline:
      ${DIM}claude /track${RESET}
 
-${DIM}Run health check any time: npm run doctor${RESET}
+${DIM}Docs & issues: https://github.com/nextwebb/career-agent${RESET}
 `);
