@@ -5,7 +5,7 @@
  * Run via: npx @nextwebb/career-agent
  *
  * Steps:
- *   1. Detect Python 3
+ *   1. Detect Python 3.10+
  *   2. Check/install reportlab
  *   3. Check Claude Code CLI
  *   4. Register marketplace + install plugin
@@ -37,16 +37,18 @@ function run(cmd, args, opts = {}) {
   return spawnSync(cmd, args, { encoding: "utf8", shell: false, ...opts });
 }
 
-// ─── Step 1: Detect Python 3 ─────────────────────────────────────────────────
+// ─── Step 1: Detect Python 3.10+ ──────────────────────────────────────────────
 header("Checking prerequisites…");
 
 let pythonBin = null;
-for (const candidate of ["python3", "python"]) {
+for (const candidate of ["python3", "python3.12", "python3.11", "python3.10", "python"]) {
   const result = run(candidate, ["--version"]);
   if (result.status === 0) {
     const versionLine = (result.stdout || result.stderr || "").trim();
     const match = versionLine.match(/Python (\d+)\.(\d+)/);
-    if (match && parseInt(match[1], 10) >= 3) {
+    const major = match ? parseInt(match[1], 10) : 0;
+    const minor = match ? parseInt(match[2], 10) : 0;
+    if (major > 3 || (major === 3 && minor >= 10)) {
       pythonBin = candidate;
       ok(`Python found: ${versionLine}`);
       break;
@@ -55,8 +57,8 @@ for (const candidate of ["python3", "python"]) {
 }
 
 if (!pythonBin) {
-  fail("Python 3 not found.");
-  dim("Install Python 3 from https://python.org/downloads and re-run this setup.");
+  fail("Python 3.10+ not found.");
+  dim("Install Python 3.10+ from https://python.org/downloads and re-run this setup.");
   process.exit(1);
 }
 

@@ -9,8 +9,12 @@ Run: pytest tests/smoke_test.py -v
 """
 
 import json
+import os
 import py_compile
+import shutil
+import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -56,6 +60,115 @@ class TestProjectStructure:
         for file in example_files:
             assert file.exists(), f"Missing example file: {file}"
             assert file.is_file(), f"Path exists but is not a file: {file}"
+
+
+class TestSetupInstaller:
+    """Validate installer prerequisite checks."""
+
+    def _write_executable(self, path, content):
+        path.write_text(textwrap.dedent(content), encoding="utf-8")
+        path.chmod(0o755)
+
+    def _write_python_shim(self, path, python_version):
+        python_shim = f"""\
+            #!/usr/bin/env sh
+            if [ "$1" = "--version" ]; then
+              echo "Python {python_version}"
+              exit 0
+            fi
+            if [ "$1" = "-c" ]; then
+              exit 0
+            fi
+            exit 0
+        """
+        self._write_executable(path, python_shim)
+
+    def _write_missing_command_shim(self, path):
+        self._write_executable(
+            path,
+            """\
+            #!/usr/bin/env sh
+            exit 127
+            """,
+        )
+
+    def _run_setup_with_python(self, tmp_path, python_version, versioned_python=None):
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+
+        versioned_python = versioned_python or {}
+        self._write_python_shim(bin_dir / "python3", python_version)
+        self._write_python_shim(bin_dir / "python", python_version)
+        for command in ["python3.12", "python3.11", "python3.10"]:
+            if command not in versioned_python:
+                self._write_missing_command_shim(bin_dir / command)
+        for command, version in versioned_python.items():
+            self._write_python_shim(bin_dir / command, version)
+
+        self._write_executable(
+            bin_dir / "claude",
+            """\
+            #!/usr/bin/env sh
+            if [ "$1" = "--version" ]; then
+              echo "2.1.153 (Claude Code)"
+              exit 0
+            fi
+            exit 0
+            """,
+        )
+
+        node_bin = shutil.which("node")
+        assert node_bin, "node is required for installer smoke tests"
+
+        env = {
+            **os.environ,
+            "PATH": f"{bin_dir}{os.pathsep}/bin",
+            "HOME": str(tmp_path / "home"),
+        }
+        env["HOME"] and Path(env["HOME"]).mkdir()
+
+        return subprocess.run(
+            [node_bin, str(ROOT / "bin" / "setup.js")],
+            cwd=tmp_path,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    def test_setup_rejects_python_39(self, tmp_path):
+        """Installer should enforce documented Python 3.10+ minimum."""
+        result = self._run_setup_with_python(tmp_path, "3.9.6")
+
+        output = result.stdout + result.stderr
+        assert result.returncode == 1
+        assert "Python 3.10+ not found." in output
+        assert not (tmp_path / "profile.json").exists()
+
+    @pytest.mark.parametrize("python_version", ["3.10.14", "3.11.13", "3.12.11"])
+    def test_setup_accepts_supported_python_versions(self, tmp_path, python_version):
+        """Installer should continue for documented supported Python versions."""
+        result = self._run_setup_with_python(tmp_path, python_version)
+
+        output = result.stdout + result.stderr
+        assert result.returncode == 0, output
+        assert f"Python found: Python {python_version}" in output
+        assert "career-agent is ready!" in output
+        assert (tmp_path / "profile.json").exists()
+
+    def test_setup_accepts_versioned_python_when_default_is_unsupported(self, tmp_path):
+        """Installer should try supported versioned Python executables before failing."""
+        result = self._run_setup_with_python(
+            tmp_path,
+            "3.9.6",
+            versioned_python={"python3.11": "3.11.13"},
+        )
+
+        output = result.stdout + result.stderr
+        assert result.returncode == 0, output
+        assert "Python found: Python 3.11.13" in output
+        assert "career-agent is ready!" in output
+        assert (tmp_path / "profile.json").exists()
 
 
 class TestPythonSyntax:
