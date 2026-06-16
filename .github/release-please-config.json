@@ -1,0 +1,23 @@
+{
+  "release-type": "node",
+  "include-component-in-tag": false,
+  "packages": {
+    ".": {
+      "changelog-sections": [
+        { "type": "feat",  "section": "Features" },
+        { "type": "fix",   "section": "Fixes" },
+        { "type": "perf",  "section": "Performance" },
+        { "type": "docs",  "section": "Documentation" },
+        { "type": "chore", "section": "Miscellaneous", "hidden": true },
+        { "type": "ci",    "section": "Miscellaneous", "hidden": true }
+      ],
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "plugin.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  }
+}
