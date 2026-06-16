@@ -78,33 +78,11 @@ All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_P
 
 ## Install as Plugin
 
-### Option 1: One command (Recommended)
-
 ```bash
 npx @nextwebb/career-agent
 ```
 
-This checks Python 3, installs `reportlab`, registers the marketplace, installs the plugin, and creates `profile.json`. Node 18+ required.
-
-### Option 2: Via Marketplace
-
-```bash
-claude plugin marketplace add nextwebb/career-agent
-claude plugin install career-agent@career-agent
-```
-
-Or in Claude Code:
-
-```
-/plugin marketplace add nextwebb/career-agent
-/plugin install career-agent@career-agent
-```
-
-### Option 3: Direct Install
-
-```bash
-claude plugin install github:nextwebb/career-agent
-```
+Checks Python 3, installs `reportlab`, installs the plugin, and creates `profile.json`. Node 18+ required.
 
 After installation, bootstrap your profile from your CV or LinkedIn PDF:
 
@@ -238,24 +216,7 @@ The role config picks a variant. The CV builder selects the matching experience 
 
 1. Open Claude Code desktop → Settings → Plugins
 2. Click **Install from folder** → select this repo root
-3. Skills appear as `/source`, `/new-role`, `/generate-cv`, `/apply`, `/track`
-
-### Claude Code (CLI)
-
-```bash
-# In your project or home directory
-cp -r skills ~/.claude/skills/career-agent
-```
-
-Then in any Claude Code session:
-```
-/career-agent:apply my_role
-```
-
-Or add to your project's `CLAUDE.md`:
-```
-@~/.claude/skills/career-agent/apply/SKILL.md
-```
+3. Skills appear as `/setup-profile`, `/source`, `/new-role`, `/generate-cv`, `/apply`, `/track`
 
 ---
 
