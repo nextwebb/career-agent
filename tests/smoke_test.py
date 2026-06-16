@@ -109,7 +109,7 @@ class TestSetupInstaller:
 
         env = {
             **os.environ,
-            "PATH": f"{bin_dir}{os.pathsep}/usr/bin{os.pathsep}/bin",
+            "PATH": f"{bin_dir}{os.pathsep}/bin",
             "HOME": str(tmp_path / "home"),
         }
         env["HOME"] and Path(env["HOME"]).mkdir()
