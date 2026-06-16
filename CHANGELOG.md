@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.1] — 2026-06-16
+
+### Fixes
+- Enforce the documented Python 3.10+ minimum in the npm installer.
+- Probe versioned Python executables such as `python3.12`, `python3.11`, and `python3.10` before failing.
+
 ## [1.0.0] — 2026-06-15
 
 ### Features
