@@ -84,15 +84,18 @@ All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_P
 npx @nextwebb/career-agent
 ```
 
-Checks Python 3.10+, installs `reportlab`, and creates `profile.json`. Node 18+ required.
+Checks Python 3.10+, installs `reportlab`, verifies the Claude Code CLI is available, and creates `profile.json`. Node 18+ required. The Claude Code CLI must be on your `PATH` — if you use the desktop app only, [install the CLI](https://claude.ai/code) first.
 
 ### Install the plugin
 
-Open Claude Code desktop → Settings → Plugins → **Install from folder** → select the cloned repo root.
+First clone the repo:
 
 ```bash
 git clone https://github.com/nextwebb/career-agent
+cd career-agent
 ```
+
+Then open Claude Code desktop → Settings → Plugins → **Install from folder** → select the `career-agent` directory.
 
 Then bootstrap your profile:
 
