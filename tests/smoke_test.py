@@ -83,13 +83,26 @@ class TestSetupInstaller:
         """
         self._write_executable(path, python_shim)
 
+    def _write_missing_command_shim(self, path):
+        self._write_executable(
+            path,
+            """\
+            #!/usr/bin/env sh
+            exit 127
+            """,
+        )
+
     def _run_setup_with_python(self, tmp_path, python_version, versioned_python=None):
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir()
 
+        versioned_python = versioned_python or {}
         self._write_python_shim(bin_dir / "python3", python_version)
         self._write_python_shim(bin_dir / "python", python_version)
-        for command, version in (versioned_python or {}).items():
+        for command in ["python3.12", "python3.11", "python3.10"]:
+            if command not in versioned_python:
+                self._write_missing_command_shim(bin_dir / command)
+        for command, version in versioned_python.items():
             self._write_python_shim(bin_dir / command, version)
 
         self._write_executable(
