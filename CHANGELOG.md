@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5](https://github.com/nextwebb/career-agent/compare/v1.1.4...v1.1.5) (2026-06-17)
+
+
+### Fixes
+
+* **ci:** update actions for Node 24 runtime ([#55](https://github.com/nextwebb/career-agent/issues/55)) ([18f304d](https://github.com/nextwebb/career-agent/commit/18f304de0f3cd7ec1194fdc4f4dd8cb932097f11))
+
 ## [1.1.4](https://github.com/nextwebb/career-agent/compare/v1.1.3...v1.1.4) (2026-06-16)
 
 
