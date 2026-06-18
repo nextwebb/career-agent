@@ -1,4 +1,6 @@
-# Auto-request Claude and Copilot code review on every PR.
-# Claude reviews via the claude-review.yml workflow (anthropic-ai/claude-code-action).
-# Copilot review requires "Copilot code review" to be enabled in repo Settings → Copilot.
-* @nextwebb @copilot @chatgpt-codex-connector
+# Verified repository owner for PR review routing.
+#
+# AI review tools should be requested through their supported GitHub integrations
+# or workflows, not through CODEOWNERS bot handles unless GitHub confirms those
+# owners exist and have write access to this repository.
+* @nextwebb
