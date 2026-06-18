@@ -16,6 +16,7 @@
   ],
   "scripts": {
     "doctor": "node bin/doctor.js",
+    "check:codeowners": "node scripts/check-codeowners.js",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "keywords": [
