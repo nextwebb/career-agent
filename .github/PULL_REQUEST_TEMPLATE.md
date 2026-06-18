@@ -7,6 +7,7 @@
 ## Checklist
 - [ ] CI passes locally: `pytest tests/ && ruff check . && mypy src/`
 - [ ] Conventional commit messages (`feat:`, `fix:`, `docs:`, `chore:`)
+- [ ] PR title is a release-parseable Conventional Commit with no `[codex]` or other agent prefix
 - [ ] SKILL.md updated if skill behaviour changed
 - [ ] Review path verified (valid CODEOWNERS, branch protection, or documented manual review)
 - [ ] ENGINEERING_PRINCIPLES.md followed

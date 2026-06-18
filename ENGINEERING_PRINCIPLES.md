@@ -275,6 +275,9 @@ test: add comprehensive smoke test suite
 - No period at end
 - Keep under 72 characters
 - Include scope when helpful: `fix(cv_builder): handle missing education field`
+- PR titles and merge subjects must also use this format because release automation parses commits on `main`.
+- Branch names should follow the same type-first convention, for example `docs/install-paths` or `fix/pdf-link-validation`.
+- Do not use `[codex]`, `agent:`, or similar metadata in branch names, PR titles, or merge subjects.
 
 ---
 
