@@ -44,3 +44,8 @@ branch protection or repository policy names as required. If an external service
 is expected to gate merges, configure it to create a concrete check run with logs
 and a terminal conclusion. If it is not expected to gate merges and continues to
 emit empty queued suites, remove or disable the stale integration where possible.
+
+Post-merge validation reports should list required GitHub Actions gates and
+relevant local commands under passed or failed validation. Empty external app
+suites belong in a separate residual-notes section unless they produce a named
+required check run.

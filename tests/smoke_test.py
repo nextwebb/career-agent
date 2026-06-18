@@ -561,6 +561,132 @@ class TestSKILLMarkdown:
         assert result.returncode == 0, result.stdout + result.stderr
 
 
+class TestPublicContactPolicy:
+    """Validate the public metadata/doc contact policy enforced by check-package."""
+
+    def _copy_repo_for_package_check(self, tmp_path):
+        repo = tmp_path / "repo"
+        shutil.copytree(
+            ROOT,
+            repo,
+            ignore=shutil.ignore_patterns(
+                ".git",
+                ".mypy_cache",
+                ".pytest_cache",
+                ".ruff_cache",
+                "__pycache__",
+                "build",
+                "dist",
+                "node_modules",
+                "*.pyc",
+            ),
+        )
+        return repo
+
+    def _run_check_package(self, repo):
+        node_bin = shutil.which("node")
+        npm_bin = shutil.which("npm")
+        if not node_bin or not npm_bin:
+            pytest.skip("node and npm are required for package policy validation")
+
+        return subprocess.run(
+            [node_bin, str(repo / "scripts" / "check-package.js")],
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    def test_check_package_rejects_personal_security_email(self, tmp_path):
+        """SECURITY.md must use private GitHub reporting, not a direct maintainer email."""
+        repo = self._copy_repo_for_package_check(tmp_path)
+        security = repo / "SECURITY.md"
+        security.write_text(
+            "\n".join(
+                [
+                    "# Security Policy",
+                    "",
+                    "## Reporting a Vulnerability",
+                    "",
+                    "Email: security.contact@gmail.com",
+                    "",
+                    "Response: within 72 hours",
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+        result = self._run_check_package(repo)
+        output = result.stdout + result.stderr
+
+        assert result.returncode != 0
+        assert "Public metadata/docs contain direct email contact(s)." in output
+        assert "SECURITY.md:" in output
+
+    def test_check_package_scans_packaged_plugin_docs(self, tmp_path):
+        """The contact scan should include public docs discovered through npm pack."""
+        repo = self._copy_repo_for_package_check(tmp_path)
+        plugin_readme = repo / ".claude-plugin" / "README.md"
+        plugin_readme.write_text(
+            plugin_readme.read_text(encoding="utf-8")
+            + "\n\nSecurity contact: maintainer.person@proton.me\n",
+            encoding="utf-8",
+        )
+
+        result = self._run_check_package(repo)
+        output = result.stdout + result.stderr
+
+        assert result.returncode != 0
+        assert ".claude-plugin/README.md:" in output
+
+    def test_check_package_ignores_local_private_data_areas(self, tmp_path):
+        """Local-only career data may contain applicant emails and must stay out of public scans."""
+        repo = self._copy_repo_for_package_check(tmp_path)
+        (repo / "profile.json").write_text('{"email": "applicant@gmail.com"}', encoding="utf-8")
+        (repo / "tracker.json").write_text('{"contact": "recruiter@company.com"}', encoding="utf-8")
+        (repo / "roles" / "private.json").write_text(
+            '{"recruiter_email": "recruiter@company.com"}',
+            encoding="utf-8",
+        )
+        (repo / "generated" / "note.txt").write_text(
+            "Application contact: applicant@gmail.com",
+            encoding="utf-8",
+        )
+
+        result = self._run_check_package(repo)
+
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    def test_validation_policy_documents_required_external_suite_distinction(self):
+        """Post-merge reports must distinguish empty app suites from required gates."""
+        content = (ROOT / "docs" / "validation-policy.md").read_text(encoding="utf-8")
+        normalized_content = " ".join(content.split())
+
+        required_policy_terms = [
+            "zero check runs",
+            "not evidence of either success or failure",
+            "do not block a green post-merge validation claim",
+            "explicitly made that app a required check",
+            "concrete check run with logs",
+            "terminal conclusion",
+        ]
+        for term in required_policy_terms:
+            assert term in normalized_content, f"validation policy missing invariant: {term}"
+
+        required_gates = [
+            "CI / All Checks Passed",
+            "Security / CodeQL Analysis",
+            "Security / Dependency Vulnerability Check",
+            "Security / Trivy Filesystem Scan",
+            "Security / Trivy Secret Scan",
+            "Security / Security Summary",
+            "Deploy GitHub Pages / Deploy docs/ to GitHub Pages",
+            "Release Please / release-please",
+        ]
+        for gate in required_gates:
+            assert gate in content, f"validation policy missing required gate: {gate}"
+
+
 class TestPackagedScriptWorkspace:
     """Installed scripts should operate on the caller's workspace data."""
 
