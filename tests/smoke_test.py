@@ -326,13 +326,13 @@ class TestPythonSyntax:
         try:
             import cl_builder
             import cv_builder
-            import quality_gates
             import tracker
+            from quality_gates import run_quality_gates
 
             # Check key functions exist
             assert hasattr(cv_builder, "build_cv"), "Missing build_cv function"
             assert hasattr(cl_builder, "build_cover_letter"), "Missing build_cover_letter"
-            assert hasattr(quality_gates, "run_quality_gates"), "Missing run_quality_gates"
+            assert callable(run_quality_gates), "Missing run_quality_gates"
             assert hasattr(tracker, "load"), "Missing tracker.load function"
         except ImportError as e:
             pytest.fail(f"Failed to import core modules: {e}")
@@ -1153,6 +1153,7 @@ class TestRequirementsTxt:
 
         content = req_file.read_text(encoding="utf-8")
         assert "reportlab" in content, "Missing reportlab dependency"
+        assert "pypdf" in content, "Missing pypdf dependency"
 
     def test_requirements_format(self):
         """Verify requirements.txt has proper version pinning."""

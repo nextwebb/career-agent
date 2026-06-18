@@ -104,7 +104,7 @@ Codex support means the package includes `.codex-plugin/plugin.json`, Codex-comp
 ### Setup check
 
 ```bash
-# Check Python 3.10+, reportlab, Claude/Codex host availability, and create profile.json
+# Check Python 3.10+, PDF dependencies, Claude/Codex host availability, and create profile.json
 npx @nextwebb/career-agent
 ```
 
@@ -263,7 +263,7 @@ career-agent/
 ├── plugin.json                      # Legacy/shared plugin manifest
 ├── .claude-plugin/plugin.json       # Claude Code plugin manifest
 ├── .codex-plugin/plugin.json        # Codex plugin manifest
-├── requirements.txt                 # pip install reportlab
+├── requirements.txt                 # pip install reportlab and pypdf
 ├── profile.example.json             # Copy → profile.json (gitignored)
 ├── .gitignore
 │
@@ -311,10 +311,10 @@ npx --package=@nextwebb/career-agent career-agent
 
 ### PDF generation fails
 
-Ensure `reportlab` is installed and use the correct flag syntax:
+Ensure `reportlab` and `pypdf` are installed and use the correct flag syntax:
 
 ```bash
-pip install reportlab
+pip install -r requirements.txt
 python src/generate_application.py --role <role_id>   # correct
 python src/generate_application.py <role_id>           # wrong: positional args not accepted
 ```
