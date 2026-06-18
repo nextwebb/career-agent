@@ -21,10 +21,10 @@ GitHub Actions gates are:
 
 - `CI / All Checks Passed`
 - `Security / CodeQL Analysis`
-- `Security / Dependency Vulnerability Check`
-- `Security / Trivy Filesystem Scan`
-- `Security / Trivy Secret Scan`
-- `Security / Security Summary`
+- `Security / Dependency Vulnerability Scan`
+- `Security / Secret Detection`
+- `Security / Filesystem Security Scan`
+- `Security / Generate SBOM`
 - `Deploy GitHub Pages / Deploy docs/ to GitHub Pages`
 - `Release Please / release-please`
 
