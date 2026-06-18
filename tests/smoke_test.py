@@ -43,6 +43,28 @@ def parse_skill_frontmatter(skill_file: Path) -> dict[str, str]:
     return metadata
 
 
+def read_markdown_table_after_heading(content: str, heading: str) -> list[dict[str, str]]:
+    """Return the first Markdown table after a heading as row dictionaries."""
+    lines = content.splitlines()
+    heading_index = lines.index(heading)
+    table_start = next(i for i in range(heading_index + 1, len(lines)) if lines[i].startswith("|"))
+    headers = [cell.strip() for cell in lines[table_start].strip("|").split("|")]
+    rows: list[dict[str, str]] = []
+
+    for line in lines[table_start + 2 :]:
+        if not line.startswith("|"):
+            break
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        assert len(cells) == len(headers), f"Malformed table row: {line}"
+        rows.append(dict(zip(headers, cells, strict=True)))
+
+    return rows
+
+
+def normalize_whitespace(content: str) -> str:
+    return " ".join(content.split())
+
+
 class TestProjectStructure:
     """Validate directory structure and required files exist."""
 
@@ -524,6 +546,101 @@ class TestSKILLMarkdown:
 
         assert classifier_index < fill_index
         assert "Any other non-sensitive personal fields visible after classification" in content
+
+    def test_apply_codex_chrome_verification_matrix_present(self):
+        """Codex Chrome /apply support should be tied to structured evidence."""
+        doc = ROOT / "docs" / "apply-codex-chrome-verification.md"
+        assert doc.exists(), "Missing Codex Chrome /apply verification matrix"
+
+        content = doc.read_text(encoding="utf-8")
+        rows = read_markdown_table_after_heading(content, "## Support Status")
+        rows_by_case = {row["ATS case"]: row for row in rows}
+
+        required_cases = {
+            "Greenhouse direct",
+            "Greenhouse embed direct top-level URL",
+            "Greenhouse EU domain",
+            "Lever",
+            "Workable",
+            "Unknown or unsupported ATS",
+            "Safety boundaries",
+        }
+        assert required_cases <= rows_by_case.keys()
+
+        live_ats_cases = [
+            "Greenhouse direct",
+            "Greenhouse embed direct top-level URL",
+            "Greenhouse EU domain",
+            "Lever",
+            "Workable",
+        ]
+        for case in live_ats_cases:
+            row = rows_by_case[case]
+            assert row["Codex Chrome status"] == "Experimental"
+            assert row["Evidence status"] == "Live page observed 2026-06-18; no upload/fill"
+            assert "Manual fallback" in row["Stable support decision"]
+
+        unsupported = rows_by_case["Unknown or unsupported ATS"]
+        assert unsupported["Codex Chrome status"] == "Unsupported for automation"
+        assert "Live unsupported ATS page observed 2026-06-18" in unsupported["Evidence status"]
+        assert "Do not automate" in unsupported["Stable support decision"]
+
+        safety = rows_by_case["Safety boundaries"]
+        assert safety["Codex Chrome status"] == "Required stop boundary"
+        assert "Live pages observed 2026-06-18" in safety["Evidence status"]
+        for term in ["Submit", "consent", "legal attestation", "CAPTCHA", "ambiguous"]:
+            assert term in safety["URL pattern to verify"]
+        assert "Never fill or click" in safety["Stable support decision"]
+
+        required_evidence_fields = [
+            "Date tested",
+            "Codex surface",
+            "Browser surface: Codex Chrome",
+            "ATS platform",
+            "URL pattern",
+            "Generated CV PDF upload result",
+            "Fields filled",
+            "Fields handed off",
+            "Sensitive/safety fields detected",
+            "Final state proving Submit was not clicked",
+            "Result: verified / failed / blocked / experimental",
+        ]
+        for field in required_evidence_fields:
+            assert field in content, f"Codex Chrome evidence template missing: {field}"
+
+        skill_content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
+        assert "docs/apply-codex-chrome-verification.md" in skill_content
+        assert "non-submitted evidence record" in skill_content
+
+    def test_apply_codex_chrome_live_observations_remain_experimental(self):
+        """Live page observations must not be inflated into stable automation claims."""
+        content = (ROOT / "docs" / "apply-codex-chrome-verification.md").read_text(encoding="utf-8")
+        normalized = normalize_whitespace(content)
+
+        for heading in [
+            "### Greenhouse direct - 2026-06-18",
+            "### Greenhouse embed direct top-level URL - 2026-06-18",
+            "### Greenhouse EU domain - 2026-06-18",
+            "### Lever - 2026-06-18",
+            "### Workable - 2026-06-18",
+            "### Unknown or unsupported ATS - 2026-06-18",
+        ]:
+            assert heading in content, f"missing live observation record: {heading}"
+
+        for term in [
+            "partial non-submitting observations, not evidence of successful end-to-end ATS automation",
+            "no applicant data was entered",
+            "no PDF was uploaded",
+            "Submit was not clicked",
+            "live ATS upload would transmit a file to the employer ATS",
+            "Result: experimental partial observation, not verified automation",
+            "Result: unsupported for automation",
+        ]:
+            assert term in normalized, f"missing experimental evidence boundary: {term}"
+
+        evidence_records = content.split("## Evidence Records", maxsplit=1)[1]
+        assert "- Result: verified" not in evidence_records
+        assert "Codex Chrome status | Supported" not in content
 
     def test_source_profile_recovery_points_to_setup_profile(self):
         """/source should not direct missing-profile recovery to /new-role."""

@@ -10,6 +10,7 @@ const required = [
   ".codex-plugin/plugin.json",
   "AGENTS.md",
   "LICENSE",
+  "docs/apply-codex-chrome-verification.md",
   "plugin.json",
   "profile.example.json",
   "roles.example/example_role.json",

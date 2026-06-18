@@ -28,7 +28,8 @@ Check before starting:
 1. `profile.json` exists: if not, stop and ask user to create it
 2. `roles/<role_id>.json` exists: if not, stop and direct user to run `/new-role <url>`
 3. `generated/<output_prefix>_CV.pdf` exists: if not, run `/generate-cv <role_id>` first
-4. A browser surface is available. In Codex, use Browser for public ATS pages and Chrome only when signed-in browser state, cookies, extensions, or file URL access are required. Codex `/apply` remains experimental until issue #65 verifies non-submitted ATS workflows.
+4. A browser surface is available. In Codex, use Browser for public ATS pages and Chrome only when signed-in browser state, cookies, extensions, or file URL access are required. Codex Chrome `/apply` remains experimental unless `docs/apply-codex-chrome-verification.md` contains a non-submitted evidence record for the exact ATS case and URL pattern.
+5. For Codex Chrome runs, review `docs/apply-codex-chrome-verification.md` before filling. If the ATS case is unverified, failed, ambiguous, or missing from the matrix, tell the user it is experimental and stop or proceed only with a manual fallback/handoff plan that never submits.
 
 ## Steps
 
@@ -52,6 +53,7 @@ Open `role.url` in the available browser surface.
 
 - **Greenhouse embed** (when `role.url` contains `boards.greenhouse.io/embed`):  
   Navigate directly to the embed URL as a top-level page: do NOT try to interact with it inside an iframe on a company careers page. Cross-origin iframes block all DOM tools.
+- **Greenhouse EU domain**: treat a confirmed Greenhouse EU application URL as `ats_platform: "greenhouse"` unless the repo intentionally adds and tests a separate supported value. In Codex Chrome, keep EU-domain automation experimental until the verification matrix records a non-submitted pass for that URL/domain pattern.
 - **Workable**: URL must end in `/apply/`: e.g. `https://apply.workable.com/<company>/j/<id>/apply/`
 - **Lever**: URL is typically `https://jobs.lever.co/<company>/<uuid>/apply`
 
@@ -223,6 +225,7 @@ The agent ALWAYS:
 |---|---|---|---|
 | Greenhouse (direct) | Hidden: unhide via JS before upload | Click toggle → type → click option | File upload field |
 | Greenhouse (embed) | Same as above | Same | Same |
+| Greenhouse (EU domain) | Treat as Greenhouse only after URL/domain verification | Same | Same |
 | Lever | Visible | N/A | Text paste only |
 | Workable | Visible | Direct value injection can miss React state; fall back to click+type | File upload or text |
 
