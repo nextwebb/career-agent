@@ -4,14 +4,14 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>career-agent: Agentic Job Applications for Claude Code and Codex</title>
-<meta name="description" content="Six commands. End-to-end job applications. Bootstrap your profile, source verified roles, generate tailored CV PDFs, fill safe ATS fields, and hand off sensitive controls."/>
+<meta name="description" content="Six commands. End-to-end job applications. Bootstrap your profile, discover verified role leads, generate tailored CV PDFs, fill safe ATS fields, and hand off sensitive controls."/>
 <meta name="theme-color" content="#020203"/>
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml"/>
 <link rel="shortcut icon" href="./assets/favicon.svg" type="image/svg+xml"/>
 
 <!-- OpenGraph / Product Hunt -->
 <meta property="og:title" content="career-agent: Agentic Job Applications for Claude Code and Codex"/>
-<meta property="og:description" content="Six commands. Bootstrap your profile from your CV, source verified roles, generate tailored PDFs, fill safe ATS fields, and hand off sensitive controls."/>
+<meta property="og:description" content="Six commands. Bootstrap your profile from your CV, discover verified role leads, generate tailored PDFs, fill safe ATS fields, and hand off sensitive controls."/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://nextwebb.github.io/career-agent/"/>
 <meta property="og:image" content="https://raw.githubusercontent.com/nextwebb/career-agent/main/demo.gif"/>
@@ -192,7 +192,7 @@
       </div>
       <div class="p-6 font-mono text-terminal text-on-surface space-y-3 leading-relaxed overflow-x-auto">
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/setup-profile</span> <span class="text-tertiary-container">~/Downloads/LinkedIn.pdf</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">profile.json written &middot; 9 roles parsed &middot; 3 CV variants</span></div>
-        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/source</span> <span class="text-tertiary-container">Netherlands backend</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">verified roles returned &middot; top fit is heuristic</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/source</span> <span class="text-tertiary-container">Netherlands backend</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">verified leads returned &middot; top fit is heuristic</span></div>
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/new-role</span> <span class="text-tertiary-container">https://boards.greenhouse.io/stripe/jobs/5891234</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">roles/stripe_backend_2026.json</span></div>
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/generate-cv</span> <span class="text-tertiary-container">stripe_backend_2026</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">stripe_backend_2026_CV.pdf &middot; CoverLetter.pdf</span></div>
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/apply</span> <span class="text-tertiary-container">stripe_backend_2026</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">safe fields prepared where verified &middot; handoff before Submit</span></div>
@@ -308,7 +308,7 @@
           <span class="material-symbols-outlined text-on-surface-variant text-[20px]">find_in_page</span>
         </div>
         <h3 class="font-display font-bold text-on-surface">Role Sourcing</h3>
-        <p class="font-body text-body-sm text-on-surface-variant">Checks company career pages and scores roles against your profile. Returns verified open positions when available, and marks blocked or inconclusive checks clearly. Fit scores are heuristic.</p>
+        <p class="font-body text-body-sm text-on-surface-variant">Discovers leads from available public sources, verifies open roles on company-controlled pages, and scores verified matches against your profile. Blocked or inconclusive checks are marked clearly. Fit scores are heuristic.</p>
       </div>
 
       <div class="glass p-7 border border-obsidian-edge rounded-xl flex flex-col gap-4 hover:border-safety-indigo/30 transition-colors">
@@ -374,14 +374,14 @@
         </div>
 
         <div class="skill-panel" id="panel-source">
-          <h3 class="font-display text-h2-mobile font-bold text-on-surface mb-3">Market Intelligence</h3>
-          <p class="font-body text-body text-on-surface-variant mb-5">Find verified open roles matching your profile from company career pages. Filters by country and role type, ranked by fit score against your profile variants.</p>
+          <h3 class="font-display text-h2-mobile font-bold text-on-surface mb-3">Role Lead Verification</h3>
+          <p class="font-body text-body text-on-surface-variant mb-5">Discover role leads from available public/search sources, verify open roles on company-controlled posts, and rank verified matches by heuristic fit score against your profile variants.</p>
           <div class="glass rounded-lg border border-obsidian-edge p-4 font-mono text-terminal text-on-surface mb-4">
             <span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/source</span> Germany backend
           </div>
           <div class="flex gap-3 p-4 bg-obsidian-surface rounded-lg border border-obsidian-edge">
             <span class="material-symbols-outlined text-safety-indigo text-[18px] mt-0.5 shrink-0">info</span>
-            <p class="font-body text-body-sm text-on-surface-variant">Crawls company career pages directly. Results include fit score, sponsorship signals, and relocation requirements.</p>
+            <p class="font-body text-body-sm text-on-surface-variant">Official posts are cited when roles are counted as verified. Sponsorship and relocation are labeled by confidence, with source-list claims kept separate from job-post facts.</p>
           </div>
         </div>
 

@@ -11,6 +11,7 @@ const required = [
   "AGENTS.md",
   "LICENSE",
   "docs/apply-codex-chrome-verification.md",
+  "docs/source-methodology.md",
   "plugin.json",
   "profile.example.json",
   "roles.example/example_role.json",

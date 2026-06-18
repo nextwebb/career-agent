@@ -31,13 +31,15 @@ Not a template engine. Not a job tracker. An agent that does the work.
 ## What it does
 
 0. **`/setup-profile`**: Build `profile.json` from your CV or LinkedIn PDF, extract work history, generate 3 CV variants, and write per-job bullets automatically
-1. **`/source`**: Find and verify open roles matching your profile from company career pages
+1. **`/source`**: Discover leads from available public/search sources, verify open roles on company-controlled pages, and rank them with a documented heuristic fit score
 2. **`/new-role`**: Scaffold a new role config interactively by scraping the JD
 3. **`/generate-cv`**: Build ATS-optimised CV + cover letter PDFs tailored to the role
 4. **`/apply`**: Open the job URL in a browser, fill safe fields only when the ATS case is understood, upload PDFs when safe, answer safe custom questions, then hand off to you for sensitive fields and Submit
 5. **`/track`**: View your application pipeline, update statuses, add notes
 
 The agent never submits on your behalf. That boundary is intentional.
+
+`/source` evidence and ranking rules are documented in [docs/source-methodology.md](docs/source-methodology.md).
 
 ---
 
@@ -126,7 +128,7 @@ Then bootstrap your profile:
 ```
 /setup-profile               # Claude Code alias
 $setup-profile               # Codex skill invocation
-/source Germany backend      # Find matching roles
+/source Germany backend      # Find and verify matching role leads
 /new-role                    # Create role config
 /generate-cv <role_id>       # Generate PDFs
 /apply <role_id>             # Browser form handoff, Codex Chrome evidence-gated
@@ -265,7 +267,7 @@ career-agent/
 │
 ├── skills/
 │   ├── setup-profile/SKILL.md       # Bootstrap profile.json from CV or LinkedIn PDF
-│   ├── source/SKILL.md              # Find + verify open roles from your profile
+│   ├── source/SKILL.md              # Find + verify open role leads from your profile
 │   ├── new-role/SKILL.md            # Scaffold a new role JSON interactively
 │   ├── generate-cv/SKILL.md         # Build PDF from profile + role config
 │   ├── apply/SKILL.md               # Fill ATS form + upload + handoff
