@@ -4,8 +4,7 @@
   "description": "Agentic job application workflow for tailored CVs, cover letters, sourcing, ATS form handoff, and application tracking.",
   "author": {
     "name": "nextwebb",
-    "email": "Oaikhenahpeterson@gmail.com",
-    "url": "https://github.com/nextwebb"
+    "url": "https://blog.nextwebb.tech"
   },
   "homepage": "https://nextwebb.github.io/career-agent",
   "repository": "https://github.com/nextwebb/career-agent",
