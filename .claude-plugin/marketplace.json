@@ -4,7 +4,7 @@
   "description": "Career workflow for job seekers that generates tailored PDFs and hands off ATS form filling before sensitive actions.",
   "owner": {
     "name": "nextwebb",
-    "email": "nextwebbdevelop45@gmail.com"
+    "email": "Oaikhenahpeterson@gmail.com"
   },
   "plugins": [
     {
@@ -17,7 +17,7 @@
       "description": "Agentic job application workflow. Generates tailored CV + cover letter PDFs per role, fills safe ATS fields via browser automation, and hands off sensitive fields and Submit to the user.",
       "author": {
         "name": "nextwebb",
-        "email": "nextwebbdevelop45@gmail.com"
+        "email": "Oaikhenahpeterson@gmail.com"
       },
       "homepage": "https://nextwebb.github.io/career-agent",
       "repository": "https://github.com/nextwebb/career-agent",
