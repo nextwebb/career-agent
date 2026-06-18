@@ -9,6 +9,7 @@
 - Generated application claims must be traceable to `profile.json`, the role config, or explicit user-provided facts. If evidence is missing, omit the claim or flag it for review.
 - Follow `ENGINEERING_PRINCIPLES.md` for Python style, testing, commit format, and review expectations.
 - Prefer focused changes tied to a linked GitHub issue. Avoid unrelated refactors.
+- Use agent branch names such as `codex/issue-<number>-<short-slug>` when an issue exists, but keep PR titles and merge subjects release-parseable Conventional Commits without `[codex]` or other agent prefixes.
 - Use repo-relative commands in docs and skills unless a host-specific variable is explicitly required.
 - When changing skill behavior, update the relevant `skills/*/SKILL.md` file and add or adjust smoke/static checks.
 - Treat browser automation as high-risk. The agent must stop before Submit, irreversible confirmations, credentials, legal attestations, consent fields, EEO/voluntary self-identification, CAPTCHA, or ambiguous fields.
