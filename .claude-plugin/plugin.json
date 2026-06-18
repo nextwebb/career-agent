@@ -1,7 +1,7 @@
 {
   "name": "career-agent",
   "version": "1.1.5",
-  "description": "Agentic job application workflow. Generates tailored CV + cover letter PDFs per role and fills ATS forms via browser automation.",
+  "description": "Agentic job application workflow for tailored CVs, cover letters, sourcing, ATS form handoff, and application tracking.",
   "author": {
     "name": "nextwebb",
     "email": "nextwebbdevelop45@gmail.com"

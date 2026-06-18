@@ -26,10 +26,14 @@ Valid statuses: `draft` → `applied` → `screen` → `interview` → `offer` /
 
 ## Steps
 
+Resolve `<career_agent_root>` as the installed package or plugin root that contains `src/tracker.py`. If running from a repo checkout and `src/tracker.py` exists in the current directory, the current directory is `<career_agent_root>`.
+
+Do not assume the user's working directory is the package root. The script path comes from `<career_agent_root>`, while `tracker.json` and `roles/` are read and written in the user's current workspace.
+
 ### List pipeline
 
 ```bash
-python3 src/tracker.py --list
+python3 "<career_agent_root>/src/tracker.py" --list
 ```
 
 Output groups applications by status with icons. Show this after every `/apply` handoff.
@@ -37,7 +41,7 @@ Output groups applications by status with icons. Show this after every `/apply` 
 ### Add a role to tracking
 
 ```bash
-python3 src/tracker.py --add <role_id>
+python3 "<career_agent_root>/src/tracker.py" --add <role_id>
 ```
 
 Run this automatically at the end of `/new-role`: every new role config should be tracked from the start as `draft`.
@@ -45,7 +49,7 @@ Run this automatically at the end of `/new-role`: every new role config should b
 ### Update status
 
 ```bash
-python3 src/tracker.py --update <role_id> --status <status>
+python3 "<career_agent_root>/src/tracker.py" --update <role_id> --status <status>
 ```
 
 Run `--update <role_id> --status applied` automatically after a successful `/apply` handoff (when user confirms they clicked Submit).
@@ -53,7 +57,7 @@ Run `--update <role_id> --status applied` automatically after a successful `/app
 ### Add a note
 
 ```bash
-python3 src/tracker.py --note <role_id> "Recruiter called: technical screen Thursday 3pm"
+python3 "<career_agent_root>/src/tracker.py" --note <role_id> "Recruiter called: technical screen Thursday 3pm"
 ```
 
 ### When to run automatically
@@ -67,7 +71,7 @@ python3 src/tracker.py --note <role_id> "Recruiter called: technical screen Thur
 
 ## tracker.json
 
-Stored at repo root. Gitignored: your application history stays local.
+Stored in the current workspace. Gitignored in repo checkouts: your application history stays local.
 
 Format:
 ```json

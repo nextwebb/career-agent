@@ -485,6 +485,15 @@ class TestSKILLMarkdown:
             for token in forbidden:
                 assert token not in content, f"{skill_file} contains Claude-only token {token}"
 
+    def test_installed_skill_commands_do_not_use_workspace_relative_src_paths(self):
+        """Installed skills should resolve packaged scripts instead of cwd-relative src paths."""
+        for skill_name in ["generate-cv", "track"]:
+            skill_file = ROOT / "skills" / skill_name / "SKILL.md"
+            content = skill_file.read_text(encoding="utf-8")
+
+            assert "python3 src/" not in content
+            assert "<career_agent_root>" in content
+
     def test_apply_sensitive_field_policy_present(self):
         """The /apply policy should include the expanded human handoff boundary."""
         content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
@@ -505,6 +514,16 @@ class TestSKILLMarkdown:
         ]
         for term in required_terms:
             assert term in content, f"/apply missing sensitive-field term: {term}"
+
+    def test_apply_sensitive_field_policy_precedes_personal_field_fill(self):
+        """/apply must classify fields before filling any personal data."""
+        content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
+
+        classifier_index = content.index("### 3. Sensitive-field classifier")
+        fill_index = content.index("### 4. Fill safe personal fields")
+
+        assert classifier_index < fill_index
+        assert "Any other non-sensitive personal fields visible after classification" in content
 
     def test_source_profile_recovery_points_to_setup_profile(self):
         """/source should not direct missing-profile recovery to /new-role."""
@@ -540,6 +559,63 @@ class TestSKILLMarkdown:
             check=False,
         )
         assert result.returncode == 0, result.stdout + result.stderr
+
+
+class TestPackagedScriptWorkspace:
+    """Installed scripts should operate on the caller's workspace data."""
+
+    def test_tracker_uses_current_workspace_for_user_data(self, tmp_path):
+        """tracker.py should not require the repo root as cwd."""
+        roles_dir = tmp_path / "roles"
+        roles_dir.mkdir()
+        shutil.copy(ROOT / "roles.example" / "example_role.json", roles_dir / "example_role.json")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "src" / "tracker.py"),
+                "--add",
+                "example_role",
+            ],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr or result.stdout
+        tracker_path = tmp_path / "tracker.json"
+        assert tracker_path.exists()
+        entries = json.loads(tracker_path.read_text(encoding="utf-8"))
+        assert entries[0]["role_id"] == "example_role"
+        assert entries[0]["company"] == "Stripe"
+
+    def test_generate_application_uses_current_workspace_for_user_data(self, tmp_path):
+        """generate_application.py should support an installed script path from a workspace cwd."""
+        pytest.importorskip("reportlab")
+
+        roles_dir = tmp_path / "roles"
+        roles_dir.mkdir()
+        shutil.copy(ROOT / "profile.example.json", tmp_path / "profile.json")
+        shutil.copy(ROOT / "roles.example" / "example_role.json", roles_dir / "example_role.json")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "src" / "generate_application.py"),
+                "--role",
+                "example_role",
+            ],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr or result.stdout
+        generated_dir = tmp_path / "generated"
+        assert list(generated_dir.glob("*_CV.pdf"))
+        assert list(generated_dir.glob("*_CoverLetter.pdf"))
 
 
 class TestGitignore:

@@ -41,10 +41,14 @@ For each job in `profile.experience`, check if the role config has `experience_o
 
 ### 3. Generate CV PDF
 
+Resolve `<career_agent_root>` as the installed package or plugin root that contains `src/generate_application.py`. If running from a repo checkout and `src/generate_application.py` exists in the current directory, the current directory is `<career_agent_root>`.
+
+Do not assume the user's working directory is the package root. The script path comes from `<career_agent_root>`, while `profile.json`, `roles/`, and `generated/` are read and written in the user's current workspace.
+
 Run:
 
 ```bash
-python3 src/generate_application.py --role <role_id>
+python3 "<career_agent_root>/src/generate_application.py" --role <role_id>
 ```
 
 The script reads `profile.json` + `roles/<role_id>.json` and writes:
@@ -54,7 +58,7 @@ generated/<output_prefix>_CV.pdf
 generated/<output_prefix>_CoverLetter.pdf
 ```
 
-If `src/generate_application.py` does not exist yet, generate it now using the PDF spec below.
+If the packaged script cannot be found, stop and report that the career-agent package or plugin installation is incomplete.
 
 ### 4. PDF spec
 

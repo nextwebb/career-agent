@@ -57,24 +57,7 @@ Open `role.url` in the available browser surface.
 
 Take a screenshot to verify the page loaded and the form is visible before proceeding.
 
-### 3. Fill personal fields
-
-Locate each text input, click into it, and type the value. Do NOT rely on direct form value injection alone; it may not trigger React onChange events on Greenhouse or Workable.
-
-Fill in this order:
-1. First name
-2. Last name
-3. Email
-4. Phone
-5. Location / City (if required)
-6. LinkedIn URL
-7. GitHub URL (if field exists)
-8. Portfolio / website (if field exists)
-9. Any other personal fields visible
-
-After filling each field, verify the value is present before moving to the next section.
-
-### 4. Sensitive-field classifier
+### 3. Sensitive-field classifier
 
 Before filling any visible field, dropdown, radio group, checkbox, upload input, or mapped `role.custom_answers` key, inspect the field label, name, placeholder, help text, surrounding copy, and available options.
 
@@ -90,6 +73,23 @@ Do not fill the field when any of that text suggests:
 - Any field that requires legal judgment, an attestation of truth, or uncertain interpretation
 
 This policy overrides `role.custom_answers`. If a custom answer key or mapped field looks sensitive, leave it blank and report it in the handoff.
+
+### 4. Fill safe personal fields
+
+Locate each text input, classify it using the sensitive-field policy above, click into safe fields only, and type the value. Do NOT rely on direct form value injection alone; it may not trigger React onChange events on Greenhouse or Workable.
+
+Fill in this order:
+1. First name
+2. Last name
+3. Email
+4. Phone
+5. Location / City (if required)
+6. LinkedIn URL
+7. GitHub URL (if field exists)
+8. Portfolio / website (if field exists)
+9. Any other non-sensitive personal fields visible after classification
+
+After filling each field, verify the value is present before moving to the next section.
 
 ### 5. Upload CV
 
