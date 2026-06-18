@@ -120,6 +120,7 @@ Public functions SHOULD have docstrings explaining:
 - Purpose
 - Parameters
 - Return value (if not obvious)
+- Keep docstrings concise. Do not add `Args`/`Returns` type inventories when type hints already carry that information.
 
 **Example:**
 ```python
@@ -139,6 +140,7 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
 - Use inline comments for complex logic
 - Prefer self-documenting code over excessive comments
 - Include "why" not "what" (code shows what, comments explain why)
+- Explain durable intent, trade-offs, or constraints. Do not add ticket IDs, PR IDs, agent names, or volatile measurements to source comments.
 
 ### User-Facing Errors
 All error messages MUST guide the user on what to do next:
@@ -178,6 +180,10 @@ tests/
 ├── smoke_test.py         # Fast structural/syntax validation
 └── integration_test.sh   # Real PDF generation end-to-end
 ```
+
+### Test Naming
+- Prefer self-documenting test names over docstrings that repeat the name.
+- Remove noisy test docstrings when the test name and assertions already explain the behavior.
 
 ### Running Tests Locally
 ```bash
