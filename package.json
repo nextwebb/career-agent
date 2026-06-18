@@ -11,6 +11,7 @@
     ".codex-plugin",
     "AGENTS.md",
     "bin",
+    "docs/apply-codex-chrome-verification.md",
     "docs/assets",
     "plugin.json",
     "roles.example",
