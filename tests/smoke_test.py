@@ -43,6 +43,24 @@ def parse_skill_frontmatter(skill_file: Path) -> dict[str, str]:
     return metadata
 
 
+def read_markdown_table_after_heading(content: str, heading: str) -> list[dict[str, str]]:
+    """Return the first Markdown table after a heading as row dictionaries."""
+    lines = content.splitlines()
+    heading_index = lines.index(heading)
+    table_start = next(i for i in range(heading_index + 1, len(lines)) if lines[i].startswith("|"))
+    headers = [cell.strip() for cell in lines[table_start].strip("|").split("|")]
+    rows: list[dict[str, str]] = []
+
+    for line in lines[table_start + 2 :]:
+        if not line.startswith("|"):
+            break
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        assert len(cells) == len(headers), f"Malformed table row: {line}"
+        rows.append(dict(zip(headers, cells, strict=True)))
+
+    return rows
+
+
 class TestProjectStructure:
     """Validate directory structure and required files exist."""
 
@@ -526,12 +544,15 @@ class TestSKILLMarkdown:
         assert "Any other non-sensitive personal fields visible after classification" in content
 
     def test_apply_codex_chrome_verification_matrix_present(self):
-        """Codex Chrome /apply support should be tied to non-submitting evidence."""
+        """Codex Chrome /apply support should be tied to structured evidence."""
         doc = ROOT / "docs" / "apply-codex-chrome-verification.md"
         assert doc.exists(), "Missing Codex Chrome /apply verification matrix"
 
         content = doc.read_text(encoding="utf-8")
-        required_terms = [
+        rows = read_markdown_table_after_heading(content, "## Support Status")
+        rows_by_case = {row["ATS case"]: row for row in rows}
+
+        required_cases = {
             "Greenhouse direct",
             "Greenhouse embed direct top-level URL",
             "Greenhouse EU domain",
@@ -539,16 +560,49 @@ class TestSKILLMarkdown:
             "Workable",
             "Unknown or unsupported ATS",
             "Safety boundaries",
+        }
+        assert required_cases <= rows_by_case.keys()
+
+        live_ats_cases = [
+            "Greenhouse direct",
+            "Greenhouse embed direct top-level URL",
+            "Greenhouse EU domain",
+            "Lever",
+            "Workable",
+        ]
+        for case in live_ats_cases:
+            row = rows_by_case[case]
+            assert row["Codex Chrome status"] == "Experimental"
+            assert row["Evidence status"] == "Unverified in this task"
+            assert "Manual fallback" in row["Stable support decision"]
+
+        unsupported = rows_by_case["Unknown or unsupported ATS"]
+        assert unsupported["Codex Chrome status"] == "Unsupported for automation"
+        assert "Unverified in this task" in unsupported["Evidence status"]
+        assert "Do not automate" in unsupported["Stable support decision"]
+
+        safety = rows_by_case["Safety boundaries"]
+        assert safety["Codex Chrome status"] == "Required stop boundary"
+        assert "Unverified in this task" in safety["Evidence status"]
+        for term in ["Submit", "consent", "legal attestation", "CAPTCHA", "ambiguous"]:
+            assert term in safety["URL pattern to verify"]
+        assert "Never fill or click" in safety["Stable support decision"]
+
+        required_evidence_fields = [
             "Date tested",
+            "Codex surface",
+            "Browser surface: Codex Chrome",
+            "ATS platform",
+            "URL pattern",
             "Generated CV PDF upload result",
             "Fields filled",
             "Fields handed off",
+            "Sensitive/safety fields detected",
             "Final state proving Submit was not clicked",
-            "Unverified in this task",
-            "experimental",
+            "Result: verified / failed / blocked / experimental",
         ]
-        for term in required_terms:
-            assert term in content, f"Codex Chrome verification matrix missing: {term}"
+        for field in required_evidence_fields:
+            assert field in content, f"Codex Chrome evidence template missing: {field}"
 
         skill_content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
         assert "docs/apply-codex-chrome-verification.md" in skill_content

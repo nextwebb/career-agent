@@ -18,7 +18,7 @@
 
 **Agentic job application workflow for Claude Code and Codex.**
 
-One command generates a tailored CV + cover letter PDF per role. The agent fills safe ATS fields, then hands off sensitive, consent, attestation, legal, and Submit controls to you.
+One command generates a tailored CV + cover letter PDF per role. For browser workflows with enough platform evidence and safe field classification, the agent fills safe ATS fields, then hands off sensitive, consent, attestation, legal, and Submit controls to you.
 
 Not a template engine. Not a job tracker. An agent that does the work.
 
@@ -34,7 +34,7 @@ Not a template engine. Not a job tracker. An agent that does the work.
 1. **`/source`**: Find and verify open roles matching your profile from company career pages
 2. **`/new-role`**: Scaffold a new role config interactively by scraping the JD
 3. **`/generate-cv`**: Build ATS-optimised CV + cover letter PDFs tailored to the role
-4. **`/apply`**: Open the job URL in a browser, fill safe fields, upload PDFs, answer safe custom questions, then hand off to you for sensitive fields and Submit
+4. **`/apply`**: Open the job URL in a browser, fill safe fields only when the ATS case is understood, upload PDFs when safe, answer safe custom questions, then hand off to you for sensitive fields and Submit
 5. **`/track`**: View your application pipeline, update statuses, add notes
 
 The agent never submits on your behalf. That boundary is intentional.
@@ -48,7 +48,7 @@ The agent never submits on your behalf. That boundary is intentional.
 | Profile bootstrap from CV/LinkedIn | ✅ `/setup-profile` | ❌ manual markdown file |
 | CV variant system (A/B/C by audience) | ✅ per-role | ❌ single template |
 | Per-role cover letter PDF | ✅ | ✅ `/cover` |
-| Browser form filling | ✅ Greenhouse, Lever, Workable | ✅ `/apply` |
+| Browser form filling | ✅ guarded handoff with Greenhouse, Lever, Workable notes | ✅ `/apply` |
 | ATS-aware single-column PDF | ✅ reportlab | ✅ HTML→PDF |
 | Human-in-loop handoff | ✅ sensitive fields + Submit | ✅ |
 | Profile data local + gitignored | ✅ | ✅ |
@@ -216,7 +216,7 @@ The role config picks a variant. The CV builder selects the matching experience 
 
 These are implementation notes for supported ATS patterns, not a guarantee that every live form variant will work. Verify each form before filling, and stop on unsupported ATS pages, login walls, CAPTCHA, ambiguous consent, or hidden fields that cannot be classified.
 
-Codex Chrome `/apply` is not stable by assumption. Use the [Codex Chrome verification matrix](docs/apply-codex-chrome-verification.md) to decide whether a platform is supported for a non-submitting Codex run. As of 2026-06-18, no live Codex Chrome ATS tests are committed in this repository, so all supported ATS rows below are experimental for Codex Chrome. Failed, ambiguous, or unverified platforms should use manual fallback and handoff.
+Codex Chrome `/apply` is not stable by assumption. Use the [Codex Chrome verification matrix](docs/apply-codex-chrome-verification.md) to decide whether a platform has non-submitting evidence for a Codex run. As of 2026-06-18, no live Codex Chrome ATS tests are committed in this repository, so all named ATS rows below are experimental for Codex Chrome. Failed, ambiguous, or unverified platforms should use manual fallback and handoff.
 
 | Platform | General behavior | Codex Chrome status |
 |---|---|---|

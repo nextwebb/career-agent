@@ -100,7 +100,7 @@ Variant:        <A|B|C>: <label>
 Role:           <title> @ <company>
 ```
 
-Ask: "Ready to apply? Use `/apply <role_id>` in Claude Code or `$apply <role_id>` in Codex. Codex `/apply` remains experimental until issue #65 verifies non-submitted ATS flows."
+Ask: "Ready to apply? Use `/apply <role_id>` in Claude Code or `$apply <role_id>` in Codex. Codex Chrome `/apply` remains experimental until the verification matrix has non-submitted evidence for the target ATS case."
 
 ## Error handling
 

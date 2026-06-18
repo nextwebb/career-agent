@@ -8,6 +8,11 @@ forms. Every row below is therefore marked unverified or experimental. Do not
 promote Codex Chrome `/apply` support beyond experimental until a non-submitted
 test record exists for the platform and URL pattern.
 
+Procedure-only rows are not live ATS evidence. A row that has no committed
+non-submitting test record must stay `Experimental` or `Unsupported for
+automation`, and its evidence status must say that it is unverified in this
+task.
+
 ## Verification Rules
 
 - Use Codex Chrome only when the workflow needs signed-in browser state,
@@ -30,12 +35,12 @@ test record exists for the platform and URL pattern.
 | ATS case | URL pattern to verify | Codex Chrome status | Evidence status | Stable support decision |
 |---|---|---|---|---|
 | Greenhouse direct | `https://job-boards.greenhouse.io/<company>/jobs/<id>` or equivalent direct Greenhouse application URL | Experimental | Unverified in this task | Manual fallback if upload, combobox, radio, or safety classification is uncertain |
-| Greenhouse embed direct top-level URL | `https://boards.greenhouse.io/embed/job_app?for=<company>&token=<id>` or equivalent top-level embed URL | Experimental | Unverified in this task | Use only as a top-level page; do not automate inside company iframes |
-| Greenhouse EU domain | EU Greenhouse board/application host for a Greenhouse form | Experimental | Unverified in this task | `ats_platform` should remain normalized to `greenhouse` unless a separate supported value is intentionally added and tested |
+| Greenhouse embed direct top-level URL | `https://boards.greenhouse.io/embed/job_app?for=<company>&token=<id>` or equivalent top-level embed URL | Experimental | Unverified in this task | Manual fallback unless the embed URL is opened as a top-level page; do not automate inside company iframes |
+| Greenhouse EU domain | EU Greenhouse board/application host for a Greenhouse form | Experimental | Unverified in this task | Manual fallback until EU URL/domain handling has non-submitted evidence; `ats_platform` should remain normalized to `greenhouse` unless a separate supported value is intentionally added and tested |
 | Lever | `https://jobs.lever.co/<company>/<id>/apply` | Experimental | Unverified in this task | Manual fallback if custom questions or cover-letter text areas cannot be classified safely |
 | Workable | `https://apply.workable.com/<company>/j/<id>/apply/` | Experimental | Unverified in this task | Manual fallback for multi-step pages, dropdown uncertainty, or hidden required fields |
-| Unknown or unsupported ATS | Any form where `ats_platform` is `unknown` or not `greenhouse`, `lever`, or `workable` | Unsupported for automation | Stop condition verified by policy only | Do not automate; provide manual guidance |
-| Safety boundaries | Submit, irreversible confirmation, credentials, EEO, demographics, disability, veteran, consent, legal attestation, CAPTCHA, ambiguous fields | Required stop boundary | Policy documented; no live browser evidence in this task | Never fill or click without explicit user confirmation after handoff |
+| Unknown or unsupported ATS | Any form where `ats_platform` is `unknown` or not `greenhouse`, `lever`, or `workable` | Unsupported for automation | Unverified in this task; stop condition documented by policy only | Do not automate; provide manual guidance |
+| Safety boundaries | Submit, irreversible confirmation, credentials, EEO, demographics, disability, veteran, consent, legal attestation, CAPTCHA, ambiguous fields | Required stop boundary | Unverified in this task; policy documented with no live browser evidence | Never fill or click without explicit user confirmation after handoff |
 
 ## Evidence Template
 
