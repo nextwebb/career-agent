@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "career-agent"
-version = "1.1.5"
+version = "1.2.0"
 description = "Agentic job application workflow for tailored CVs, cover letters, sourcing, ATS form handoff, and application tracking."
 authors = [{name = "nextwebb"}]
 license = {text = "MIT"}

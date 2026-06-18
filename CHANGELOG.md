@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/nextwebb/career-agent/compare/v1.1.5...v1.2.0) (2026-06-18)
+
+
+### Features
+
+* **codex:** add intrinsic support ([#66](https://github.com/nextwebb/career-agent/issues/66)) ([7ba2676](https://github.com/nextwebb/career-agent/commit/7ba267600c6ba3c4bdfb0d21a2311909723858d8))
+
 ## [1.1.5](https://github.com/nextwebb/career-agent/compare/v1.1.4...v1.1.5) (2026-06-17)
 
 
