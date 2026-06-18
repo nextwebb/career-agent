@@ -577,17 +577,17 @@ class TestSKILLMarkdown:
         for case in live_ats_cases:
             row = rows_by_case[case]
             assert row["Codex Chrome status"] == "Experimental"
-            assert row["Evidence status"] == "Unverified in this task"
+            assert row["Evidence status"] == "Live page observed 2026-06-18; no upload/fill"
             assert "Manual fallback" in row["Stable support decision"]
 
         unsupported = rows_by_case["Unknown or unsupported ATS"]
         assert unsupported["Codex Chrome status"] == "Unsupported for automation"
-        assert "Unverified in this task" in unsupported["Evidence status"]
+        assert "Live unsupported ATS page observed 2026-06-18" in unsupported["Evidence status"]
         assert "Do not automate" in unsupported["Stable support decision"]
 
         safety = rows_by_case["Safety boundaries"]
         assert safety["Codex Chrome status"] == "Required stop boundary"
-        assert "Unverified in this task" in safety["Evidence status"]
+        assert "Live pages observed 2026-06-18" in safety["Evidence status"]
         for term in ["Submit", "consent", "legal attestation", "CAPTCHA", "ambiguous"]:
             assert term in safety["URL pattern to verify"]
         assert "Never fill or click" in safety["Stable support decision"]
@@ -611,6 +611,36 @@ class TestSKILLMarkdown:
         skill_content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
         assert "docs/apply-codex-chrome-verification.md" in skill_content
         assert "non-submitted evidence record" in skill_content
+
+    def test_apply_codex_chrome_live_observations_remain_experimental(self):
+        """Live page observations must not be inflated into stable automation claims."""
+        content = (ROOT / "docs" / "apply-codex-chrome-verification.md").read_text(encoding="utf-8")
+        normalized = normalize_whitespace(content)
+
+        for heading in [
+            "### Greenhouse direct - 2026-06-18",
+            "### Greenhouse embed direct top-level URL - 2026-06-18",
+            "### Greenhouse EU domain - 2026-06-18",
+            "### Lever - 2026-06-18",
+            "### Workable - 2026-06-18",
+            "### Unknown or unsupported ATS - 2026-06-18",
+        ]:
+            assert heading in content, f"missing live observation record: {heading}"
+
+        for term in [
+            "partial non-submitting observations, not evidence of successful end-to-end ATS automation",
+            "no applicant data was entered",
+            "no PDF was uploaded",
+            "Submit was not clicked",
+            "live ATS upload would transmit a file to the employer ATS",
+            "Result: experimental partial observation, not verified automation",
+            "Result: unsupported for automation",
+        ]:
+            assert term in normalized, f"missing experimental evidence boundary: {term}"
+
+        evidence_records = content.split("## Evidence Records", maxsplit=1)[1]
+        assert "- Result: verified" not in evidence_records
+        assert "Codex Chrome status | Supported" not in content
 
     def test_source_profile_recovery_points_to_setup_profile(self):
         """/source should not direct missing-profile recovery to /new-role."""
