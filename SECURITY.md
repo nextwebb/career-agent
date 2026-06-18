@@ -4,7 +4,9 @@
 
 **Do not open public GitHub issues for security vulnerabilities.**
 
-Email: nextwebbdevelop45@gmail.com
+Report privately through GitHub Security Advisories:
+https://github.com/nextwebb/career-agent/security/advisories/new
+
 Response: within 72 hours
 
 ## Scope
