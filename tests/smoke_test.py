@@ -652,6 +652,30 @@ class TestSKILLMarkdown:
         assert "/setup-profile" in recovery
         assert "/new-role" not in recovery
 
+    def test_source_methodology_documents_evidence_and_scoring(self):
+        """/source should keep source, verification, and scoring behavior documented."""
+        skill_content = (ROOT / "skills" / "source" / "SKILL.md").read_text(encoding="utf-8")
+        methodology = ROOT / "docs" / "source-methodology.md"
+
+        assert methodology.exists(), "Missing /source methodology doc"
+        assert "docs/source-methodology.md" in skill_content
+
+        content = methodology.read_text(encoding="utf-8")
+        required_terms = [
+            "does not use private",
+            "Verified facts",
+            "Inferred recruiter judgment",
+            "Primary sources",
+            "Fallback discovery sources",
+            "Role Verification",
+            "Fit Score Rubric",
+            "Sponsorship and Relocation Confidence",
+            "Source list claim only, not confirmed in job post",
+            "Fewer Than 20 Verified Matches",
+        ]
+        for term in required_terms:
+            assert term in content, f"/source methodology missing term: {term}"
+
     def test_agents_md_exists_for_codex(self):
         """Codex should have repository-level project guidance."""
         agents_md = ROOT / "AGENTS.md"
