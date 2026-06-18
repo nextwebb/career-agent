@@ -6,6 +6,7 @@
 
 ## Checklist
 - [ ] CI passes locally: `pytest tests/ && ruff check . && mypy src/`
+- [ ] Scope is minimal, schemas/types were verified where touched, and assumptions are documented
 - [ ] Conventional commit messages (`feat:`, `fix:`, `docs:`, `chore:`)
 - [ ] SKILL.md updated if skill behaviour changed
 - [ ] Review path verified (valid CODEOWNERS, branch protection, or documented manual review)
