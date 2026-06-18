@@ -16,6 +16,7 @@ import subprocess
 import sys
 import textwrap
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -327,10 +328,12 @@ class TestPythonSyntax:
             import cl_builder
             import cv_builder
             import tracker
+            from quality_gates import run_quality_gates
 
             # Check key functions exist
             assert hasattr(cv_builder, "build_cv"), "Missing build_cv function"
             assert hasattr(cl_builder, "build_cover_letter"), "Missing build_cover_letter"
+            assert callable(run_quality_gates), "Missing run_quality_gates"
             assert hasattr(tracker, "load"), "Missing tracker.load function"
         except ImportError as e:
             pytest.fail(f"Failed to import core modules: {e}")
@@ -992,18 +995,24 @@ class TestPackagedScriptWorkspace:
     def test_generate_application_uses_current_workspace_for_user_data(self, tmp_path):
         """generate_application.py should support an installed script path from a workspace cwd."""
         pytest.importorskip("reportlab")
+        pytest.importorskip("pypdf")
 
         roles_dir = tmp_path / "roles"
         roles_dir.mkdir()
-        shutil.copy(ROOT / "profile.example.json", tmp_path / "profile.json")
-        shutil.copy(ROOT / "roles.example" / "example_role.json", roles_dir / "example_role.json")
+        shutil.copy(
+            ROOT / "tests/fixtures/non_pii/profile.synthetic.json", tmp_path / "profile.json"
+        )
+        shutil.copy(
+            ROOT / "tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json",
+            roles_dir / "synthetic_quality_gate_pass.json",
+        )
 
         result = subprocess.run(
             [
                 sys.executable,
                 str(ROOT / "src" / "generate_application.py"),
                 "--role",
-                "example_role",
+                "synthetic_quality_gate_pass",
             ],
             cwd=tmp_path,
             capture_output=True,
@@ -1012,9 +1021,103 @@ class TestPackagedScriptWorkspace:
         )
 
         assert result.returncode == 0, result.stderr or result.stdout
+        assert "Quality gates:" in result.stdout
+        assert "FAIL" not in result.stdout
         generated_dir = tmp_path / "generated"
         assert list(generated_dir.glob("*_CV.pdf"))
         assert list(generated_dir.glob("*_CoverLetter.pdf"))
+
+
+class TestPdfQualityGates:
+    @staticmethod
+    def _load_fixture(name: str) -> dict[str, Any]:
+        path = ROOT / name
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def _generate_fixture_packet(
+        self, tmp_path: Path, role_fixture: str
+    ) -> tuple[dict[str, Any], dict[str, Any], Path, Path]:
+        pytest.importorskip("reportlab")
+        pytest.importorskip("pypdf")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cl_builder import build_cover_letter
+            from cv_builder import build_cv
+            from generate_application import prepare_generation_config
+
+            profile = self._load_fixture("tests/fixtures/non_pii/profile.synthetic.json")
+            role = self._load_fixture(f"tests/fixtures/non_pii/roles/{role_fixture}")
+            config = prepare_generation_config(profile, role)
+            cv_path = tmp_path / f"{config['output_prefix']}_CV.pdf"
+            cl_path = tmp_path / f"{config['output_prefix']}_CoverLetter.pdf"
+
+            build_cv(profile, config, str(cv_path))
+            build_cover_letter(profile, config, str(cl_path))
+
+            return profile, config, cv_path, cl_path
+        finally:
+            sys.path.pop(0)
+
+    def test_quality_gates_pass_on_synthetic_fixture(self, tmp_path):
+        pypdf = pytest.importorskip("pypdf")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from quality_gates import OK, run_quality_gates
+
+            profile, config, cv_path, cl_path = self._generate_fixture_packet(
+                tmp_path, "synthetic_quality_gate_pass.json"
+            )
+            report = run_quality_gates(profile, config, cv_path, cl_path)
+            cv_text = "\n".join(
+                page.extract_text() or "" for page in pypdf.PdfReader(str(cv_path)).pages
+            )
+        finally:
+            sys.path.pop(0)
+
+        assert not report.has_failures
+        assert any(
+            result.name == "cv_text_extractable" and result.status == OK
+            for result in report.results
+        )
+        assert "+15550100000" in cv_text.replace(" ", "")
+        assert "Designed Python APIs for fictional partner onboarding" in cv_text
+        assert "Implemented fictional model-evaluation jobs" not in cv_text
+        assert cv_text.index("Developer Productivity") < cv_text.index("Platform Reliability")
+
+    def test_quality_gates_fail_on_placeholder_text(self, tmp_path):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from quality_gates import FAIL, run_quality_gates
+
+            profile, config, cv_path, cl_path = self._generate_fixture_packet(
+                tmp_path, "synthetic_quality_gate_fail.json"
+            )
+            report = run_quality_gates(profile, config, cv_path, cl_path)
+        finally:
+            sys.path.pop(0)
+
+        assert report.has_failures
+        assert any(
+            result.name == "no_placeholder_text" and result.status == FAIL
+            for result in report.results
+        )
+
+    def test_quality_gates_warn_on_duplicate_low_evidence_bullets(self, tmp_path):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from quality_gates import WARN, run_quality_gates
+
+            profile, config, cv_path, cl_path = self._generate_fixture_packet(
+                tmp_path, "synthetic_quality_gate_warn.json"
+            )
+            report = run_quality_gates(profile, config, cv_path, cl_path)
+        finally:
+            sys.path.pop(0)
+
+        assert not report.has_failures
+        warnings = {result.name for result in report.results if result.status == WARN}
+        assert "bullet_repetition" in warnings
+        assert "impact_evidence_density" in warnings
 
 
 class TestGitignore:
@@ -1051,6 +1154,7 @@ class TestRequirementsTxt:
 
         content = req_file.read_text(encoding="utf-8")
         assert "reportlab" in content, "Missing reportlab dependency"
+        assert "pypdf" in content, "Missing pypdf dependency"
 
     def test_requirements_format(self):
         """Verify requirements.txt has proper version pinning."""

@@ -7,7 +7,7 @@
  *
  * Checks:
  *   - Python 3.10+ available
- *   - reportlab installed
+ *   - PDF runtime dependencies installed
  *   - Claude Code CLI status
  *   - Codex CLI status
  *   - profile.json exists in cwd
@@ -36,6 +36,10 @@ const FAIL = `${RED}✗ FAIL${RESET}`;
 const WARN = `${YELLOW}⚠ WARN${RESET}`;
 
 const results = [];
+const PYTHON_PACKAGES = [
+  { label: "reportlab", importName: "reportlab", versionExpr: "reportlab.Version" },
+  { label: "pypdf", importName: "pypdf", versionExpr: "pypdf.__version__" },
+];
 
 function check(label, status, detail = "") {
   const icon = status === "pass" ? PASS : status === "warn" ? WARN : FAIL;
@@ -81,15 +85,24 @@ if (python) {
   check("Python 3.10+", "fail", "Not found — install from https://python.org/downloads");
 }
 
-if (python) {
-  const rlCheck = run(python.bin, ["-c", "import reportlab; print(reportlab.Version)"]);
-  if (rlCheck.status === 0) {
-    check("reportlab", "pass", `version ${(rlCheck.stdout || "").trim()}`);
+for (const pkg of PYTHON_PACKAGES) {
+  if (python) {
+    const packageCheck = run(python.bin, [
+      "-c",
+      `import ${pkg.importName}; print(${pkg.versionExpr})`,
+    ]);
+    if (packageCheck.status === 0) {
+      check(pkg.label, "pass", `version ${(packageCheck.stdout || "").trim()}`);
+    } else {
+      check(
+        pkg.label,
+        "fail",
+        `Not installed — run: ${python.bin} -m pip install ${pkg.label}`
+      );
+    }
   } else {
-    check("reportlab", "fail", `Not installed — run: ${python.bin} -m pip install reportlab`);
+    check(pkg.label, "fail", "Skipped (Python 3.10+ not found)");
   }
-} else {
-  check("reportlab", "fail", "Skipped (Python 3.10+ not found)");
 }
 
 const claudeVersion = commandVersion("claude");

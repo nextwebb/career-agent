@@ -22,6 +22,7 @@ const required = [
   "skills/source/SKILL.md",
   "skills/track/SKILL.md",
   "src/generate_application.py",
+  "src/quality_gates.py",
   "src/tracker.py",
 ];
 

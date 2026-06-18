@@ -105,7 +105,7 @@ Every module MUST have a docstring with:
 
 **Example:**
 ```python
-"""cv_builder.py: ATS-optimised CV PDF builder.
+"""cv_builder.py: ATS-safe CV PDF builder.
 
 Reads personal data from profile.json; role-specific content from the role config dict.
 
@@ -365,12 +365,17 @@ Hooks run automatically before each commit:
 ✅ **Tests**: Are changes covered by tests?
 ✅ **Documentation**: Updated README/SKILL.md if needed?
 ✅ **Style**: Passes Ruff/mypy without warnings?
+✅ **Evidence**: Do generated application claims trace back to profile, role config, or explicit user input?
+✅ **Gates**: Does new agent behavior have deterministic checks where failure would harm the user?
+✅ **Claims**: Do docs avoid overclaiming recruiter outcomes, ATS acceptance, or "world-class" quality?
 
 ### PR Checklist (Author)
 Before requesting review:
 - [ ] All CI checks pass
 - [ ] Added/updated tests
 - [ ] Updated documentation
+- [ ] Deterministic gates added/updated for generated application behavior
+- [ ] No generated CV, cover letter, role, or profile fixture contains real-person PII
 - [ ] No console.log or debug prints
 - [ ] Conventional commit messages
 - [ ] No merge conflicts
@@ -380,6 +385,8 @@ Before requesting review:
 - [ ] No security vulnerabilities introduced
 - [ ] Tests cover new functionality
 - [ ] Documentation is accurate
+- [ ] Quality gates distinguish objective failures from subjective warnings
+- [ ] Public claims are evidence-backed and do not imply guaranteed hiring outcomes
 - [ ] Conventional commit format followed
 
 ---

@@ -1,15 +1,17 @@
 # career-agent
 
-Agentic job application workflow. Generates tailored CVs and fills safe ATS fields via browser automation, then hands off sensitive fields and Submit to the user.
+Agentic job application workflow. Generates tailored CVs with deterministic quality gates and fills safe ATS fields via browser automation, then hands off sensitive fields and Submit to the user.
+
+Philosophy: keep the workflow lightweight and local-first, put deterministic gates behind agent actions, and treat generated materials as review-ready drafts rather than guarantees of recruiter or ATS outcomes.
 
 ## Skills
 
-- `/setup-profile`: Build profile.json from your CV or LinkedIn PDF: extracts work history, generates 3 CV variants, writes per-job bullets automatically
-- `/generate-cv <role_id>`: Build ATS-optimised CV + cover letter PDFs for a role
+- `/setup-profile`: Build profile.json from your CV or LinkedIn PDF: extracts work history, generates 3 CV variants, drafts source-backed per-job bullets for review
+- `/generate-cv <role_id>`: Build ATS-safe CV + cover letter PDFs for a role and run deterministic quality gates
 - `/apply <role_id>`: Fill safe ATS fields, upload PDFs, answer safe questions, hand off to user for sensitive fields + Submit
 - `/new-role [url]`: Scaffold a new role config interactively
 - `/track [role_id] [status]`: View pipeline, update application status, add notes
-- `/source [country] [role_type]`: Find verified open roles from your CV/LinkedIn/profile.json + optional company docs
+- `/source [country] [role_type]`: Find roles and verify source pages are open from your CV/LinkedIn/profile.json + optional company docs
 
 ## Key files
 
@@ -19,7 +21,8 @@ Agentic job application workflow. Generates tailored CVs and fills safe ATS fiel
 - `.codex-plugin/plugin.json`: Codex plugin manifest
 - `AGENTS.md`: Codex repository guidance
 - `src/cv_builder.py`: reportlab Platypus PDF engine (single-column, Helvetica, ATS-safe)
-- `src/generate_application.py`: CLI PDF generator: `python src/generate_application.py --role <role_id>`
+- `src/generate_application.py`: CLI PDF generator with quality gates: `python src/generate_application.py --role <role_id>`
+- `src/quality_gates.py`: Deterministic PDF and content-hygiene quality gates
 - `src/tracker.py`: Application pipeline tracker: `python src/tracker.py --list`
 - `generated/`: Output PDFs (gitignored)
 
@@ -71,3 +74,4 @@ generated/<prefix>_CoverLetter.pdf
 - Colours: black body, #2563eb links
 - Links: clickable (email, LinkedIn, GitHub, blog)
 - ATS-safe: no headers/footers with text outside main flow, no two-column layouts
+- Quality gates: generated PDFs must be readable, text-extractable, free of placeholder text, and complete enough for human review before applying

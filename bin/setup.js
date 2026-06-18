@@ -7,7 +7,7 @@
  * Steps:
  *   1. Dispatch `career-agent doctor` to the doctor command
  *   2. Detect Python 3.10+
- *   3. Check/install reportlab
+ *   3. Check/install PDF runtime dependencies
  *   4. Detect Claude Code and Codex independently
  *   5. Copy profile.example.json → ./profile.json (if missing)
  *   6. Print next steps
@@ -31,6 +31,10 @@ const warn = (msg) => console.log(`${YELLOW}⚠${RESET} ${msg}`);
 const fail = (msg) => console.error(`${RED}✗${RESET} ${msg}`);
 const dim = (msg) => console.log(`${DIM}  ${msg}${RESET}`);
 const header = (msg) => console.log(`\n${BOLD}${msg}${RESET}`);
+const PYTHON_PACKAGES = [
+  { importName: "reportlab", installName: "reportlab" },
+  { importName: "pypdf", installName: "pypdf" },
+];
 
 function run(cmd, args, opts = {}) {
   return spawnSync(cmd, args, { encoding: "utf8", shell: false, ...opts });
@@ -88,19 +92,27 @@ if (!python) {
 }
 ok(`Python found: ${python.version}`);
 
-const rlCheck = run(python.bin, ["-c", "import reportlab"]);
-if (rlCheck.status === 0) {
-  ok("reportlab is installed");
-} else {
-  dim("reportlab not found — installing…");
-  const rlInstall = run(python.bin, ["-m", "pip", "install", "reportlab", "--quiet"]);
-  if (rlInstall.status === 0) {
-    ok("reportlab installed");
+for (const pkg of PYTHON_PACKAGES) {
+  const packageCheck = run(python.bin, ["-c", `import ${pkg.importName}`]);
+  if (packageCheck.status === 0) {
+    ok(`${pkg.installName} is installed`);
   } else {
-    fail("Failed to install reportlab.");
-    dim(`Run manually: ${python.bin} -m pip install reportlab`);
-    dim("Then re-run: npx @nextwebb/career-agent");
-    hasErrors = true;
+    dim(`${pkg.installName} not found — installing…`);
+    const packageInstall = run(python.bin, [
+      "-m",
+      "pip",
+      "install",
+      pkg.installName,
+      "--quiet",
+    ]);
+    if (packageInstall.status === 0) {
+      ok(`${pkg.installName} installed`);
+    } else {
+      fail(`Failed to install ${pkg.installName}.`);
+      dim(`Run manually: ${python.bin} -m pip install ${pkg.installName}`);
+      dim("Then re-run: npx @nextwebb/career-agent");
+      hasErrors = true;
+    }
   }
 }
 

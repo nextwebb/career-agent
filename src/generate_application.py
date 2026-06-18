@@ -14,7 +14,7 @@ Usage:
 Setup:
     1. cp profile.example.json profile.json   # fill in your details
     2. cp roles.example/example_role.json roles/my_role.json
-    3. pip install reportlab
+    3. pip install -r requirements.txt
     4. python src/generate_application.py --role my_role
 
 Role configs:    ./roles/<role_id>.json in the current workspace
@@ -30,6 +30,7 @@ import json
 import sys
 import time
 import webbrowser
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, cast
 
@@ -48,6 +49,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from cl_builder import build_cover_letter
 from cv_builder import build_cv
+from quality_gates import QualityGateError, format_quality_report, run_quality_gates
 from validation import (
     ValidationError,
     validate_and_report,
@@ -122,33 +124,98 @@ def load_role(role_id: str) -> dict[str, Any]:
     return config
 
 
-def generate(profile: dict[str, Any], role_id: str, open_url: bool = False) -> tuple[str, str]:
-    config = load_role(role_id)
+def _resolve_impact_statements(profile: dict[str, Any], variant: str) -> list[dict[str, Any]]:
+    impact = profile.get("impact_statements", [])
+    if not isinstance(impact, dict):
+        return list(impact) if isinstance(impact, list) else []
+
+    ordered_keys = []
+    variant_data = profile.get("variants", {}).get(variant, {})
+    if isinstance(variant_data, dict):
+        impact_order = variant_data.get("impact_order", [])
+        if isinstance(impact_order, list):
+            ordered_keys = [key for key in impact_order if key in impact]
+
+    remaining_keys = [key for key in impact if key not in ordered_keys]
+    return [impact[key] for key in [*ordered_keys, *remaining_keys]]
+
+
+def _select_bullets(experience: dict[str, Any], variant: str, override: Any = None) -> list[str]:
+    if isinstance(override, dict) and isinstance(override.get("bullets"), list):
+        return [str(bullet) for bullet in override["bullets"] if str(bullet).strip()]
+
+    bullets = experience.get("bullets", [])
+    if isinstance(bullets, list):
+        return [str(bullet) for bullet in bullets if str(bullet).strip()]
+
+    if not isinstance(bullets, dict):
+        return []
+
+    selected = bullets.get(variant) or bullets.get("default") or []
+    if not isinstance(selected, list):
+        return []
+    return [str(bullet) for bullet in selected if str(bullet).strip()]
+
+
+def _resolve_experience(profile: dict[str, Any], config: dict[str, Any]) -> list[dict[str, Any]]:
+    variant = str(config.get("variant", ""))
+    overrides = config.get("experience_overrides", {})
+    resolved = []
+
+    for experience in profile.get("experience", []):
+        if not isinstance(experience, dict):
+            continue
+
+        experience_id = experience.get("id", "")
+        override = overrides.get(experience_id) if isinstance(overrides, dict) else None
+        bullets = _select_bullets(experience, variant, override)
+        resolved.append(
+            {
+                "title": experience.get("title", ""),
+                "company_line": experience.get("company_line", experience.get("company", "")),
+                "client_line": experience.get("client_line", ""),
+                "bullets": bullets,
+            }
+        )
+
+    return resolved
+
+
+def prepare_generation_config(profile: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+    """Resolve profile defaults, selected variant content, and role overrides."""
+
+    prepared = deepcopy(config)
+    variant = str(prepared.get("variant", ""))
+
     OUTPUT_DIR.mkdir(exist_ok=True)
 
     # Merge profile variant data into config for CV generation
-    variant = config.get("variant", "")
     if variant and "variants" in profile:
         variant_data = profile["variants"].get(variant, {})
         # Add variant-specific fields if not in role config
-        if "headline" not in config and "headline" in variant_data:
-            config["headline"] = variant_data["headline"]
-        if "summary" not in config and "summary" in variant_data:
-            config["summary"] = variant_data["summary"]
+        if "headline" not in prepared and "headline" in variant_data:
+            prepared["headline"] = variant_data["headline"]
+        if "summary" not in prepared and "summary" in variant_data:
+            prepared["summary"] = variant_data["summary"]
 
     # Fall back to profile defaults if still missing
-    config.setdefault("headline", profile.get("headline", ""))
-    config.setdefault("summary", profile.get("summary", ""))
+    prepared.setdefault("headline", profile.get("headline", ""))
+    prepared.setdefault("summary", profile.get("summary", ""))
 
-    # Convert impact_statements from dict to list if needed
-    impact = profile.get("impact_statements", [])
-    if isinstance(impact, dict):
-        impact = list(impact.values())
-    config.setdefault("impact_statements", impact)
+    prepared.setdefault("impact_statements", _resolve_impact_statements(profile, variant))
+    prepared.setdefault("experience", _resolve_experience(profile, prepared))
+    prepared.setdefault("skills", profile.get("skills", []))
 
-    config.setdefault("experience", profile.get("experience", []))
-    config.setdefault("skills", profile.get("skills", []))
+    return prepared
 
+
+def generate(
+    profile: dict[str, Any],
+    role_id: str,
+    open_url: bool = False,
+    quality_gates: bool = True,
+) -> tuple[str, str]:
+    config = prepare_generation_config(profile, load_role(role_id))
     prefix = config["output_prefix"]
     cv_path = str(OUTPUT_DIR / f"{prefix}_CV.pdf")
     cl_path = str(OUTPUT_DIR / f"{prefix}_CoverLetter.pdf")
@@ -160,6 +227,16 @@ def generate(profile: dict[str, Any], role_id: str, open_url: bool = False) -> t
 
     build_cv(profile, config, cv_path)
     build_cover_letter(profile, config, cl_path)
+
+    if quality_gates:
+        report = run_quality_gates(profile, config, cv_path, cl_path)
+        print(format_quality_report(report))
+        if report.has_failures:
+            raise QualityGateError(
+                "Generated PDFs failed deterministic quality gates. "
+                "Fix profile.json or the role config, then regenerate. "
+                "Use --no-quality-gates only for diagnostics."
+            )
 
     url = config.get("url", "")
     if open_url and url:
@@ -200,6 +277,11 @@ def main():
     parser.add_argument(
         "--open", action="store_true", help="Open each job URL in your browser after generating"
     )
+    parser.add_argument(
+        "--no-quality-gates",
+        action="store_true",
+        help="Generate PDFs without deterministic quality gates (diagnostics only)",
+    )
     args = parser.parse_args()
 
     if args.list:
@@ -214,11 +296,20 @@ def main():
             print("No role configs found in ./roles/")
             sys.exit(1)
         results = []
-        for i, role_id in enumerate(role_ids):
-            cv, cl = generate(profile, role_id, open_url=args.open)
-            results.append((role_id, cv, cl))
-            if args.open and i < len(role_ids) - 1:
-                time.sleep(1.5)
+        try:
+            for i, role_id in enumerate(role_ids):
+                cv, cl = generate(
+                    profile,
+                    role_id,
+                    open_url=args.open,
+                    quality_gates=not args.no_quality_gates,
+                )
+                results.append((role_id, cv, cl))
+                if args.open and i < len(role_ids) - 1:
+                    time.sleep(1.5)
+        except QualityGateError as e:
+            print(f"\nERROR: {e}")
+            sys.exit(2)
         print(f"\n{'=' * 60}")
         print(f"  Generated {len(results)} application(s) → {OUTPUT_DIR}/")
         print(f"{'=' * 60}")
@@ -232,7 +323,16 @@ def main():
         return
 
     if args.role:
-        cv, cl = generate(profile, args.role, open_url=args.open)
+        try:
+            cv, cl = generate(
+                profile,
+                args.role,
+                open_url=args.open,
+                quality_gates=not args.no_quality_gates,
+            )
+        except QualityGateError as e:
+            print(f"\nERROR: {e}")
+            sys.exit(2)
         cfg = load_role(args.role)
         print("\n  Done.")
         print(f"  CV:  {Path(cv).name}")

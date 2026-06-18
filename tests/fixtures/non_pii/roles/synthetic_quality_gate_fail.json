@@ -1,0 +1,19 @@
+{
+  "_comment": "Synthetic role fixture intentionally containing placeholders for quality-gate failure tests.",
+  "role_id": "synthetic_quality_gate_fail",
+  "company": "Example Failure Labs",
+  "title": "Senior Backend Engineer",
+  "location": "Remote",
+  "url": "https://example.com/jobs/synthetic-quality-gate-fail",
+  "ats_platform": "unknown",
+  "variant": "C",
+  "output_prefix": "synthetic_quality_gate_fail",
+  "cover_letter": {
+    "salutation": "Dear Hiring Team,",
+    "paragraphs": [
+      "Opening paragraph - specific hook to the company/role...",
+      "Paragraph 2 - relevant experience, concrete evidence..."
+    ],
+    "closing": "Best regards,"
+  }
+}
