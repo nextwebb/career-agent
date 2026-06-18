@@ -1,9 +1,10 @@
 # /source Methodology
 
-`/source` is a lead-generation and verification workflow. It helps an agent discover
-job leads, verify that each role is open, and rank the verified roles against the
-candidate profile. It is not a complete job-search index, does not use private
-data-source access, and cannot guarantee exhaustive market coverage.
+`/source` is a lead-generation plus official-post verification workflow. It helps an
+agent discover job leads, verify that each role is open on a company-controlled post,
+and rank the verified roles against the candidate profile. It is not a complete
+job-search index, does not use private data-source access, and cannot guarantee
+exhaustive market coverage.
 
 The workflow depends on the browser, search, and page-access capabilities available in
 the local Claude Code or Codex session. If search, a careers page, or an ATS page is
@@ -15,7 +16,9 @@ assumptions.
 Separate every claim into one of two buckets:
 
 - **Verified facts**: facts visible in a cited source, such as a company-hosted job post,
-  official ATS page, company careers page, or user-uploaded source document.
+  official ATS page, company careers page, or user-uploaded source document. A source
+  list can verify only that the list made a company-level claim; it does not verify that
+  a current job post offers sponsorship, relocation, compensation, or a specific role.
 - **Inferred recruiter judgment**: fit score, probability, compensation potential,
   seniority fit, immigration practicality, and suggested CV or cover-letter strategy.
 
@@ -41,7 +44,9 @@ Fallback discovery sources:
 
 Fallback discovery sources can suggest leads, but they are weaker evidence than an
 official company or ATS post. Prefer a company-hosted or company-controlled job post
-before counting a role as verified.
+before counting a role as verified. If no official or company-controlled post can be
+reached, place the item under **Unverified leads** instead of scoring it as a verified
+role, unless the user explicitly asks for discovery-only leads.
 
 Do not claim access to private recruiter databases, paid job feeds, internal ATS data,
 or guaranteed complete coverage unless the user explicitly provides and authorizes that
@@ -105,7 +110,8 @@ LinkedIn and aggregator treatment:
 
 - A LinkedIn or aggregator page can be used for discovery.
 - A company-controlled LinkedIn job post can be cited when no better official post is
-  available, but mark the source as `public platform` instead of `company-hosted`.
+  available, but mark the source as `public platform`, keep the evidence-quality score
+  conservative, and state that no stronger official post was reachable.
 - Aggregator text does not verify sponsorship, relocation, compensation, or seniority
   unless the same claim appears in the cited company-controlled post.
 - If a LinkedIn or aggregator link points to a company-hosted post, cite the
@@ -125,6 +131,16 @@ verified roles out of 100 using this weighting:
 | Sponsorship or relocation signal | 10 | Explicit job-post language, source-list claim, company history, or lack of evidence. |
 | Compensation potential | 5 | Published salary, market, seniority, company stage, and likely pay band. |
 | Evidence quality and freshness | 10 | Official source quality, current application flow, complete JD, and low ambiguity. |
+
+Caps and guardrails:
+
+- Do not score an unverified lead.
+- Cap `Evidence quality and freshness` at 6 when the only reachable source is a public
+  platform post rather than an official company or ATS post.
+- Cap `Sponsorship or relocation signal` at 5 when the only positive signal is a source
+  list claim or company-level history that is not confirmed in the current job post.
+- Score `Sponsorship or relocation signal` as 0 when the post says sponsorship is
+  unavailable or requires existing local work authorization that the candidate lacks.
 
 Use score bands consistently:
 

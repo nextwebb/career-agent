@@ -1,13 +1,13 @@
 ---
 name: source
-description: Find verified open roles matching your profile, ranked by fit score with sponsorship and relocation signals
+description: Discover role leads, verify open roles on official posts, and rank verified matches with heuristic sponsorship and relocation confidence
 ---
 
 # source
 
-Find verified, currently-open roles that match your profile. Uses your CV, LinkedIn export, or profile.json as the candidate baseline. Optionally reads uploaded company/sponsorship documents as a starting source list.
+Discover role leads, verify currently-open roles on official or company-controlled posts, and rank verified matches against your profile. Uses your CV, LinkedIn export, or profile.json as the candidate baseline. Optionally reads uploaded company/sponsorship documents as a starting source list.
 
-Aims to return up to 20 ranked roles when enough matches can be verified, with fit scores, CV variant suggestions, cover letter angles, and sponsorship/relocation signals. Each role should cite the official job post or careers page, and blocked or inconclusive checks should be marked clearly. Fit scores are heuristic.
+Aims to return up to 20 ranked roles when enough matches can be verified, with fit scores, CV variant suggestions, cover letter angles, and sponsorship/relocation confidence labels. Each role should cite the official job post or careers page, and blocked or inconclusive checks should be marked clearly. Fit scores are heuristic recruiter judgment, not verified facts.
 
 Follow `docs/source-methodology.md` for the source hierarchy, broad-search strategy, verification standard, scoring rubric, sponsorship/relocation confidence labels, and fewer-than-20 fallback behavior. Do not claim private recruiter database access, paid feed access, internal ATS access, or guaranteed complete job-search coverage unless the user explicitly provides and authorizes that source in the session.
 
@@ -159,7 +159,7 @@ Count a role as verified only when the company identity is clear, title and loca
 Use LinkedIn and aggregators carefully:
 - Use LinkedIn and aggregators for discovery when useful
 - Prefer the company-hosted or company-controlled post as the verification source
-- If only a public LinkedIn company posting is available, mark `Source type: public platform`
+- If only a public LinkedIn company posting is available, mark `Source type: public platform`, keep the evidence-quality score conservative, and state that no stronger official post was reachable
 - Do not treat aggregator text as proof of sponsorship, relocation, compensation, or seniority unless the same claim appears in the cited company-controlled post
 
 ---
@@ -177,6 +177,12 @@ Rank by the fit score in `docs/source-methodology.md`, using these weights:
 5. Sponsorship or relocation signal: 10
 6. Compensation potential: 5
 7. Evidence quality and freshness: 10
+
+Apply these caps:
+- Do not score unverified leads
+- Cap evidence quality at 6 when the only reachable source is a public platform post
+- Cap sponsorship or relocation signal at 5 when it comes only from a source list or company-level history, not the current job post
+- Score sponsorship or relocation signal as 0 when the post says sponsorship is unavailable or requires existing local work authorization that the candidate lacks
 
 If fewer than 20 suitable roles can be verified, do not pad with unverified leads. Return the verified set and include a coverage note describing searches attempted, blocked pages, fallback expansions, and any watched companies or unverified leads.
 
@@ -223,7 +229,7 @@ Companies from the source list that look promising but have no matching open rol
 ## Evidence standard
 
 - If a role is currently open: cite the company careers page or official job post URL
-- If sponsorship/relocation is only from uploaded documents: say so explicitly
+- If sponsorship/relocation is only from uploaded documents: say so explicitly and do not treat it as confirmed for the current job post
 - If a careers page returned no matching roles: do not count it toward the 20
 - Separate verified facts from inferred recruiter judgment
 - Do not present inference as fact

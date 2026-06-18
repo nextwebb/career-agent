@@ -652,29 +652,161 @@ class TestSKILLMarkdown:
         assert "/setup-profile" in recovery
         assert "/new-role" not in recovery
 
-    def test_source_methodology_documents_evidence_and_scoring(self):
-        """/source should keep source, verification, and scoring behavior documented."""
+    def test_source_methodology_links_skill_and_defines_evidence_model(self):
+        """/source should separate verified facts from recruiter judgment."""
         skill_content = (ROOT / "skills" / "source" / "SKILL.md").read_text(encoding="utf-8")
         methodology = ROOT / "docs" / "source-methodology.md"
 
         assert methodology.exists(), "Missing /source methodology doc"
         assert "docs/source-methodology.md" in skill_content
 
-        content = methodology.read_text(encoding="utf-8")
-        required_terms = [
-            "does not use private",
+        content = normalize_whitespace(methodology.read_text(encoding="utf-8"))
+        for term in [
+            "lead-generation plus official-post verification workflow",
+            "does not use private data-source access",
+            "cannot guarantee exhaustive market coverage",
             "Verified facts",
             "Inferred recruiter judgment",
+            "A source list can verify only that the list made a company-level claim",
+            "does not verify that a current job post offers sponsorship",
+        ]:
+            assert term in content, f"/source methodology missing evidence term: {term}"
+
+    def test_source_methodology_defines_primary_and_fallback_sources(self):
+        """/source should define source hierarchy without implying private access."""
+        content = normalize_whitespace(
+            (ROOT / "docs" / "source-methodology.md").read_text(encoding="utf-8")
+        )
+
+        for term in [
             "Primary sources",
+            "Company careers pages on official company domains",
+            "Company-controlled ATS postings",
+            "User-uploaded source lists",
             "Fallback discovery sources",
-            "Role Verification",
-            "Fit Score Rubric",
+            "Public web search results",
+            "Public LinkedIn job pages or company posts",
+            "Public job aggregators",
+            "Unverified leads",
+            "private recruiter databases",
+            "paid job feeds",
+            "internal ATS data",
+        ]:
+            assert term in content, f"/source methodology missing source term: {term}"
+
+    def test_source_methodology_defines_verification_and_aggregator_treatment(self):
+        """/source should require official-post verification and demote aggregators."""
+        content = normalize_whitespace(
+            (ROOT / "docs" / "source-methodology.md").read_text(encoding="utf-8")
+        )
+
+        for criterion in [
+            "The company identity is clear",
+            "The role title and location or work setup are visible",
+            "The post appears current and accepting applications",
+            "The application URL is reachable",
+            "The source URL is cited",
+            "stale search snippet",
+            "uncited memory, model knowledge, or unsupported inference",
+        ]:
+            assert criterion in content, f"/source methodology missing verification: {criterion}"
+
+        for term in [
+            "A LinkedIn or aggregator page can be used for discovery",
+            "mark the source as `public platform`",
+            "no stronger official post was reachable",
+            "Aggregator text does not verify sponsorship, relocation, compensation, or seniority",
+            "cite the company-hosted post as the verification source",
+        ]:
+            assert term in content, f"/source methodology missing aggregator rule: {term}"
+
+    def test_source_methodology_defines_score_weights_and_caps(self):
+        """/source fit scores should have explicit components and conservative caps."""
+        content = (ROOT / "docs" / "source-methodology.md").read_text(encoding="utf-8")
+        normalized = normalize_whitespace(content)
+
+        expected_weights = [
+            ("Technical match", "35"),
+            ("Seniority match", "15"),
+            ("Domain and product relevance", "10"),
+            ("Location and work authorization practicality", "15"),
+            ("Sponsorship or relocation signal", "10"),
+            ("Compensation potential", "5"),
+            ("Evidence quality and freshness", "10"),
+        ]
+        for factor, weight in expected_weights:
+            assert f"| {factor} | {weight} |" in content
+
+        for term in [
+            "The fit score is a heuristic recruiter judgment",
+            "Do not score an unverified lead",
+            "Cap `Evidence quality and freshness` at 6",
+            "Cap `Sponsorship or relocation signal` at 5",
+            "Score `Sponsorship or relocation signal` as 0",
+        ]:
+            assert term in normalized, f"/source methodology missing scoring rule: {term}"
+
+    def test_source_methodology_defines_sponsorship_confidence_levels(self):
+        """/source should label sponsorship evidence instead of upgrading inference."""
+        content = normalize_whitespace(
+            (ROOT / "docs" / "source-methodology.md").read_text(encoding="utf-8")
+        )
+
+        for label in [
+            "Confirmed in job post",
             "Sponsorship and Relocation Confidence",
             "Source list claim only, not confirmed in job post",
+            "Company-level signal only",
+            "Not mentioned",
+            "Likely blocker",
+            "Never upgrade sponsorship or relocation from inferred to confirmed",
+        ]:
+            assert label in content, f"/source methodology missing confidence label: {label}"
+
+        assert "Source-list evidence:" in content
+        assert "The post does not mention visa sponsorship or relocation" in content
+
+    def test_source_methodology_defines_fewer_than_20_behavior(self):
+        """/source should return fewer verified matches instead of padding the list."""
+        content = normalize_whitespace(
+            (ROOT / "docs" / "source-methodology.md").read_text(encoding="utf-8")
+        )
+
+        for term in [
             "Fewer Than 20 Verified Matches",
+            "do not pad the list with unverified leads",
+            "How many verified roles were found",
+            "Which searches, markets, or source-list companies were checked",
+            "Which pages were blocked, stale, or inconclusive",
+            "Which fallback expansions were used",
+            "Watched companies",
+            "Unverified leads",
+        ]:
+            assert term in content, f"/source methodology missing fewer-than-20 rule: {term}"
+
+    def test_source_public_copy_avoids_overclaiming_coverage(self):
+        """/source README/docs copy should describe lead verification, not exhaustive search."""
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        docs_index = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+        combined = readme + "\n" + docs_index
+
+        for term in [
+            "Discover leads from available public/search sources",
+            "verify open roles on company-controlled pages",
+            "verified role leads",
+            "Official posts are cited when roles are counted as verified",
+            "source-list claims kept separate from job-post facts",
+        ]:
+            assert term in combined, f"/source public copy missing cautious wording: {term}"
+
+        forbidden = [
+            "private recruiter database",
+            "Crawls company career pages directly",
+            "relocation requirements",
+            "Market Intelligence",
         ]
-        for term in required_terms:
-            assert term in content, f"/source methodology missing term: {term}"
+        for term in forbidden:
+            assert term not in combined, f"/source public copy overclaims with: {term}"
 
     def test_agents_md_exists_for_codex(self):
         """Codex should have repository-level project guidance."""
