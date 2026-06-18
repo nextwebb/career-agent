@@ -17,9 +17,9 @@ Setup:
     3. pip install reportlab
     4. python src/generate_application.py --role my_role
 
-Role configs:    ./roles/<role_id>.json
-Profile:         ./profile.json
-Output PDFs:     ./generated/
+Role configs:    ./roles/<role_id>.json in the current workspace
+Profile:         ./profile.json in the current workspace
+Output PDFs:     ./generated/ in the current workspace
 """
 
 import argparse
@@ -39,10 +39,10 @@ if importlib.util.find_spec("reportlab") is None:
     print("Or directly:      pip install reportlab")
     sys.exit(1)
 
-SCRIPT_DIR = Path(__file__).parent.parent  # repo root
-ROLES_DIR = SCRIPT_DIR / "roles"
-OUTPUT_DIR = SCRIPT_DIR / "generated"
-PROFILE_PATH = SCRIPT_DIR / "profile.json"
+WORKSPACE_DIR = Path.cwd()
+ROLES_DIR = WORKSPACE_DIR / "roles"
+OUTPUT_DIR = WORKSPACE_DIR / "generated"
+PROFILE_PATH = WORKSPACE_DIR / "profile.json"
 
 sys.path.insert(0, str(Path(__file__).parent))
 

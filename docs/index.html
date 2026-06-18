@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>career-agent — Agentic Job Applications for Claude Code</title>
-<meta name="description" content="Six commands. End-to-end job applications. Bootstrap your profile, source verified roles, generate tailored CV PDFs, fill ATS forms automatically. Claude does the work. You click Submit."/>
+<title>career-agent: Agentic Job Applications for Claude Code and Codex</title>
+<meta name="description" content="Six commands. End-to-end job applications. Bootstrap your profile, source verified roles, generate tailored CV PDFs, fill safe ATS fields, and hand off sensitive controls."/>
 <meta name="theme-color" content="#020203"/>
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml"/>
 <link rel="shortcut icon" href="./assets/favicon.svg" type="image/svg+xml"/>
 
 <!-- OpenGraph / Product Hunt -->
-<meta property="og:title" content="career-agent — Agentic Job Applications for Claude Code"/>
-<meta property="og:description" content="Six commands. End-to-end job applications. Bootstrap your profile from your CV, source verified roles, generate tailored PDFs, fill ATS forms. Claude does the work. You click Submit."/>
+<meta property="og:title" content="career-agent: Agentic Job Applications for Claude Code and Codex"/>
+<meta property="og:description" content="Six commands. Bootstrap your profile from your CV, source verified roles, generate tailored PDFs, fill safe ATS fields, and hand off sensitive controls."/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://nextwebb.github.io/career-agent/"/>
 <meta property="og:image" content="https://raw.githubusercontent.com/nextwebb/career-agent/main/demo.gif"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="career-agent — Agentic Job Applications for Claude Code"/>
-<meta name="twitter:description" content="Six commands. Source roles, tailor CV, fill ATS forms, track pipeline. Claude Code plugin. Data stays local."/>
+<meta name="twitter:title" content="career-agent: Agentic Job Applications for Claude Code and Codex"/>
+<meta name="twitter:description" content="Six commands. Source roles, tailor CV, fill safe ATS fields, track pipeline. Data stays local."/>
 <meta name="twitter:image" content="https://raw.githubusercontent.com/nextwebb/career-agent/main/demo.gif"/>
 
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -148,10 +148,10 @@
   <!-- HERO -->
   <section class="max-w-narrative-width mx-auto px-gutter py-section-gap flex flex-col gap-8">
     <div class="flex flex-wrap gap-2 font-mono text-label text-safety-indigo animate-fiu">
-      <span class="px-2.5 py-1 border border-safety-indigo/30 rounded-full bg-safety-indigo/10">Claude Code Plugin</span>
+      <span class="px-2.5 py-1 border border-safety-indigo/30 rounded-full bg-safety-indigo/10">Claude Code + Codex</span>
       <span class="px-2.5 py-1 border border-obsidian-edge rounded-full text-on-surface-variant">Python 3.10+</span>
       <span class="px-2.5 py-1 border border-obsidian-edge rounded-full text-on-surface-variant">MIT License</span>
-      <span class="px-2.5 py-1 border border-obsidian-edge rounded-full text-on-surface-variant">v1.1.2</span>
+      <span class="px-2.5 py-1 border border-obsidian-edge rounded-full text-on-surface-variant">v1.1.5</span>
     </div>
 
     <h1 class="font-display text-hero-mobile md:text-hero text-on-surface animate-fiu delay-1">
@@ -162,7 +162,7 @@
     <p class="font-body text-body text-on-surface-variant max-w-xl leading-relaxed animate-fiu delay-2">
       Bootstrap your profile from your CV &rarr; source verified roles &rarr; scaffold a config
       &rarr; generate a tailored CV PDF &rarr; fill the ATS form &rarr; track your pipeline.
-      <span class="text-on-surface">Profile data stays local (gitignored). Claude does the work. You click Submit.</span>
+      <span class="text-on-surface">Profile data stays local (gitignored). The agent fills safe fields. You handle sensitive controls and Submit.</span>
     </p>
 
     <div class="flex flex-wrap gap-4 animate-fiu delay-3">
@@ -187,16 +187,16 @@
           <div class="w-3 h-3 rounded-full bg-tertiary-container/80"></div>
           <div class="w-3 h-3 rounded-full bg-success-emerald/80"></div>
         </div>
-        <span class="font-mono text-terminal text-on-surface-variant opacity-60">career-agent &middot; Claude Code</span>
+        <span class="font-mono text-terminal text-on-surface-variant opacity-60">career-agent &middot; Claude Code aliases</span>
         <div class="w-16"></div>
       </div>
       <div class="p-6 font-mono text-terminal text-on-surface space-y-3 leading-relaxed overflow-x-auto">
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/setup-profile</span> <span class="text-tertiary-container">~/Downloads/LinkedIn.pdf</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">profile.json written &middot; 9 roles parsed &middot; 3 CV variants</span></div>
-        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/source</span> <span class="text-tertiary-container">Netherlands backend</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">28 verified roles &middot; Top: Stripe fit 93/100</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/source</span> <span class="text-tertiary-container">Netherlands backend</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">verified roles returned &middot; top fit is heuristic</span></div>
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/new-role</span> <span class="text-tertiary-container">https://boards.greenhouse.io/stripe/jobs/5891234</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">roles/stripe_backend_2026.json</span></div>
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/generate-cv</span> <span class="text-tertiary-container">stripe_backend_2026</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">stripe_backend_2026_CV.pdf &middot; CoverLetter.pdf</span></div>
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/apply</span> <span class="text-tertiary-container">stripe_backend_2026</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">CV uploaded &middot; work auth answered &middot; 12 fields filled</span></div>
-        <div class="pl-4 text-success-emerald opacity-90">&rarr; Waiting for you: EEO fields + Submit</div>
+        <div class="pl-4 text-success-emerald opacity-90">&rarr; Waiting for you: sensitive fields + Submit</div>
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/track</span> <span class="text-tertiary-container">stripe_backend_2026 applied</span>&nbsp; <span class="text-success-emerald">&#10003;</span> <span class="text-on-surface-variant">status &rarr; applied</span><span class="cursor text-safety-indigo ml-1">&#9610;</span></div>
       </div>
     </div>
@@ -214,7 +214,7 @@
         <span class="font-mono text-terminal text-on-surface-variant opacity-60 ml-2">demo &middot; /apply stripe_backend_2026</span>
       </div>
       <img src="https://raw.githubusercontent.com/nextwebb/career-agent/main/demo.gif"
-           alt="career-agent demo: Claude filling a Greenhouse ATS form automatically"
+           alt="career-agent demo: filling a Greenhouse ATS form with human handoff"
            class="w-full" loading="lazy"/>
     </div>
   </section>
@@ -281,8 +281,8 @@
     <div class="mt-10 flex items-start gap-3 px-5 py-4 border border-safety-indigo/30 rounded-xl bg-safety-indigo/5 max-w-2xl mx-auto">
       <span class="material-symbols-outlined text-safety-indigo text-[20px] mt-0.5 shrink-0">verified_user</span>
       <p class="font-body text-body-sm text-on-surface-variant">
-        <span class="text-on-surface font-bold">Claude never clicks Submit.</span>
-        It stops before EEO/voluntary self-identification fields (gender, race, veteran, disability). That boundary is intentional and non-negotiable.
+        <span class="text-on-surface font-bold">The agent never clicks Submit.</span>
+        It stops before EEO, consent, attestation, legal, CAPTCHA, credential, payment, national-ID, and ambiguous fields. That boundary is intentional.
       </p>
     </div>
   </section>
@@ -291,7 +291,7 @@
   <section class="max-w-container-max mx-auto px-gutter mb-section-gap">
     <h2 class="font-display text-h2-mobile md:text-h2 text-on-surface mb-4">What makes it different</h2>
     <p class="font-body text-body text-on-surface-variant mb-12 max-w-2xl">
-      Not a template engine. Not a job board. A Claude Code plugin that runs the entire application pipeline from inside your terminal. Your data never leaves your machine.
+      Not a template engine. Not a job board. A Claude Code and Codex workflow that runs the application pipeline from your local project. career-agent has no backend, accounts, or telemetry.
     </p>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
 
@@ -300,15 +300,15 @@
           <span class="material-symbols-outlined text-safety-indigo text-[20px]">person_add</span>
         </div>
         <h3 class="font-display font-bold text-on-surface">Profile Bootstrap</h3>
-        <p class="font-body text-body-sm text-on-surface-variant">Upload your CV or LinkedIn PDF. Claude extracts work history, infers three audience variants (AI/LLM, Data Platform, Backend), and writes every bullet four ways — ready for tailored generation immediately.</p>
+        <p class="font-body text-body-sm text-on-surface-variant">Upload your CV or LinkedIn PDF. The agent extracts work history, infers three audience variants (AI/LLM, Data Platform, Backend), and writes one default bullet set plus three audience-specific variants.</p>
       </div>
 
       <div class="glass p-7 border border-obsidian-edge rounded-xl flex flex-col gap-4 hover:border-safety-indigo/30 transition-colors">
         <div class="w-10 h-10 rounded border border-obsidian-edge bg-surface-container-high flex items-center justify-center">
           <span class="material-symbols-outlined text-on-surface-variant text-[20px]">find_in_page</span>
         </div>
-        <h3 class="font-display font-bold text-on-surface">Intelligent Sourcing</h3>
-        <p class="font-body text-body-sm text-on-surface-variant">Crawls company career pages and scores roles against your profile. Returns verified open positions with fit scores &mdash; no ghost jobs, no noise.</p>
+        <h3 class="font-display font-bold text-on-surface">Role Sourcing</h3>
+        <p class="font-body text-body-sm text-on-surface-variant">Checks company career pages and scores roles against your profile. Returns verified open positions when available, and marks blocked or inconclusive checks clearly. Fit scores are heuristic.</p>
       </div>
 
       <div class="glass p-7 border border-obsidian-edge rounded-xl flex flex-col gap-4 hover:border-safety-indigo/30 transition-colors">
@@ -316,7 +316,7 @@
           <span class="material-symbols-outlined text-on-surface-variant text-[20px]">architecture</span>
         </div>
         <h3 class="font-display font-bold text-on-surface">A/B/C CV Variant System</h3>
-        <p class="font-body text-body-sm text-on-surface-variant">Three audience variants &mdash; AI/LLM, Data Platform, Senior Backend &mdash; with per-job bullet sets reframed for each. One profile, infinite tailored applications.</p>
+        <p class="font-body text-body-sm text-on-surface-variant">Three audience variants: AI/LLM, Data Platform, Senior Backend, with per-job bullet sets reframed for each. One profile, reusable tailored outputs.</p>
       </div>
 
       <div class="glass p-7 border border-obsidian-edge rounded-xl flex flex-col gap-4 hover:border-safety-indigo/30 transition-colors">
@@ -324,7 +324,7 @@
           <span class="material-symbols-outlined text-on-surface-variant text-[20px]">picture_as_pdf</span>
         </div>
         <h3 class="font-display font-bold text-on-surface">ATS-Safe PDF Generation</h3>
-        <p class="font-body text-body-sm text-on-surface-variant">reportlab Platypus engine. Single-column, Helvetica, no tables, no images, clickable links. Passes ATS parsers that choke on two-column layouts.</p>
+        <p class="font-body text-body-sm text-on-surface-variant">reportlab Platypus engine. Single-column, Helvetica, no tables, no images, clickable links. Designed to avoid common parser issues; review extracted content before submitting.</p>
       </div>
 
       <div class="glass p-7 border border-obsidian-edge rounded-xl flex flex-col gap-4 hover:border-safety-indigo/30 transition-colors">
@@ -332,7 +332,7 @@
           <span class="material-symbols-outlined text-on-surface-variant text-[20px]">smart_toy</span>
         </div>
         <h3 class="font-display font-bold text-on-surface">Browser Form Automation</h3>
-        <p class="font-body text-body-sm text-on-surface-variant">Opens the ATS URL, fills every required field from your profile and role config, uploads PDFs, answers custom questions. Greenhouse (direct + iframe), Lever, Workable.</p>
+        <p class="font-body text-body-sm text-on-surface-variant">Opens the ATS URL, fills safe fields from your profile and role config, uploads PDFs, and answers safe custom questions. Greenhouse (direct + iframe), Lever, Workable.</p>
       </div>
 
       <div class="glass p-7 border border-safety-indigo/20 rounded-xl flex flex-col gap-4 relative overflow-hidden">
@@ -341,7 +341,7 @@
           <span class="material-symbols-outlined text-safety-indigo text-[20px]">lock</span>
         </div>
         <h3 class="font-display font-bold text-on-surface">Data Stays Local</h3>
-        <p class="font-body text-body-sm text-on-surface-variant"><code class="font-mono text-label text-safety-indigo">profile.json</code> and <code class="font-mono text-label text-safety-indigo">roles/</code> are gitignored. Your PII never leaves your machine. No cloud sync, no accounts, no API keys for your data.</p>
+        <p class="font-body text-body-sm text-on-surface-variant"><code class="font-mono text-label text-safety-indigo">profile.json</code> and <code class="font-mono text-label text-safety-indigo">roles/</code> are gitignored. career-agent has no backend, accounts, telemetry, or API keys for your data. Your agent host and browser may process content you choose to provide.</p>
       </div>
 
     </div>
@@ -363,13 +363,13 @@
 
         <div class="skill-panel active" id="panel-setup">
           <h3 class="font-display text-h2-mobile font-bold text-on-surface mb-3">Profile Bootstrap</h3>
-          <p class="font-body text-body text-on-surface-variant mb-5">Build <code class="font-mono text-label text-safety-indigo">profile.json</code> from your CV or LinkedIn PDF. Extracts work history, infers three CV variants, and writes every bullet four ways so you're ready to generate tailored applications immediately.</p>
+          <p class="font-body text-body text-on-surface-variant mb-5">Build <code class="font-mono text-label text-safety-indigo">profile.json</code> from your CV or LinkedIn PDF. Extracts work history, infers three CV variants, and writes one default bullet set plus three audience-specific variants.</p>
           <div class="glass rounded-lg border border-obsidian-edge p-4 font-mono text-terminal text-on-surface mb-4">
             <span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/setup-profile</span> <span class="text-on-surface-variant opacity-60"># upload or paste your CV in the same message</span>
           </div>
           <div class="flex gap-3 p-4 bg-obsidian-surface rounded-lg border border-obsidian-edge">
             <span class="material-symbols-outlined text-safety-indigo text-[18px] mt-0.5 shrink-0">info</span>
-            <p class="font-body text-body-sm text-on-surface-variant">Evidence standard: Claude never invents facts not in the source. Fields it can't populate are left blank and flagged in the report.</p>
+            <p class="font-body text-body-sm text-on-surface-variant">Evidence standard: the agent never invents facts not in the source. Fields it can't populate are left blank and flagged in the report.</p>
           </div>
         </div>
 
@@ -399,7 +399,7 @@
 
         <div class="skill-panel" id="panel-gencv">
           <h3 class="font-display text-h2-mobile font-bold text-on-surface mb-3">PDF Generation</h3>
-          <p class="font-body text-body text-on-surface-variant mb-5">Builds ATS-optimised CV and cover letter PDFs using reportlab Platypus. Single-column, Helvetica, no tables, no images, clickable links — passes ATS parsers that choke on two-column layouts.</p>
+          <p class="font-body text-body text-on-surface-variant mb-5">Builds ATS-aware CV and cover letter PDFs using reportlab Platypus. Single-column, Helvetica, no tables, no images, clickable links. Parser behavior varies by ATS, so review extracted content before submitting.</p>
           <div class="glass rounded-lg border border-obsidian-edge p-4 font-mono text-terminal text-on-surface mb-4">
             <span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/generate-cv</span> stripe_backend_2026
           </div>
@@ -411,19 +411,19 @@
 
         <div class="skill-panel" id="panel-apply">
           <h3 class="font-display text-h2-mobile font-bold text-on-surface mb-3">ATS Form Filling</h3>
-          <p class="font-body text-body text-on-surface-variant mb-5">Opens the job URL, fills every required field from your profile and role config, uploads PDFs, answers custom questions, then hands off to you for EEO and Submit.</p>
+          <p class="font-body text-body text-on-surface-variant mb-5">Opens the job URL, fills safe fields from your profile and role config, uploads PDFs, answers safe custom questions, then hands off sensitive fields and Submit to you.</p>
           <div class="glass rounded-lg border border-obsidian-edge p-4 font-mono text-terminal text-on-surface mb-4">
             <span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/apply</span> stripe_backend_2026
           </div>
           <div class="flex gap-3 p-4 bg-obsidian-surface rounded-lg border border-safety-indigo/20">
             <span class="material-symbols-outlined text-safety-indigo text-[18px] mt-0.5 shrink-0">verified_user</span>
-            <p class="font-body text-body-sm text-on-surface-variant">Claude never fills EEO/voluntary self-identification fields or clicks Submit. You review and confirm.</p>
+            <p class="font-body text-body-sm text-on-surface-variant">The agent never fills EEO, consent, attestation, legal, CAPTCHA, credential, payment, national-ID, or ambiguous fields, and never clicks Submit.</p>
           </div>
         </div>
 
         <div class="skill-panel" id="panel-track">
           <h3 class="font-display text-h2-mobile font-bold text-on-surface mb-3">Pipeline Tracker</h3>
-          <p class="font-body text-body text-on-surface-variant mb-5">View your application pipeline, update statuses, add notes. Stored in <code class="font-mono text-label text-safety-indigo">tracker.json</code> (gitignored &mdash; stays local).</p>
+          <p class="font-body text-body text-on-surface-variant mb-5">View your application pipeline, update statuses, add notes. Stored in <code class="font-mono text-label text-safety-indigo">tracker.json</code> (gitignored - stays local).</p>
           <div class="glass rounded-lg border border-obsidian-edge p-4 font-mono text-terminal text-on-surface mb-4">
             <span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/track</span> <span class="text-on-surface-variant">stripe_backend_2026 "screen"</span>
           </div>
@@ -448,7 +448,7 @@
             <img src="https://www.greenhouse.io/favicon.ico" alt="Greenhouse logo" class="w-full h-full object-contain"
                  onerror="this.parentNode.innerHTML='<span class=\'font-mono text-label font-bold text-obsidian-deep\'>GH</span>'"/>
           </div>
-          <span class="px-2 py-0.5 rounded-full bg-success-emerald/15 text-success-emerald font-mono text-label">Verified</span>
+          <span class="px-2 py-0.5 rounded-full bg-success-emerald/15 text-success-emerald font-mono text-label">Support Notes</span>
         </div>
         <h3 class="font-display font-bold text-on-surface mb-2">Greenhouse</h3>
         <p class="font-body text-body-sm text-on-surface-variant mb-4">Direct forms and iframe embeds. Handles React comboboxes for country/city and hidden file inputs via JS unhide.</p>
@@ -461,10 +461,10 @@
             <img src="https://lever.co/favicon.ico" alt="Lever logo" class="w-full h-full object-contain"
                  onerror="this.parentNode.innerHTML='<span class=\'font-mono text-label font-bold text-obsidian-deep\'>LV</span>'"/>
           </div>
-          <span class="px-2 py-0.5 rounded-full bg-success-emerald/15 text-success-emerald font-mono text-label">Verified</span>
+          <span class="px-2 py-0.5 rounded-full bg-success-emerald/15 text-success-emerald font-mono text-label">Support Notes</span>
         </div>
         <h3 class="font-display font-bold text-on-surface mb-2">Lever</h3>
-        <p class="font-body text-body-sm text-on-surface-variant mb-4">Single-page form filling. No file upload for cover letter &mdash; cover letter text is pasted into Lever's text field instead.</p>
+        <p class="font-body text-body-sm text-on-surface-variant mb-4">Single-page form filling. No file upload for cover letter - cover letter text is pasted into Lever's text field instead.</p>
         <div class="font-mono text-label text-on-surface-variant border-t border-obsidian-edge pt-3 opacity-70">jobs.lever.co</div>
       </div>
 
@@ -474,7 +474,7 @@
             <img src="https://workable.com/favicon.ico" alt="Workable logo" class="w-full h-full object-contain"
                  onerror="this.parentNode.innerHTML='<span class=\'font-mono text-label font-bold text-obsidian-deep\'>WK</span>'"/>
           </div>
-          <span class="px-2 py-0.5 rounded-full bg-success-emerald/15 text-success-emerald font-mono text-label">Verified</span>
+          <span class="px-2 py-0.5 rounded-full bg-success-emerald/15 text-success-emerald font-mono text-label">Support Notes</span>
         </div>
         <h3 class="font-display font-bold text-on-surface mb-2">Workable</h3>
         <p class="font-body text-body-sm text-on-surface-variant mb-4">Full coverage for document uploads and multi-choice qualification questions. Visible file inputs work directly.</p>
@@ -483,42 +483,80 @@
 
     </div>
     <p class="font-body text-body-sm text-on-surface-variant mt-6 opacity-70">
-      Coming next: Ashby, SmartRecruiters, iCIMS, Taleo &mdash;
+      Coming next: Ashby, SmartRecruiters, iCIMS, Taleo -
       <a href="https://github.com/nextwebb/career-agent/blob/main/CONTRIBUTING.md" class="text-safety-indigo hover:underline">PRs welcome</a>.
     </p>
   </section>
 
   <!-- INSTALL -->
   <section class="max-w-narrative-width mx-auto px-gutter mb-section-gap" id="install">
-    <h2 class="font-display text-h2-mobile md:text-h2 text-on-surface mb-4">Get started in three commands</h2>
+    <h2 class="font-display text-h2-mobile md:text-h2 text-on-surface mb-4">Install</h2>
     <p class="font-body text-body text-on-surface-variant mb-8">
-      Checks Python 3.10+, installs <code class="font-mono text-label text-safety-indigo">reportlab</code>, creates <code class="font-mono text-label text-safety-indigo">profile.json</code>, and installs the plugin. Requires Node 18+.
+      The setup command checks Python 3.10+, installs <code class="font-mono text-label text-safety-indigo">reportlab</code> when needed, detects Claude Code and Codex independently, and creates <code class="font-mono text-label text-safety-indigo">profile.json</code>. It does not install either plugin host for you.
     </p>
 
     <div class="glass rounded-xl border border-safety-indigo/30 p-6 glow-indigo-sm mb-6">
       <div class="flex justify-between items-center mb-3">
-        <span class="font-mono text-label text-on-surface-variant uppercase tracking-widest">Install</span>
+        <span class="font-mono text-label text-on-surface-variant uppercase tracking-widest">Setup check</span>
         <button id="copy-npx"
-                onclick="navigator.clipboard.writeText('npx @nextwebb/career-agent\nclaude plugin marketplace add nextwebb/career-agent\nclaude plugin install career-agent').then(()=>{ this.textContent='Copied'; setTimeout(()=>{ this.innerHTML='<span class=\'material-symbols-outlined text-[15px]\'>content_copy</span> Copy'; },1500) })"
+                onclick="navigator.clipboard.writeText('npx @nextwebb/career-agent\nnpx @nextwebb/career-agent doctor').then(()=>{ this.textContent='Copied'; setTimeout(()=>{ this.innerHTML='<span class=\'material-symbols-outlined text-[15px]\'>content_copy</span> Copy'; },1500) })"
                 class="flex items-center gap-1 font-mono text-label text-on-surface-variant hover:text-safety-indigo transition-colors">
           <span class="material-symbols-outlined text-[15px]">content_copy</span> Copy
         </button>
       </div>
       <div class="font-mono text-terminal text-on-surface space-y-2">
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">npx</span> @nextwebb/career-agent</div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">npx</span> @nextwebb/career-agent doctor</div>
+      </div>
+    </div>
+
+    <div class="glass rounded-xl border border-obsidian-edge p-6 mb-6">
+      <div class="font-mono text-label text-on-surface-variant uppercase tracking-widest mb-4">Claude Code</div>
+      <div class="font-mono text-terminal text-on-surface space-y-2">
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">claude</span> plugin marketplace add nextwebb/career-agent</div>
         <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">claude</span> plugin install career-agent</div>
+      </div>
+    </div>
+
+    <div class="glass rounded-xl border border-obsidian-edge p-6 mb-6">
+      <div class="font-mono text-label text-on-surface-variant uppercase tracking-widest mb-4">Codex</div>
+      <p class="font-body text-body-sm text-on-surface-variant">
+        This package includes <code class="font-mono text-label text-safety-indigo">.codex-plugin/plugin.json</code> and Codex skill metadata. Making it available in Codex depends on the Codex surface you use and the plugin source you configure. The setup check and Claude commands above are not Codex plugin setup.
+      </p>
+    </div>
+
+    <div class="glass rounded-xl border border-obsidian-edge overflow-hidden mb-6">
+      <div class="px-6 py-4 border-b border-obsidian-edge font-mono text-label text-on-surface-variant uppercase tracking-widest">Support matrix</div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left font-body text-body-sm">
+          <thead class="text-on-surface">
+            <tr class="border-b border-obsidian-edge">
+              <th class="px-6 py-3">Workflow</th>
+              <th class="px-6 py-3">Claude Code</th>
+              <th class="px-6 py-3">Codex</th>
+            </tr>
+          </thead>
+          <tbody class="text-on-surface-variant">
+            <tr class="border-b border-obsidian-edge"><td class="px-6 py-3">Profile, sourcing, role config, PDFs, tracking</td><td class="px-6 py-3">Supported</td><td class="px-6 py-3">Supported</td></tr>
+            <tr><td class="px-6 py-3">ATS form filling</td><td class="px-6 py-3">Supported with Claude in Chrome</td><td class="px-6 py-3">Experimental until issue #65 verifies non-submitted ATS flows</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
     <div class="glass rounded-xl border border-obsidian-edge p-6">
       <div class="font-mono text-label text-on-surface-variant uppercase tracking-widest mb-4">Then</div>
       <div class="font-mono text-terminal text-on-surface space-y-2">
-        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/setup-profile</span><span class="text-on-surface-variant opacity-60">  # upload your CV or LinkedIn PDF</span></div>
-        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/source</span> Netherlands backend</div>
-        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/new-role</span> &lt;url&gt;</div>
-        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/generate-cv</span> &lt;role_id&gt;</div>
-        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/apply</span> &lt;role_id&gt;</div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/setup-profile</span><span class="text-on-surface-variant opacity-60">  # Claude Code alias</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">$setup-profile</span><span class="text-on-surface-variant opacity-60">  # Codex skill invocation</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/source</span> Netherlands backend<span class="text-on-surface-variant opacity-60">  # Claude Code alias</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">$source</span> Netherlands backend<span class="text-on-surface-variant opacity-60">  # Codex skill invocation</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/new-role</span> &lt;url&gt;<span class="text-on-surface-variant opacity-60">  # Claude Code alias</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">$new-role</span> &lt;url&gt;<span class="text-on-surface-variant opacity-60">  # Codex skill invocation</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/generate-cv</span> &lt;role_id&gt;<span class="text-on-surface-variant opacity-60">  # Claude Code alias</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">$generate-cv</span> &lt;role_id&gt;<span class="text-on-surface-variant opacity-60">  # Codex skill invocation</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">/apply</span> &lt;role_id&gt;<span class="text-on-surface-variant opacity-60">  # Claude Code alias</span></div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">$apply</span> &lt;role_id&gt;<span class="text-on-surface-variant opacity-60">  # Codex experimental until #65</span></div>
       </div>
     </div>
   </section>
@@ -534,7 +572,7 @@
           <span class="material-symbols-outlined faq-icon text-on-surface-variant shrink-0">add</span>
         </summary>
         <div class="px-6 pb-5 font-body text-body-sm text-on-surface-variant">
-          Yes. <code class="font-mono text-label text-safety-indigo">profile.json</code>, <code class="font-mono text-label text-safety-indigo">roles/</code>, and <code class="font-mono text-label text-safety-indigo">tracker.json</code> are all gitignored. Your PII never leaves your machine. career-agent has no backend, no accounts, and no telemetry.
+          career-agent has no backend, accounts, or telemetry. <code class="font-mono text-label text-safety-indigo">profile.json</code>, <code class="font-mono text-label text-safety-indigo">roles/</code>, and <code class="font-mono text-label text-safety-indigo">tracker.json</code> are gitignored. Your agent host and browser may process content you choose to provide.
         </div>
       </details>
 
@@ -544,17 +582,17 @@
           <span class="material-symbols-outlined faq-icon text-on-surface-variant shrink-0">add</span>
         </summary>
         <div class="px-6 pb-5 font-body text-body-sm text-on-surface-variant">
-          No. Claude stops at the final review page. It also never fills EEO/voluntary self-identification fields (gender, race, veteran status, disability). This boundary is intentional &mdash; you retain full control of the irreversible action.
+          No. The agent stops at the final review page. It also never fills EEO, consent, attestation, legal, CAPTCHA, credential, payment, national-ID, or ambiguous fields. This boundary is intentional - you retain full control of irreversible and sensitive actions.
         </div>
       </details>
 
       <details class="group glass border border-obsidian-edge rounded-xl overflow-hidden">
         <summary class="flex justify-between items-center px-6 py-5 text-on-surface font-body font-bold">
-          What do I need besides Claude Code?
+          What do I need besides Claude Code or Codex?
           <span class="material-symbols-outlined faq-icon text-on-surface-variant shrink-0">add</span>
         </summary>
         <div class="px-6 pb-5 font-body text-body-sm text-on-surface-variant">
-          Python 3.10+ with <code class="font-mono text-label text-safety-indigo">reportlab</code> for PDF generation (<code class="font-mono text-label text-safety-indigo">pip install reportlab</code>). Node 18+ if you use the <code class="font-mono text-label text-safety-indigo">npx</code> installer. For form filling via <code class="font-mono text-label text-safety-indigo">/apply</code>, you also need the <strong>Claude in Chrome extension</strong> &mdash; all DOM-based ATS automation runs through it. CV generation alone does not require the extension.
+          Python 3.10+ with <code class="font-mono text-label text-safety-indigo">reportlab</code> for PDF generation (<code class="font-mono text-label text-safety-indigo">pip install reportlab</code>). Node 18+ if you use the <code class="font-mono text-label text-safety-indigo">npx</code> setup check. For form filling, Claude Code uses Claude in Chrome. Codex uses Browser for public pages and Chrome for signed-in browser state, but Codex <code class="font-mono text-label text-safety-indigo">/apply</code> remains experimental until issue #65.
         </div>
       </details>
 
@@ -564,7 +602,7 @@
           <span class="material-symbols-outlined faq-icon text-on-surface-variant shrink-0">add</span>
         </summary>
         <div class="px-6 pb-5 font-body text-body-sm text-on-surface-variant">
-          You can, but the schema is substantial &mdash; three CV variants, six impact statements, and four bullet sets per job role. For a 10-role history that's 40+ bullet sets. <code class="font-mono text-label text-safety-indigo">/setup-profile</code> generates all of it from your existing CV or LinkedIn PDF in one pass.
+          You can, but the schema is substantial - three CV variants, six impact statements, and four bullet sets per job role. For a 10-role history that's 40+ bullet sets. <code class="font-mono text-label text-safety-indigo">/setup-profile</code> generates all of it from your existing CV or LinkedIn PDF in one pass.
         </div>
       </details>
 
@@ -592,7 +630,7 @@
         <img src="./assets/logo.svg" alt="" class="w-7 h-7" aria-hidden="true"/>
         <span>career-agent</span>
       </div>
-      <p class="font-body text-body-sm text-on-surface-variant">Agentic job application workflow for Claude Code. Six commands, end-to-end. Your data stays local.</p>
+      <p class="font-body text-body-sm text-on-surface-variant">Agentic job application workflow for Claude Code and Codex. Six commands, end-to-end. Local files stay gitignored.</p>
     </div>
     <div class="flex flex-wrap gap-x-16 gap-y-6 text-body-sm">
       <div class="flex flex-col gap-2.5">
@@ -611,7 +649,7 @@
   </div>
   <div class="max-w-container-max mx-auto mt-10 pt-6 border-t border-obsidian-edge flex flex-col md:flex-row justify-between items-center gap-4">
     <span class="font-body text-body-sm text-on-surface-variant opacity-50">&copy; 2026 Peterson Oaikhenah (nextwebb). MIT License.</span>
-    <span class="font-body text-body-sm text-on-surface-variant opacity-50">Built with Claude Code &middot; reportlab &middot; Python</span>
+    <span class="font-body text-body-sm text-on-surface-variant opacity-50">Built with Claude Code, Codex, reportlab, and Python</span>
   </div>
 </footer>
 

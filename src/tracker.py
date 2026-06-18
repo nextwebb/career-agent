@@ -2,7 +2,7 @@
 """
 tracker.py — Application status tracker for career-agent.
 
-Maintains tracker.json in the repo root (gitignored).
+Maintains tracker.json in the current workspace.
 Each entry records one application: role, company, status, dates, notes.
 
 Usage:
@@ -21,8 +21,9 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-TRACKER_PATH = Path(__file__).parent.parent / "tracker.json"
-ROLES_DIR = Path(__file__).parent.parent / "roles"
+WORKSPACE_DIR = Path.cwd()
+TRACKER_PATH = WORKSPACE_DIR / "tracker.json"
+ROLES_DIR = WORKSPACE_DIR / "roles"
 
 STATUSES = ["draft", "applied", "screen", "interview", "offer", "rejected", "withdrawn"]
 

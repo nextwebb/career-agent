@@ -5,6 +5,7 @@
 # career-agent
 
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-000?style=flat&logo=anthropic&logoColor=white)](https://claude.ai/code)
+[![Codex](https://img.shields.io/badge/Codex-Plugin-111827?style=flat)](https://developers.openai.com/codex)
 [![CI](https://github.com/nextwebb/career-agent/workflows/CI/badge.svg)](https://github.com/nextwebb/career-agent/actions/workflows/ci.yml)
 [![Security](https://github.com/nextwebb/career-agent/workflows/Security/badge.svg)](https://github.com/nextwebb/career-agent/actions/workflows/security.yml)
 [![npm](https://img.shields.io/npm/v/@nextwebb/career-agent?style=flat&logo=npm)](https://www.npmjs.com/package/@nextwebb/career-agent)
@@ -15,28 +16,28 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional_Commits-1.0.0-FE5196?style=flat&logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat)](https://opensource.org/licenses/MIT)
 
-**Agentic job application workflow for Claude Code.**
+**Agentic job application workflow for Claude Code and Codex.**
 
-One command generates a tailored CV + cover letter PDF per role. Claude fills the ATS form. You review and click Submit.
+One command generates a tailored CV + cover letter PDF per role. The agent fills safe ATS fields, then hands off sensitive, consent, attestation, legal, and Submit controls to you.
 
 Not a template engine. Not a job tracker. An agent that does the work.
 
 **[📖 Live Demo & Docs](https://nextwebb.github.io/career-agent/)** | **[⭐ Star on GitHub](https://github.com/nextwebb/career-agent)**
 
-![career-agent demo](demo.gif)
+![career-agent demo](https://raw.githubusercontent.com/nextwebb/career-agent/main/demo.gif)
 
 ---
 
 ## What it does
 
-0. **`/setup-profile`** — Build `profile.json` from your CV or LinkedIn PDF — extracts work history, generates 3 CV variants, writes per-job bullets automatically
-1. **`/source`** — Find and verify open roles matching your profile from company career pages
-2. **`/new-role`** — Scaffold a new role config interactively by scraping the JD
-3. **`/generate-cv`** — Build ATS-optimised CV + cover letter PDFs tailored to the role
-4. **`/apply`** — Open the job URL in Chrome, fill every required field, upload PDFs, answer custom questions — then hand off to you for EEO/voluntary fields and Submit
-5. **`/track`** — View your application pipeline, update statuses, add notes
+0. **`/setup-profile`**: Build `profile.json` from your CV or LinkedIn PDF, extract work history, generate 3 CV variants, and write per-job bullets automatically
+1. **`/source`**: Find and verify open roles matching your profile from company career pages
+2. **`/new-role`**: Scaffold a new role config interactively by scraping the JD
+3. **`/generate-cv`**: Build ATS-optimised CV + cover letter PDFs tailored to the role
+4. **`/apply`**: Open the job URL in a browser, fill safe fields, upload PDFs, answer safe custom questions, then hand off to you for sensitive fields and Submit
+5. **`/track`**: View your application pipeline, update statuses, add notes
 
-Claude never submits on your behalf. That boundary is intentional.
+The agent never submits on your behalf. That boundary is intentional.
 
 ---
 
@@ -48,11 +49,12 @@ Claude never submits on your behalf. That boundary is intentional.
 | CV variant system (A/B/C by audience) | ✅ per-role | ❌ single template |
 | Per-role cover letter PDF | ✅ | ✅ `/cover` |
 | Browser form filling | ✅ Greenhouse, Lever, Workable | ✅ `/apply` |
-| ATS-safe single-column PDF | ✅ reportlab | ✅ HTML→PDF |
-| Human-in-loop handoff | ✅ EEO + Submit only | ✅ |
+| ATS-aware single-column PDF | ✅ reportlab | ✅ HTML→PDF |
+| Human-in-loop handoff | ✅ sensitive fields + Submit | ✅ |
 | Profile data local + gitignored | ✅ | ✅ |
-| npx one-command install | ✅ | ✅ |
-| Claude Code CLI + desktop | ✅ both | ✅ + Gemini/OpenCode |
+| npx setup check | ✅ | ✅ |
+| Claude Code CLI + desktop | ✅ | ✅ + Gemini/OpenCode |
+| Codex plugin metadata | ✅ | ❌ |
 
 ---
 
@@ -68,37 +70,66 @@ All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_P
 
 ---
 
+## Support matrix
+
+| Workflow | Claude Code | Codex |
+|---|---|---|
+| Setup and doctor | ✅ supported | ✅ supported |
+| Profile bootstrap | ✅ `/setup-profile` | ✅ `$setup-profile` or skill selector |
+| Job sourcing | ✅ `/source` | ✅ `$source` or natural language |
+| Role config | ✅ `/new-role` | ✅ `$new-role` or natural language |
+| CV and cover letter PDFs | ✅ `/generate-cv` | ✅ `$generate-cv` or natural language |
+| Pipeline tracking | ✅ `/track` | ✅ `$track` or natural language |
+| ATS form filling | ✅ with Claude in Chrome | ⚠️ experimental until [#65](https://github.com/nextwebb/career-agent/issues/65) |
+
+Codex support means the package includes `.codex-plugin/plugin.json`, Codex-compatible skill metadata, host-neutral skill instructions, and Codex-aware setup checks. It does not mean `npx` installs the plugin into Codex. How you make the plugin available in Codex depends on the Codex surface and configured plugin source.
+
 ## Prerequisites
 
-- [Claude Code](https://claude.ai/code) CLI or Claude Code desktop app
+- [Claude Code](https://claude.ai/code) CLI or [Codex](https://developers.openai.com/codex) CLI/app
 - Python 3.10+ with `reportlab` (`pip install reportlab`)
-- [Claude in Chrome extension](https://chrome.google.com/webstore) connected to Claude Code (CLI or desktop) — **not** the Claude.ai consumer app
+- Node 18+ for the `npx` setup and doctor commands
+- Browser automation for `/apply`:
+  - Claude Code: Claude in Chrome extension
+  - Codex: Browser for public pages, Chrome for signed-in browser state; still experimental until #65
 
 ---
 
 ## Install
 
+### Setup check
+
 ```bash
-# 1. Check prerequisites (Python 3.10+, reportlab, Claude Code CLI) and create profile.json
+# Check Python 3.10+, reportlab, Claude/Codex host availability, and create profile.json
 npx @nextwebb/career-agent
+```
 
-# 2. Register the plugin source
+Run a health check without creating `profile.json`:
+
+```bash
+npx @nextwebb/career-agent doctor
+```
+
+### Claude Code plugin install
+
+```bash
 claude plugin marketplace add nextwebb/career-agent
-
-# 3. Install the plugin
 claude plugin install career-agent
 ```
 
-Node 18+ required for the prerequisites check. The Claude Code CLI must be on your `PATH` — if you use the desktop app only, [install the CLI](https://claude.ai/code) first.
+### Codex plugin metadata
+
+Codex metadata is packaged at `.codex-plugin/plugin.json`. Making it available in Codex depends on the Codex surface you use and the plugin source you configure. Do not treat `npx` or the Claude marketplace commands above as Codex plugin setup.
 
 Then bootstrap your profile:
 
 ```
-/setup-profile               # Build profile.json from your CV/LinkedIn PDF
+/setup-profile               # Claude Code alias
+$setup-profile               # Codex skill invocation
 /source Germany backend      # Find matching roles
 /new-role                    # Create role config
 /generate-cv <role_id>       # Generate PDFs
-/apply <role_id>             # Fill ATS form
+/apply <role_id>             # Browser form handoff, Codex experimental
 /track                       # View pipeline
 ```
 
@@ -112,9 +143,9 @@ The fastest way is to let the agent build it for you:
 /setup-profile               # Upload or paste your CV/LinkedIn PDF
 ```
 
-Claude extracts your work history, infers three CV variants (AI/LLM, Data Platform, Backend), and writes per-job bullets four ways — ready for `/generate-cv` immediately.
+The agent extracts your work history, infers three CV variants (AI/LLM, Data Platform, Backend), and writes one default bullet set plus three audience-specific variants, ready for `/generate-cv` or `$generate-cv` immediately.
 
-Or create it manually: `profile.json` (gitignored — never committed) holds your personal data:
+Or create it manually: `profile.json` (gitignored: never committed) holds your personal data:
 
 ```json
 {
@@ -129,7 +160,7 @@ Or create it manually: `profile.json` (gitignored — never committed) holds you
     "website": "https://janedoe.dev",
     "twitter": "https://x.com/janedoe"
   },
-  "headline": "Senior Software Engineer — Python · Distributed Systems · AI",
+  "headline": "Senior Software Engineer: Python · Distributed Systems · AI",
   "summary": "7+ years building production Python systems..."
 }
 ```
@@ -173,15 +204,17 @@ See `roles.example/example_role.json` for the full schema including CV bullet ov
 
 Define named variants in `profile.json` under `"variants"`. Each variant emphasises a different slice of your experience:
 
-- **A** — AI/LLM/Evaluation focused
-- **B** — Data Platform/Pipelines focused  
-- **C** — Senior Backend/APIs focused
+- **A**: AI/LLM/Evaluation focused
+- **B**: Data Platform/Pipelines focused
+- **C**: Senior Backend/APIs focused
 
 The role config picks a variant. The CV builder selects the matching experience ordering and impact statements.
 
 ---
 
-## ATS platform support
+## ATS platform support notes
+
+These are implementation notes for supported ATS patterns, not a guarantee that every live form variant will work. Verify each form before filling, and stop on unsupported ATS pages, login walls, CAPTCHA, ambiguous consent, or hidden fields that cannot be classified.
 
 | Platform | Fill fields | Upload resume | Custom questions |
 |---|---|---|---|
@@ -197,11 +230,16 @@ The role config picks a variant. The CV builder selects the matching experience 
 
 ## Human-in-the-loop handoff
 
-Claude fills every required field it can verify from your profile and the role config. It does **not**:
+The agent fills safe fields it can verify from your profile and the role config. It does **not**:
 
 - Click Submit
-- Fill EEO/voluntary self-identification fields (gender, race, veteran status, disability)
+- Fill EEO/voluntary self-identification fields (gender, race, ethnicity, veteran status, disability)
 - Enter passwords or credentials
+- Enter national IDs, SSN/tax IDs, passport/visa document numbers, or dates of birth
+- Enter bank, payment, or payroll details
+- Select privacy, GDPR, data-retention, talent-pool, terms, consent, or attestation checkboxes
+- Solve CAPTCHA or anti-bot challenges
+- Answer fields requiring legal judgment or uncertain interpretation
 
 This is a deliberate design boundary, not a limitation. The agent flags exactly what it has filled and what remains for you.
 
@@ -212,8 +250,11 @@ This is a deliberate design boundary, not a limitation. The agent flags exactly 
 ```
 career-agent/
 ├── README.md
+├── AGENTS.md                        # Codex repo guidance
 ├── CLAUDE.md                        # Claude Code context + slash commands
-├── plugin.json                      # Claude Code plugin manifest
+├── plugin.json                      # Legacy/shared plugin manifest
+├── .claude-plugin/plugin.json       # Claude Code plugin manifest
+├── .codex-plugin/plugin.json        # Codex plugin manifest
 ├── requirements.txt                 # pip install reportlab
 ├── profile.example.json             # Copy → profile.json (gitignored)
 ├── .gitignore
@@ -235,10 +276,10 @@ career-agent/
 ├── roles.example/
 │   └── example_role.json            # Role config schema reference
 │
-├── roles/                           # gitignored — your role configs
-├── generated/                       # gitignored — output PDFs
-├── tracker.json                     # gitignored — application pipeline
-└── profile.json                     # gitignored — your profile data
+├── roles/                           # gitignored: your role configs
+├── generated/                       # gitignored: output PDFs
+├── tracker.json                     # gitignored: application pipeline
+└── profile.json                     # gitignored: your profile data
 ```
 
 ---
@@ -267,7 +308,7 @@ Ensure `reportlab` is installed and use the correct flag syntax:
 ```bash
 pip install reportlab
 python src/generate_application.py --role <role_id>   # correct
-python src/generate_application.py <role_id>           # wrong — positional args not accepted
+python src/generate_application.py <role_id>           # wrong: positional args not accepted
 ```
 
 The `generated/` output directory is created automatically on first run.
@@ -279,7 +320,7 @@ The `generated/` output directory is created automatically on first run.
 ATS platforms to add: Ashby, SmartRecruiters, Taleo, iCIMS, BambooHR.
 
 Each platform needs:
-- A `src/ats/<platform>.py` helper (optional — for complex flows)
+- A `src/ats/<platform>.py` helper (optional: for complex flows)
 - Notes in the `apply` skill about platform-specific quirks (hidden file inputs, React comboboxes, cross-origin iframes, etc.)
 
 **Before contributing:**

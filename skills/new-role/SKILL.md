@@ -1,4 +1,5 @@
 ---
+name: new-role
 description: Scaffold a role config by fetching and analysing a job posting, detecting the ATS platform, and pre-filling roles/<role_id>.json
 ---
 
@@ -10,21 +11,23 @@ Scaffold a new role config file interactively. Inspects the job posting, detects
 
 User says: `/new-role`, `add a role`, `set up a role`, `new job`, `create role config`, `add application for`
 
+In Codex, invoke this skill with `$new-role`, the skills/plugin selector, or natural language. Slash-command examples are Claude Code aliases, not Codex built-ins.
+
 ## Arguments
 
 ```
 /new-role [url]
 ```
 
-`url` — the job listing or application URL. If not provided, ask the user for it before proceeding.
+`url`: the job listing or application URL. If not provided, ask the user for it before proceeding.
 
 ## Steps
 
 ### 1. Fetch the job description
 
-Use `mcp__workspace__web_fetch` with the provided URL.
+Fetch the provided URL with the available web retrieval tool.
 
-- If the page returns only HTML shell / meta tags (client-rendered), switch to `mcp__Claude_in_Chrome__navigate` + `mcp__Claude_in_Chrome__get_page_text` to render the full page.
+- If the page returns only HTML shell / meta tags (client-rendered), use a browser surface to render the full page and read the visible page text. In Codex, use Browser for public pages and Chrome only when signed-in browser state is required.
 - Extract: job title, company name, location, key requirements.
 
 ### 2. Detect ATS platform and application URL
@@ -44,9 +47,9 @@ Set `ats_platform` accordingly. If undetectable, set `"ats_platform": "unknown"`
 
 Analyse the job title and key requirements:
 
-- **A** — Primary focus on LLM, evaluation, AI safety, ML systems, model training
-- **B** — Primary focus on data engineering, ETL/ELT, Airflow, Spark, data platform
-- **C** — Primary focus on backend APIs, microservices, open-source, developer tooling, general SWE
+- **A**: Primary focus on LLM, evaluation, AI safety, ML systems, model training
+- **B**: Primary focus on data engineering, ETL/ELT, Airflow, Spark, data platform
+- **C**: Primary focus on backend APIs, microservices, open-source, developer tooling, general SWE
 
 State which variant you picked and why, in one sentence.
 
@@ -82,10 +85,10 @@ Write `roles/<role_id>.json` using this template, filled with what you extracted
   "cover_letter": {
     "salutation": "Dear <Company> Engineering Team,",
     "paragraphs": [
-      "TODO: Opening — specific hook to this company and role...",
-      "TODO: Paragraph 2 — relevant experience, concrete evidence...",
-      "TODO: Paragraph 3 — fit with the JD requirements...",
-      "TODO: Closing — availability and call to action."
+      "TODO: Opening: specific hook to this company and role...",
+      "TODO: Paragraph 2: relevant experience, concrete evidence...",
+      "TODO: Paragraph 3: fit with the JD requirements...",
+      "TODO: Closing: availability and call to action."
     ],
     "closing": "Best regards,"
   },
@@ -115,7 +118,7 @@ If found, note the exact phrase and field it applies to in the `notes` field and
   Company:  <company>
   Title:    <title>
   Platform: <ats_platform>
-  Variant:  <A|B|C> — <rationale>
+  Variant:  <A|B|C>: <rationale>
   URL:      <application_url>
 
 Action required:
@@ -129,7 +132,7 @@ If a reading check phrase was found:
 ⚠️  Reading check detected:
     Field: <field name>
     Required phrase: "<exact phrase>"
-    This must appear in your answer — already noted in roles/<role_id>.json
+    This must appear in your answer: already noted in roles/<role_id>.json
 ```
 
 ## Error handling

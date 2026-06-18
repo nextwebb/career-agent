@@ -7,7 +7,14 @@ requests for implementation review.
 
 - CODEOWNERS routes all pull requests to `@nextwebb`.
 - Branch protection is not currently required on `main`.
-- AI review is not configured through CODEOWNERS.
+- Codex review is configured through the Codex GitHub integration. Request a
+  review with `@codex review`, or rely on the integration's automatic review
+  triggers when enabled in Codex settings.
+- Copilot review is configured through repository ruleset `17852252`
+  (`Automatic Copilot code review`) for pull requests targeting the default
+  branch. The ruleset reviews new pushes to a pull request and does not review
+  draft pull requests.
+- AI review is intentionally not configured through CODEOWNERS.
 
 ## AI Review Policy
 
@@ -17,9 +24,9 @@ was added, GitHub reported `@copilot` and `@chatgpt-codex-connector` as invalid
 CODEOWNERS owners for this repository.
 
 When Codex, Copilot, Claude, or another AI review system is used, request it
-through the supported integration, workflow, or PR comment mechanism for that
-tool. Document the actual trigger in the pull request so reviewers can verify
-which path was used.
+through the supported integration, ruleset, workflow, or PR comment mechanism
+for that tool. Document the actual trigger in the pull request so reviewers can
+verify which path was used.
 
 ## Codex Support Issue Readiness
 

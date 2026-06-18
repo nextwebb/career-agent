@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in career-agent. Contributions are welcome — please read this first.
+Thanks for your interest in career-agent. Contributions are welcome: please read this first.
 
 ## Issues first
 
@@ -11,22 +11,22 @@ Open an issue before writing code. This lets us align on scope and avoid duplica
 ```bash
 pip install -r requirements.txt
 
-# Install git hooks — order matters:
+# Install git hooks: order matters:
 # 1. Set the hook path (if you have Node/npm available)
-npm install          # runs `git config core.hooksPath .githooks`
+npm run setup:hooks
 # 2. Install pre-commit into .githooks/ (not .git/hooks/)
 pip install pre-commit
 pre-commit install
 ```
 
-If you skip `npm install`, run this manually first so pre-commit installs to the right place:
+If you skip `npm run setup:hooks`, run this manually first so pre-commit installs to the right place:
 
 ```bash
 git config core.hooksPath .githooks
 pre-commit install
 ```
 
-If you already had `pre-commit install` done before setting the hook path, re-run `pre-commit install` — it will move the hook to `.githooks/pre-commit`.
+If you already had `pre-commit install` done before setting the hook path, re-run `pre-commit install`: it will move the hook to `.githooks/pre-commit`.
 
 ## Before pushing
 
@@ -69,4 +69,4 @@ When in doubt, open an issue and ask first.
 
 ## Code standards
 
-Follow `ENGINEERING_PRINCIPLES.md` — it covers Python style, type hints, error handling, security, and testing requirements.
+Follow `ENGINEERING_PRINCIPLES.md`: it covers Python style, type hints, error handling, security, and testing requirements.

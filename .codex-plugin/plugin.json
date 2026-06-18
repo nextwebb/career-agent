@@ -1,0 +1,44 @@
+{
+  "name": "career-agent",
+  "version": "1.1.5",
+  "description": "Agentic job application workflow for tailored CVs, cover letters, sourcing, ATS form handoff, and application tracking.",
+  "author": {
+    "name": "nextwebb",
+    "url": "https://blog.nextwebb.tech"
+  },
+  "homepage": "https://nextwebb.github.io/career-agent",
+  "repository": "https://github.com/nextwebb/career-agent",
+  "license": "MIT",
+  "keywords": [
+    "career",
+    "jobs",
+    "cv",
+    "resume",
+    "ats",
+    "applications",
+    "automation",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "career-agent",
+    "shortDescription": "Generate tailored applications and manage a local job pipeline.",
+    "longDescription": "career-agent helps bootstrap a profile from a CV, source verified roles, scaffold role configs, generate ATS-safe CV and cover letter PDFs, fill supported ATS forms up to a human review boundary, and track application status locally.",
+    "developerName": "nextwebb",
+    "category": "Productivity",
+    "capabilities": [
+      "Skills",
+      "Write",
+      "Browser"
+    ],
+    "websiteURL": "https://nextwebb.github.io/career-agent/",
+    "privacyPolicyURL": "https://github.com/nextwebb/career-agent/blob/main/SECURITY.md",
+    "termsOfServiceURL": "https://github.com/nextwebb/career-agent/blob/main/README.md",
+    "defaultPrompt": [
+      "Set up my career-agent profile from this CV.",
+      "Generate a tailored CV for this role.",
+      "Review this ATS form before I submit it."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

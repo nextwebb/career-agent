@@ -1,27 +1,34 @@
 {
   "name": "@nextwebb/career-agent",
   "version": "1.1.5",
-  "description": "Agentic job application workflow for Claude Code — generate tailored CVs, fill ATS forms via browser automation",
+  "description": "Agentic job application workflow for Claude Code and Codex — generate tailored CVs and hand off ATS forms safely",
   "private": false,
   "bin": {
     "career-agent": "./bin/setup.js"
   },
   "files": [
     ".claude-plugin",
+    ".codex-plugin",
+    "AGENTS.md",
     "bin",
     "docs/assets",
+    "plugin.json",
+    "roles.example",
     "skills",
-    "src",
+    "src/*.py",
     "profile.example.json"
   ],
   "scripts": {
     "doctor": "node bin/doctor.js",
     "check:codeowners": "node scripts/check-codeowners.js",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "check:package": "node scripts/check-package.js",
+    "setup:hooks": "git config core.hooksPath .githooks"
   },
   "keywords": [
     "claude-code",
     "claude-plugin",
+    "codex",
+    "codex-plugin",
     "career",
     "jobs",
     "ats",
