@@ -1,0 +1,38 @@
+{
+  "_comment": "Synthetic role fixture for deterministic PDF quality tests. No real company or job post is represented.",
+  "role_id": "synthetic_quality_gate_pass",
+  "company": "Example Robotics Labs",
+  "title": "Senior Backend Platform Engineer",
+  "location": "Remote, Example Region",
+  "url": "https://example.com/jobs/synthetic-quality-gate-pass",
+  "ats_platform": "unknown",
+  "variant": "C",
+  "output_prefix": "synthetic_quality_gate_pass",
+  "custom_answers": {
+    "hear_about_us": "Synthetic fixture",
+    "visa_sponsorship": "",
+    "work_authorization": "",
+    "cities_available": [],
+    "why_company": "Synthetic role used only to validate generated PDF quality gates.",
+    "salary_expectation": ""
+  },
+  "cover_letter": {
+    "salutation": "Dear Example Robotics Labs Engineering Team,",
+    "paragraphs": [
+      "I am interested in the Senior Backend Platform Engineer role at Example Robotics Labs because the fictional team needs reliable APIs, traceable release workflows, and review-ready platform documentation. My synthetic background is focused on Python services, contract tests, and deterministic quality gates for engineering workflows.",
+      "At Example Systems Cooperative, I designed Python APIs for fictional partner onboarding that reduced setup time from 5 days to 6 hours. I also introduced contract tests across 12 synthetic services, preventing 17 incompatible API changes before release and giving reviewers concrete evidence before deployments.",
+      "The role aligns with my strongest synthetic evidence: backend API ownership, service reliability, and developer-facing tooling. I would bring the same lightweight workflow philosophy to Example Robotics Labs: simple commands for users, deterministic checks behind the scenes, and explicit human review before high-risk actions."
+    ],
+    "closing": "Best regards,"
+  },
+  "experience_overrides": {
+    "job_1": {
+      "bullets": [
+        "Designed Python APIs for fictional partner onboarding, reducing test-case setup time from 5 days to 6 hours.",
+        "Introduced contract tests across 12 synthetic services, preventing 17 incompatible API changes before release.",
+        "Built CLI tooling that generated validation reports and improved fictional developer onboarding completion by 62%."
+      ]
+    }
+  },
+  "notes": "Synthetic non-PII quality-gate pass fixture."
+}

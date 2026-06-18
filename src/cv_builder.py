@@ -1,4 +1,4 @@
-"""cv_builder.py — ATS-optimised CV PDF builder.
+"""cv_builder.py — ATS-safe CV PDF builder.
 
 Reads personal data from profile.json; role-specific content from the role config dict.
 
@@ -25,6 +25,15 @@ def _get_name(profile: dict) -> str:
     if isinstance(name, dict):
         return f"{name.get('first', '')} {name.get('last', '')}".strip()
     return str(name)
+
+
+def _get_phone(profile: dict) -> str:
+    """Extract a display phone number from supported profile shapes."""
+
+    phone = profile.get("phone", "")
+    if isinstance(phone, dict):
+        return str(phone.get("formatted") or phone.get("number") or "").strip()
+    return str(phone).strip()
 
 
 def _s(name, **kw):
@@ -138,6 +147,9 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         contact_parts.append(
             f'<a href="mailto:{profile["email"]}" color="#2563eb">{profile["email"]}</a>'
         )
+    phone = _get_phone(profile)
+    if phone:
+        contact_parts.append(phone)
     if links.get("linkedin"):
         contact_parts.append(f'<a href="{links["linkedin"]}" color="#2563eb">LinkedIn</a>')
     if links.get("github"):
@@ -191,7 +203,10 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         if role.get("client_line"):
             header_parts.append(Paragraph(role["client_line"], CLIENT))
         story.append(KeepTogether(header_parts))
-        for b in role["bullets"]:
+        bullets = role.get("bullets", [])
+        if isinstance(bullets, dict):
+            bullets = bullets.get("default", [])
+        for b in bullets:
             story.append(bul(b))
         story.append(sp(4))
 

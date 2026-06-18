@@ -4,6 +4,9 @@
 
 - This repository is `career-agent`, a local-first job application workflow for Claude Code and Codex.
 - Keep user career data local. Never commit `profile.json`, `roles/`, `tracker.json`, `generated/`, or files containing personal application data.
+- Preserve the product philosophy: keep the user workflow lightweight and intuitive, put deterministic quality gates behind agent actions, and make only evidence-backed claims.
+- Treat generated CVs, cover letters, role configs, sourced roles, and ATS-filled pages as review-ready drafts. Do not claim recruiter outcomes, ATS acceptance, or "world-class" quality without external evidence.
+- Generated application claims must be traceable to `profile.json`, the role config, or explicit user-provided facts. If evidence is missing, omit the claim or flag it for review.
 - Follow `ENGINEERING_PRINCIPLES.md` for Python style, testing, commit format, and review expectations.
 - Prefer focused changes tied to a linked GitHub issue. Avoid unrelated refactors.
 - Use repo-relative commands in docs and skills unless a host-specific variable is explicitly required.

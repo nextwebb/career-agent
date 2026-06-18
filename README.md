@@ -18,9 +18,11 @@
 
 **Agentic job application workflow for Claude Code and Codex.**
 
-One command generates a tailored CV + cover letter PDF per role. For browser workflows with enough platform evidence and safe field classification, the agent fills safe ATS fields, then hands off sensitive, consent, attestation, legal, and Submit controls to you.
+One command generates a tailored CV + cover letter PDF per role with deterministic quality gates. For browser workflows with enough platform evidence and safe field classification, the agent fills safe ATS fields, then hands off sensitive, consent, attestation, legal, and Submit controls to you.
 
-Not a template engine. Not a job tracker. An agent that does the work.
+Not a template engine. Not a job tracker. An agent-assisted workflow with deterministic handoff points.
+
+Design philosophy: keep the workflow lightweight, keep career data local, and make generated application materials comprehensive enough for review without pretending to guarantee recruiter or ATS outcomes.
 
 **[📖 Live Demo & Docs](https://nextwebb.github.io/career-agent/)** | **[⭐ Star on GitHub](https://github.com/nextwebb/career-agent)**
 
@@ -30,10 +32,10 @@ Not a template engine. Not a job tracker. An agent that does the work.
 
 ## What it does
 
-0. **`/setup-profile`**: Build `profile.json` from your CV or LinkedIn PDF, extract work history, generate 3 CV variants, and write per-job bullets automatically
+0. **`/setup-profile`**: Build `profile.json` from your CV or LinkedIn PDF, extract work history, generate 3 CV variants, and draft source-backed per-job bullets for review
 1. **`/source`**: Discover leads from available public/search sources, verify open roles on company-controlled pages, and rank them with a documented heuristic fit score
 2. **`/new-role`**: Scaffold a new role config interactively by scraping the JD
-3. **`/generate-cv`**: Build ATS-optimised CV + cover letter PDFs tailored to the role
+3. **`/generate-cv`**: Build ATS-safe CV + cover letter PDFs tailored to the role, then run deterministic quality gates
 4. **`/apply`**: Open the job URL in a browser, fill safe fields only when the ATS case is understood, upload PDFs when safe, answer safe custom questions, then hand off to you for sensitive fields and Submit
 5. **`/track`**: View your application pipeline, update statuses, add notes
 
@@ -62,10 +64,10 @@ The agent never submits on your behalf. That boundary is intentional.
 
 ## Testing & Quality
 
-- **CI/CD**: GitHub Actions with comprehensive testing on every PR
+- **CI/CD**: GitHub Actions with focused checks on every PR
 - **Security**: CodeQL + Trivy + bandit + safety scanning (daily + on push)
 - **Code Quality**: Ruff linting + mypy type checking
-- **Tests**: Smoke tests (structure/syntax) + integration tests (real PDF generation)
+- **Tests**: Smoke tests (structure/syntax) + integration tests (real PDF generation with synthetic non-PII fixtures)
 - **Python Support**: 3.10, 3.11, 3.12
 
 All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_PRINCIPLES.md) for detailed standards.
@@ -89,7 +91,7 @@ Codex support means the package includes `.codex-plugin/plugin.json`, Codex-comp
 ## Prerequisites
 
 - [Claude Code](https://claude.ai/code) CLI or [Codex](https://developers.openai.com/codex) CLI/app
-- Python 3.10+ with `reportlab` (`pip install reportlab`)
+- Python 3.10+ with `reportlab` and `pypdf` (`pip install -r requirements.txt`)
 - Node 18+ for the `npx` setup and doctor commands
 - Browser automation for `/apply`:
   - Claude Code: Claude in Chrome extension

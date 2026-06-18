@@ -1,0 +1,138 @@
+{
+  "_comment": "Synthetic fixture for deterministic PDF quality tests. No real person, employer, portfolio, or public profile is represented.",
+  "name": {
+    "first": "Alex",
+    "last": "Example",
+    "preferred": "Alex"
+  },
+  "email": "alex.example@example.com",
+  "phone": {
+    "country_code": "+1",
+    "number": "5550100000",
+    "formatted": "+15550100000"
+  },
+  "location": "Example City, Example Region",
+  "relocation": "Open to remote roles and relocation for fictional test scenarios",
+  "links": {
+    "linkedin": "",
+    "github": "https://example.com/alex-example-code",
+    "website": "https://example.com/alex-example",
+    "twitter": "",
+    "blog": "https://example.com/alex-example-blog"
+  },
+  "years_experience": 6,
+  "headline": "Senior Software Engineer - Python, Data Platforms, Reliability",
+  "summary": "Synthetic senior software engineer profile used for deterministic PDF quality testing. This fixture represents no real person and exists only to verify that career-agent generates complete, parseable, review-ready application drafts.",
+  "variants": {
+    "A": {
+      "label": "AI/LLM Evaluation",
+      "headline": "Senior Software Engineer - LLM Evaluation, Python, Reliability",
+      "summary": "Synthetic engineer with 6 years of fictional experience building evaluation services, review workflows, and reliability tooling for model-assisted products.",
+      "impact_order": ["evaluation", "platform_reliability", "developer_productivity"]
+    },
+    "B": {
+      "label": "Data Platform",
+      "headline": "Senior Software Engineer - Data Platforms, Python, Observability",
+      "summary": "Synthetic engineer with 6 years of fictional experience building batch workflows, validation reports, and observable data platform services.",
+      "impact_order": ["platform_reliability", "developer_productivity", "evaluation"]
+    },
+    "C": {
+      "label": "Backend APIs",
+      "headline": "Senior Software Engineer - Backend APIs, Python, Reliability",
+      "summary": "Synthetic engineer with 6 years of fictional experience building backend APIs, service reliability tooling, and developer-facing platform workflows.",
+      "impact_order": ["developer_productivity", "platform_reliability", "evaluation"]
+    }
+  },
+  "impact_statements": {
+    "platform_reliability": {
+      "title": "Platform Reliability",
+      "body": "Improved fictional service reliability by defining retry policies, observability dashboards, and incident review templates across 12 synthetic services."
+    },
+    "developer_productivity": {
+      "title": "Developer Productivity",
+      "body": "Reduced synthetic onboarding time from 4 days to 1 day by creating CLI workflows, API examples, and validation reports for fictional engineering teams."
+    },
+    "evaluation": {
+      "title": "Evaluation Workflows",
+      "body": "Built fictional evaluation pipelines that compared 30 scenario fixtures per release and produced traceable quality reports for review."
+    }
+  },
+  "experience": [
+    {
+      "id": "job_1",
+      "title": "Senior Software Engineer",
+      "company": "Example Systems Cooperative",
+      "company_line": "Example Systems Cooperative - Fictional SaaS - Remote - 2021-2026",
+      "bullets": {
+        "default": [
+          "Built synthetic data workflows that reduced fictional batch processing time by 38% while preserving traceable validation reports.",
+          "Created service dashboards for 12 fictional APIs, cutting synthetic incident triage time from 45 minutes to 15 minutes.",
+          "Led review-ready documentation for fictional APIs, improving onboarding completion in test scenarios by 62%."
+        ],
+        "A": [
+          "Implemented fictional model-evaluation jobs that compared 30 scenario fixtures per release and exposed regressions before review.",
+          "Built traceable review reports linking synthetic prompt inputs, expected outputs, and release decisions for 8 internal workflows.",
+          "Partnered with fictional product teams to convert ambiguous quality feedback into deterministic acceptance checks."
+        ],
+        "B": [
+          "Designed synthetic ingestion workflows processing 2 million fixture records per day with retry policies and validation summaries.",
+          "Reduced fictional batch processing time by 38% by partitioning jobs and moving slow checks into asynchronous workers.",
+          "Added observability dashboards across 12 synthetic services, reducing incident triage time from 45 minutes to 15 minutes."
+        ],
+        "C": [
+          "Designed Python APIs for fictional partner onboarding, reducing test-case setup time from 5 days to 6 hours.",
+          "Introduced contract tests across 12 synthetic services, preventing 17 incompatible API changes before release.",
+          "Built CLI tooling that generated validation reports and improved fictional developer onboarding completion by 62%."
+        ]
+      }
+    },
+    {
+      "id": "job_2",
+      "title": "Software Engineer",
+      "company": "Fictional Cloud Works",
+      "company_line": "Fictional Cloud Works - Developer Tools - Hybrid - 2018-2021",
+      "bullets": {
+        "default": [
+          "Maintained fictional deployment services used by 40 synthetic teams across staging and production-like environments.",
+          "Migrated 24 synthetic jobs from manual scripts to scheduled workflows with alerting and rollback notes."
+        ],
+        "A": [
+          "Created synthetic evaluation fixtures for API recommendation flows, improving reproducibility across 24 test suites.",
+          "Documented model-assisted review boundaries so fictional operators could distinguish suggestions from verified facts."
+        ],
+        "B": [
+          "Migrated 24 synthetic data jobs from manual scripts to scheduled workflows with alerting and rollback notes.",
+          "Improved fictional pipeline observability by adding freshness checks, ownership labels, and failure summaries."
+        ],
+        "C": [
+          "Maintained deployment APIs used by 40 synthetic teams and added audit logs for high-risk configuration changes.",
+          "Reduced fictional release rollback time by 30% by standardising runbooks and service health checks."
+        ]
+      }
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.Sc. Computer Science",
+      "institution": "Example University",
+      "year": "2018"
+    }
+  ],
+  "skills": [
+    {
+      "label": "Languages",
+      "items": "Python - TypeScript - SQL"
+    },
+    {
+      "label": "Backend",
+      "items": "REST APIs - Contract Testing - Service Reliability - Observability"
+    },
+    {
+      "label": "Cloud & Data",
+      "items": "Batch Workflows - Queues - Dashboards - CI Quality Gates"
+    }
+  ],
+  "certifications": [
+    "Synthetic reliability workshop facilitator for non-PII test scenarios"
+  ]
+}

@@ -14,6 +14,23 @@ set -u  # Exit on undefined variable
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$ROOT_DIR"
+TMP_WORKSPACE="$(mktemp -d)"
+trap 'rm -rf "$TMP_WORKSPACE"' EXIT
+
+PYTHON_BIN=""
+for candidate in python python3 python3.12 python3.11 python3.10; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+        if "$candidate" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)' >/dev/null 2>&1; then
+            PYTHON_BIN="$candidate"
+            break
+        fi
+    fi
+done
+
+if [ -z "$PYTHON_BIN" ]; then
+    echo "❌ ERROR: Python 3.10+ is required"
+    exit 1
+fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Integration Test: PDF Generation Pipeline"
@@ -25,12 +42,19 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo "1️⃣  Checking dependencies..."
 
-if ! python3 -c "import reportlab" 2>/dev/null; then
+if ! "$PYTHON_BIN" -c "import reportlab" 2>/dev/null; then
     echo "❌ ERROR: reportlab not installed"
     echo "   Run: pip install -r requirements.txt"
     exit 1
 fi
 echo "   ✓ reportlab installed"
+
+if ! "$PYTHON_BIN" -c "import pypdf" 2>/dev/null; then
+    echo "❌ ERROR: pypdf not installed"
+    echo "   Run: pip install -r requirements.txt"
+    exit 1
+fi
+echo "   ✓ pypdf installed"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 2. Setup: Prepare test data
@@ -38,41 +62,11 @@ echo "   ✓ reportlab installed"
 echo ""
 echo "2️⃣  Preparing test data..."
 
-if [ ! -f "profile.json" ]; then
-    echo "   Creating profile.json from example..."
-    cp profile.example.json profile.json
-else
-    echo "   ✓ profile.json already exists"
-fi
-
-mkdir -p roles
-if [ ! -f "roles/example_role.json" ]; then
-    echo "   Creating test role config..."
-    cat > roles/example_role.json <<'EOF'
-{
-  "role_id": "test_role",
-  "company": "Test Company",
-  "title": "Software Engineer",
-  "url": "https://example.com/jobs/test",
-  "ats_platform": "greenhouse",
-  "variant": "A",
-  "output_prefix": "test_role",
-  "cover_letter": {
-    "salutation": "Dear Hiring Team,",
-    "paragraphs": [
-      "Test opening paragraph.",
-      "Test experience paragraph."
-    ],
-    "closing": "Best regards,"
-  }
-}
-EOF
-else
-    echo "   ✓ roles/example_role.json already exists"
-fi
-
-mkdir -p generated
-echo "   ✓ generated/ directory ready"
+mkdir -p "$TMP_WORKSPACE/roles" "$TMP_WORKSPACE/generated"
+cp tests/fixtures/non_pii/profile.synthetic.json "$TMP_WORKSPACE/profile.json"
+cp tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json \
+    "$TMP_WORKSPACE/roles/synthetic_quality_gate_pass.json"
+echo "   ✓ synthetic non-PII workspace ready: $TMP_WORKSPACE"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 3. Run: Generate PDFs
@@ -80,7 +74,22 @@ echo "   ✓ generated/ directory ready"
 echo ""
 echo "3️⃣  Generating PDFs..."
 
-python3 src/generate_application.py --role example_role
+(
+    cd "$TMP_WORKSPACE"
+    "$PYTHON_BIN" "$ROOT_DIR/src/generate_application.py" --role synthetic_quality_gate_pass \
+        | tee "$TMP_WORKSPACE/generate.log"
+)
+
+if ! grep -q "Quality gates:" "$TMP_WORKSPACE/generate.log"; then
+    echo "❌ ERROR: quality gate summary not found"
+    exit 1
+fi
+
+if grep -q "FAIL" "$TMP_WORKSPACE/generate.log"; then
+    echo "❌ ERROR: synthetic pass fixture failed quality gates"
+    cat "$TMP_WORKSPACE/generate.log"
+    exit 1
+fi
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 4. Verify: Check outputs
@@ -89,19 +98,19 @@ echo ""
 echo "4️⃣  Verifying outputs..."
 
 # Find generated PDF files (output_prefix may vary based on role config)
-CV_FILES=(generated/*_CV.pdf)
-CL_FILES=(generated/*_CoverLetter.pdf)
+CV_FILES=("$TMP_WORKSPACE"/generated/*_CV.pdf)
+CL_FILES=("$TMP_WORKSPACE"/generated/*_CoverLetter.pdf)
 
 if [ ! -f "${CV_FILES[0]}" ]; then
     echo "❌ ERROR: CV PDF not found in generated/"
-    ls -la generated/
+    ls -la "$TMP_WORKSPACE/generated/"
     exit 1
 fi
 echo "   ✓ CV PDF exists: ${CV_FILES[0]}"
 
 if [ ! -f "${CL_FILES[0]}" ]; then
     echo "❌ ERROR: Cover Letter PDF not found in generated/"
-    ls -la generated/
+    ls -la "$TMP_WORKSPACE/generated/"
     exit 1
 fi
 echo "   ✓ Cover Letter PDF exists: ${CL_FILES[0]}"

@@ -1,11 +1,11 @@
 ---
 name: generate-cv
-description: Build ATS-optimised CV and cover letter PDFs tailored to a specific role using reportlab Platypus
+description: Build ATS-safe CV and cover letter PDFs tailored to a specific role using reportlab Platypus
 ---
 
 # generate-cv
 
-Generate an ATS-optimised CV + cover letter PDF pair for a specific role.
+Generate an ATS-safe CV + cover letter PDF pair for a specific role, then run deterministic quality gates before the user reviews or applies.
 
 ## Triggers
 
@@ -39,7 +39,13 @@ The role config's `variant` field is `A`, `B`, or `C`.
 
 For each job in `profile.experience`, check if the role config has `experience_overrides` for that job ID. If yes, use those bullets. If no, use the variant-specific bullets from `profile.experience[i].bullets[variant]`. Fall back to `default` if the variant key is missing.
 
-### 3. Generate CV PDF
+### 3. Validate claims
+
+Use only facts present in `profile.json`, the role config, or explicit user-provided context. Do not invent achievements, metrics, employers, dates, eligibility claims, technologies, or public links.
+
+If evidence is missing, omit the claim or flag it for review. Generated CVs and cover letters are review-ready drafts, not guarantees of recruiter or ATS interpretation.
+
+### 4. Generate CV PDF
 
 Resolve `<career_agent_root>` as the installed package or plugin root that contains `src/generate_application.py`. If running from a repo checkout and `src/generate_application.py` exists in the current directory, the current directory is `<career_agent_root>`.
 
@@ -60,13 +66,14 @@ generated/<output_prefix>_CoverLetter.pdf
 
 If the packaged script cannot be found, stop and report that the career-agent package or plugin installation is incomplete.
 
-### 4. PDF spec
+### 5. PDF spec
 
 **Engine:** reportlab Platypus  
 **Layout:** single column, no tables, no images  
 **Font:** Helvetica (body 10pt, headings 12pt bold, name 16pt bold)  
 **Colours:** black body text, `#2563eb` for links  
 **Links:** clickable: email, LinkedIn, GitHub, blog/website
+
 **ATS-safe rules:**
 - No two-column layouts
 - No headers/footers that contain text outside the main Platypus story
@@ -78,8 +85,8 @@ If the packaged script cannot be found, stop and report that the career-agent pa
 2. Contact line: email | phone | location | LinkedIn | GitHub | website
 3. Summary (variant-specific)
 4. Experience (reverse chronological, variant-ordered bullets)
-5. Education
-6. Skills
+5. Core Skills
+6. Education
 
 **Cover letter structure:**
 1. Applicant name + contact line (top)
@@ -89,15 +96,33 @@ If the packaged script cannot be found, stop and report that the career-agent pa
 5. Closing from `role.cover_letter.closing`
 6. Name
 
-### 5. Confirm output
+### 6. Quality gates
+
+The generator runs deterministic quality gates after writing the PDFs.
+
+Hard failures stop the command unless `--no-quality-gates` is used for diagnostics:
+- PDF is unreadable or not text-extractable
+- Required CV sections are missing
+- Placeholder text appears in generated output
+- Name/email or cover-letter role context is missing
+- Embedded images are detected in ATS-safe PDFs
+
+Warnings do not block generation, but must be surfaced for review:
+- CV is longer than 2 pages
+- Cover letter is longer than 1 page
+- Expected PDF links are not exposed as clickable annotations
+- Repeated bullets, low metric density, or generic wording are detected
+
+### 7. Confirm output
 
 After generation, report:
 
 ```
-✅ CV:           generated/<prefix>_CV.pdf
-✅ Cover letter: generated/<prefix>_CoverLetter.pdf
+CV:             generated/<prefix>_CV.pdf
+Cover letter:   generated/<prefix>_CoverLetter.pdf
 Variant:        <A|B|C>: <label>
 Role:           <title> @ <company>
+Quality gates:  PASS/WARN/FAIL summary
 ```
 
 Ask: "Ready to apply? Use `/apply <role_id>` in Claude Code or `$apply <role_id>` in Codex. Codex Chrome `/apply` remains experimental until the verification matrix has non-submitted evidence for the target ATS case."
@@ -107,4 +132,5 @@ Ask: "Ready to apply? Use `/apply <role_id>` in Claude Code or `$apply <role_id>
 - `profile.json` missing → stop, instruct user to create it
 - `roles/<role_id>.json` missing → stop, instruct user to create it, run `/new-role` in Claude Code, or invoke `$new-role` in Codex
 - `reportlab` not installed → `pip install reportlab --break-system-packages`
+- `pypdf` not installed → `pip install -r requirements.txt`
 - `generated/` directory missing → create it
