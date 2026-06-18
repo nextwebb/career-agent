@@ -61,6 +61,10 @@ def read_markdown_table_after_heading(content: str, heading: str) -> list[dict[s
     return rows
 
 
+def normalize_whitespace(content: str) -> str:
+    return " ".join(content.split())
+
+
 class TestProjectStructure:
     """Validate directory structure and required files exist."""
 
