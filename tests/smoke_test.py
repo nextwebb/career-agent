@@ -16,6 +16,7 @@ import subprocess
 import sys
 import textwrap
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -1028,14 +1029,14 @@ class TestPackagedScriptWorkspace:
 
 
 class TestPdfQualityGates:
-    """Validate deterministic quality gates for generated application packets."""
-
     @staticmethod
-    def _load_fixture(name: str) -> dict:
+    def _load_fixture(name: str) -> dict[str, Any]:
         path = ROOT / name
         return json.loads(path.read_text(encoding="utf-8"))
 
-    def _generate_fixture_packet(self, tmp_path: Path, role_fixture: str):
+    def _generate_fixture_packet(
+        self, tmp_path: Path, role_fixture: str
+    ) -> tuple[dict[str, Any], dict[str, Any], Path, Path]:
         pytest.importorskip("reportlab")
         pytest.importorskip("pypdf")
         sys.path.insert(0, str(ROOT / "src"))

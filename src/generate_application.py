@@ -14,7 +14,7 @@ Usage:
 Setup:
     1. cp profile.example.json profile.json   # fill in your details
     2. cp roles.example/example_role.json roles/my_role.json
-    3. pip install reportlab
+    3. pip install -r requirements.txt
     4. python src/generate_application.py --role my_role
 
 Role configs:    ./roles/<role_id>.json in the current workspace
