@@ -80,9 +80,9 @@ All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_P
 | Role config | ✅ `/new-role` | ✅ `$new-role` or natural language |
 | CV and cover letter PDFs | ✅ `/generate-cv` | ✅ `$generate-cv` or natural language |
 | Pipeline tracking | ✅ `/track` | ✅ `$track` or natural language |
-| ATS form filling | ✅ with Claude in Chrome | ⚠️ experimental until [#65](https://github.com/nextwebb/career-agent/issues/65) |
+| ATS form filling | ✅ with Claude in Chrome | ⚠️ experimental; see [Codex Chrome verification](docs/apply-codex-chrome-verification.md) |
 
-Codex support means the package includes `.codex-plugin/plugin.json`, Codex-compatible skill metadata, host-neutral skill instructions, and Codex-aware setup checks. It does not mean `npx` installs the plugin into Codex. How you make the plugin available in Codex depends on the Codex surface and configured plugin source.
+Codex support means the package includes `.codex-plugin/plugin.json`, Codex-compatible skill metadata, host-neutral skill instructions, and Codex-aware setup checks. It does not mean `npx` installs the plugin into Codex. How you make the plugin available in Codex depends on the Codex surface and configured plugin source. Codex Chrome `/apply` support is evidence-gated: as of 2026-06-18, the committed matrix contains no live non-submitted ATS pass records, so Greenhouse, Lever, and Workable remain experimental in Codex Chrome with manual fallback guidance.
 
 ## Prerequisites
 
@@ -91,7 +91,7 @@ Codex support means the package includes `.codex-plugin/plugin.json`, Codex-comp
 - Node 18+ for the `npx` setup and doctor commands
 - Browser automation for `/apply`:
   - Claude Code: Claude in Chrome extension
-  - Codex: Browser for public pages, Chrome for signed-in browser state; still experimental until #65
+  - Codex: Browser for public pages, Chrome for signed-in browser state; Codex Chrome `/apply` remains experimental until the verification matrix has non-submitted evidence for the target ATS case
 
 ---
 
@@ -129,7 +129,7 @@ $setup-profile               # Codex skill invocation
 /source Germany backend      # Find matching roles
 /new-role                    # Create role config
 /generate-cv <role_id>       # Generate PDFs
-/apply <role_id>             # Browser form handoff, Codex experimental
+/apply <role_id>             # Browser form handoff, Codex Chrome evidence-gated
 /track                       # View pipeline
 ```
 
@@ -216,13 +216,17 @@ The role config picks a variant. The CV builder selects the matching experience 
 
 These are implementation notes for supported ATS patterns, not a guarantee that every live form variant will work. Verify each form before filling, and stop on unsupported ATS pages, login walls, CAPTCHA, ambiguous consent, or hidden fields that cannot be classified.
 
-| Platform | Fill fields | Upload resume | Custom questions |
-|---|---|---|---|
-| Greenhouse (direct) | ✅ | ✅ | ✅ |
-| Greenhouse (iframe embed) | ✅ via embed URL | ✅ | ✅ |
-| Lever | ✅ | ✅ | ✅ (text) |
-| Workable | ✅ | ✅ | ✅ |
-| More | PRs welcome | | |
+Codex Chrome `/apply` is not stable by assumption. Use the [Codex Chrome verification matrix](docs/apply-codex-chrome-verification.md) to decide whether a platform is supported for a non-submitting Codex run. As of 2026-06-18, no live Codex Chrome ATS tests are committed in this repository, so all supported ATS rows below are experimental for Codex Chrome. Failed, ambiguous, or unverified platforms should use manual fallback and handoff.
+
+| Platform | General behavior | Codex Chrome status |
+|---|---|---|
+| Greenhouse (direct) | Fill safe fields, upload resume, answer safe custom questions | Experimental until a non-submitted evidence record exists |
+| Greenhouse (iframe embed) | Use the embed URL as a top-level page, not a company iframe | Experimental until a non-submitted evidence record exists |
+| Greenhouse (EU domain) | Keep `ats_platform` normalized to `greenhouse` unless a separate supported value is intentionally added and tested | Experimental until EU URL/domain handling is verified |
+| Lever | Upload resume, paste cover-letter text when a field exists, answer safe custom questions | Experimental until a non-submitted evidence record exists |
+| Workable | Use `/apply/` URL, upload resume, handle dropdowns and multi-step forms carefully | Experimental until a non-submitted evidence record exists |
+| Unknown/unsupported ATS | Stop and provide manual guidance | Unsupported for automation |
+| More | PRs welcome | Experimental until verified |
 
 ---
 

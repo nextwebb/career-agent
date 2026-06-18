@@ -525,6 +525,35 @@ class TestSKILLMarkdown:
         assert classifier_index < fill_index
         assert "Any other non-sensitive personal fields visible after classification" in content
 
+    def test_apply_codex_chrome_verification_matrix_present(self):
+        """Codex Chrome /apply support should be tied to non-submitting evidence."""
+        doc = ROOT / "docs" / "apply-codex-chrome-verification.md"
+        assert doc.exists(), "Missing Codex Chrome /apply verification matrix"
+
+        content = doc.read_text(encoding="utf-8")
+        required_terms = [
+            "Greenhouse direct",
+            "Greenhouse embed direct top-level URL",
+            "Greenhouse EU domain",
+            "Lever",
+            "Workable",
+            "Unknown or unsupported ATS",
+            "Safety boundaries",
+            "Date tested",
+            "Generated CV PDF upload result",
+            "Fields filled",
+            "Fields handed off",
+            "Final state proving Submit was not clicked",
+            "Unverified in this task",
+            "experimental",
+        ]
+        for term in required_terms:
+            assert term in content, f"Codex Chrome verification matrix missing: {term}"
+
+        skill_content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
+        assert "docs/apply-codex-chrome-verification.md" in skill_content
+        assert "non-submitted evidence record" in skill_content
+
     def test_source_profile_recovery_points_to_setup_profile(self):
         """/source should not direct missing-profile recovery to /new-role."""
         content = (ROOT / "skills" / "source" / "SKILL.md").read_text(encoding="utf-8")
