@@ -1,4 +1,5 @@
 ---
+name: track
 description: View and update your job application pipeline; log statuses and add notes across all active roles
 ---
 
@@ -10,13 +11,15 @@ Track and update job application status across all active roles.
 
 User says: `/track`, `track my application`, `update status`, `mark as applied`, `what's my pipeline`, `show my applications`, `application status`
 
+In Codex, invoke this skill with `$track`, the skills/plugin selector, or natural language. Slash-command examples are Claude Code aliases, not Codex built-ins.
+
 ## Arguments
 
 ```
-/track                          — show full pipeline
-/track <role_id>                — show detail for one role
-/track <role_id> applied        — update status
-/track <role_id> "note text"    — add a note
+/track                         : show full pipeline
+/track <role_id>               : show detail for one role
+/track <role_id> applied       : update status
+/track <role_id> "note text"   : add a note
 ```
 
 Valid statuses: `draft` → `applied` → `screen` → `interview` → `offer` / `rejected` / `withdrawn`
@@ -26,7 +29,7 @@ Valid statuses: `draft` → `applied` → `screen` → `interview` → `offer` /
 ### List pipeline
 
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/src/tracker.py" --list
+python3 src/tracker.py --list
 ```
 
 Output groups applications by status with icons. Show this after every `/apply` handoff.
@@ -34,15 +37,15 @@ Output groups applications by status with icons. Show this after every `/apply` 
 ### Add a role to tracking
 
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/src/tracker.py" --add <role_id>
+python3 src/tracker.py --add <role_id>
 ```
 
-Run this automatically at the end of `/new-role` — every new role config should be tracked from the start as `draft`.
+Run this automatically at the end of `/new-role`: every new role config should be tracked from the start as `draft`.
 
 ### Update status
 
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/src/tracker.py" --update <role_id> --status <status>
+python3 src/tracker.py --update <role_id> --status <status>
 ```
 
 Run `--update <role_id> --status applied` automatically after a successful `/apply` handoff (when user confirms they clicked Submit).
@@ -50,7 +53,7 @@ Run `--update <role_id> --status applied` automatically after a successful `/app
 ### Add a note
 
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/src/tracker.py" --note <role_id> "Recruiter called — technical screen Thursday 3pm"
+python3 src/tracker.py --note <role_id> "Recruiter called: technical screen Thursday 3pm"
 ```
 
 ### When to run automatically
@@ -64,7 +67,7 @@ python "${CLAUDE_PLUGIN_ROOT}/src/tracker.py" --note <role_id> "Recruiter called
 
 ## tracker.json
 
-Stored at repo root. Gitignored — your application history stays local.
+Stored at repo root. Gitignored: your application history stays local.
 
 Format:
 ```json

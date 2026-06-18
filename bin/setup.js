@@ -5,11 +5,12 @@
  * Run via: npx @nextwebb/career-agent
  *
  * Steps:
- *   1. Detect Python 3.10+
- *   2. Check/install reportlab
- *   3. Check Claude Code CLI
- *   4. Copy profile.example.json → ./profile.json (if missing)
- *   5. Print next steps
+ *   1. Dispatch `career-agent doctor` to the doctor command
+ *   2. Detect Python 3.10+
+ *   3. Check/install reportlab
+ *   4. Detect Claude Code and Codex independently
+ *   5. Copy profile.example.json → ./profile.json (if missing)
+ *   6. Print next steps
  */
 
 "use strict";
@@ -18,75 +19,110 @@ const { spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
-// ANSI colour helpers
 const GREEN = "\x1b[32m";
 const RED = "\x1b[31m";
+const YELLOW = "\x1b[33m";
 const DIM = "\x1b[2m";
 const BOLD = "\x1b[1m";
 const RESET = "\x1b[0m";
 
 const ok = (msg) => console.log(`${GREEN}✓${RESET} ${msg}`);
+const warn = (msg) => console.log(`${YELLOW}⚠${RESET} ${msg}`);
 const fail = (msg) => console.error(`${RED}✗${RESET} ${msg}`);
 const dim = (msg) => console.log(`${DIM}  ${msg}${RESET}`);
 const header = (msg) => console.log(`\n${BOLD}${msg}${RESET}`);
-
-let hasErrors = false;
 
 function run(cmd, args, opts = {}) {
   return spawnSync(cmd, args, { encoding: "utf8", shell: false, ...opts });
 }
 
-// ─── Step 1: Detect Python 3.10+ ─────────────────────────────────────────────
-header("Checking prerequisites…");
+function commandVersion(command) {
+  const result = run(command, ["--version"]);
+  if (result.status !== 0) {
+    return null;
+  }
+  return (result.stdout || result.stderr || "").trim() || "available";
+}
 
-let pythonBin = null;
-for (const candidate of ["python3", "python3.12", "python3.11", "python3.10", "python"]) {
-  const result = run(candidate, ["--version"]);
-  if (result.status === 0) {
+function findPython() {
+  for (const candidate of ["python3", "python3.12", "python3.11", "python3.10", "python"]) {
+    const result = run(candidate, ["--version"]);
+    if (result.status !== 0) {
+      continue;
+    }
+
     const versionLine = (result.stdout || result.stderr || "").trim();
     const match = versionLine.match(/Python (\d+)\.(\d+)/);
     const major = match ? parseInt(match[1], 10) : 0;
     const minor = match ? parseInt(match[2], 10) : 0;
     if (major > 3 || (major === 3 && minor >= 10)) {
-      pythonBin = candidate;
-      ok(`Python found: ${versionLine}`);
-      break;
+      return { bin: candidate, version: versionLine };
     }
   }
+
+  return null;
 }
 
-if (!pythonBin) {
+if (process.argv[2] === "doctor") {
+  const doctor = run(process.execPath, [path.join(__dirname, "doctor.js")], {
+    stdio: "inherit",
+  });
+  process.exit(doctor.status || 0);
+}
+
+if (process.argv.length > 2) {
+  fail(`Unknown command: ${process.argv.slice(2).join(" ")}`);
+  dim("Supported commands: career-agent, career-agent doctor");
+  process.exit(1);
+}
+
+let hasErrors = false;
+
+header("Checking prerequisites…");
+
+const python = findPython();
+if (!python) {
   fail("Python 3.10+ not found.");
   dim("Install Python 3.10+ from https://python.org/downloads and re-run this setup.");
   process.exit(1);
 }
+ok(`Python found: ${python.version}`);
 
-// ─── Step 2: Check / install reportlab ───────────────────────────────────────
-const rlCheck = run(pythonBin, ["-c", "import reportlab"]);
+const rlCheck = run(python.bin, ["-c", "import reportlab"]);
 if (rlCheck.status === 0) {
   ok("reportlab is installed");
 } else {
   dim("reportlab not found — installing…");
-  const rlInstall = run(pythonBin, ["-m", "pip", "install", "reportlab", "--quiet"]);
+  const rlInstall = run(python.bin, ["-m", "pip", "install", "reportlab", "--quiet"]);
   if (rlInstall.status === 0) {
     ok("reportlab installed");
   } else {
     fail("Failed to install reportlab.");
-    dim(`Run manually: ${pythonBin} -m pip install reportlab`);
+    dim(`Run manually: ${python.bin} -m pip install reportlab`);
     dim("Then re-run: npx @nextwebb/career-agent");
     hasErrors = true;
   }
 }
 
-// ─── Step 3: Check Claude Code CLI ───────────────────────────────────────────
-const claudeCheck = run("claude", ["--version"]);
-if (claudeCheck.status === 0) {
-  ok(`Claude Code CLI found: ${(claudeCheck.stdout || "").trim()}`);
+const claudeVersion = commandVersion("claude");
+const codexVersion = commandVersion("codex");
+
+if (claudeVersion) {
+  ok(`Claude Code CLI found: ${claudeVersion}`);
 } else {
-  fail("Claude Code CLI not found.");
-  dim("Install it from https://claude.ai/code");
-  dim("Then re-run: npx @nextwebb/career-agent");
-  process.exit(1);
+  warn("Claude Code CLI not found. Claude plugin install commands will not work until it is installed.");
+}
+
+if (codexVersion) {
+  ok(`Codex CLI found: ${codexVersion}`);
+} else {
+  warn("Codex CLI not found. Codex plugin install and verification commands require Codex.");
+}
+
+if (!claudeVersion && !codexVersion) {
+  fail("Neither Claude Code nor Codex CLI was found.");
+  dim("Install at least one supported agent host before continuing.");
+  hasErrors = true;
 }
 
 if (hasErrors) {
@@ -94,7 +130,6 @@ if (hasErrors) {
   process.exit(1);
 }
 
-// ─── Step 4: Copy profile.example.json ───────────────────────────────────────
 header("Setting up profile…");
 
 const profileDest = path.join(process.cwd(), "profile.json");
@@ -109,34 +144,31 @@ if (fs.existsSync(profileDest)) {
   dim("profile.example.json not found in package — create profile.json manually.");
 }
 
-// ─── Step 5: Next steps ──────────────────────────────────────────────────────
 console.log("");
-if (hasErrors) {
-  console.log(`${RED}Setup completed with errors. Fix the issues above before proceeding.${RESET}`);
-} else {
-  console.log(`${GREEN}${BOLD}Prerequisites met.${RESET}`);
-}
+console.log(`${GREEN}${BOLD}Prerequisites met.${RESET}`);
 console.log(`
 ${BOLD}Next steps:${RESET}
 
-  1. Register and install the plugin:
+  Claude Code:
      ${DIM}claude plugin marketplace add nextwebb/career-agent${RESET}
      ${DIM}claude plugin install career-agent${RESET}
 
-  2. Bootstrap your profile from your CV or LinkedIn PDF:
-     ${DIM}/setup-profile${RESET}
+  Codex:
+     ${DIM}Install career-agent from a configured Codex marketplace or local plugin source.${RESET}
+     ${DIM}This package includes .codex-plugin/plugin.json for Codex plugin discovery.${RESET}
 
-  3. Find matching roles:
+  Then bootstrap your profile:
+     ${DIM}/setup-profile       # Claude Code alias${RESET}
+     ${DIM}$setup-profile       # Codex skill invocation${RESET}
+
+  Find roles and generate application files:
      ${DIM}/source Germany backend${RESET}
-
-  4. Create a role config:
      ${DIM}/new-role https://jobs.example.com/senior-engineer-123${RESET}
-
-  5. Generate your CV:
      ${DIM}/generate-cv <role_id>${RESET}
 
-  6. Fill the ATS form:
-     ${DIM}/apply <role_id>${RESET}
+  Browser form filling:
+     ${DIM}/apply <role_id>     # Claude Code supported flow${RESET}
+     ${DIM}$apply <role_id>     # Codex experimental until issue #65 is verified${RESET}
 
 ${DIM}Docs & issues: https://github.com/nextwebb/career-agent${RESET}
 `);

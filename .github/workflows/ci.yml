@@ -133,12 +133,15 @@ jobs:
 
       - name: Validate JSON files
         run: |
-          for file in plugin.json profile.example.json roles.example/*.json .claude-plugin/*.json; do
+          for file in plugin.json profile.example.json roles.example/*.json .claude-plugin/*.json .codex-plugin/*.json; do
             if [ -f "$file" ]; then
               echo "Validating $file..."
               python -m json.tool "$file" > /dev/null
             fi
           done
+
+      - name: Validate npm package contents
+        run: npm run check:package
 
       - name: Validate SKILL.md frontmatter
         run: |
@@ -146,6 +149,8 @@ jobs:
             if [ -f "$skill" ]; then
               echo "Checking $skill..."
               grep -q "^# " "$skill" || (echo "ERROR: $skill missing title" && exit 1)
+              grep -q "^name:" "$skill" || (echo "ERROR: $skill missing name frontmatter" && exit 1)
+              grep -q "^description:" "$skill" || (echo "ERROR: $skill missing description frontmatter" && exit 1)
             fi
           done
 

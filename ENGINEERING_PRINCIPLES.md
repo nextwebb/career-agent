@@ -105,7 +105,7 @@ Every module MUST have a docstring with:
 
 **Example:**
 ```python
-"""cv_builder.py — ATS-optimised CV PDF builder.
+"""cv_builder.py: ATS-optimised CV PDF builder.
 
 Reads personal data from profile.json; role-specific content from the role config dict.
 
@@ -170,7 +170,7 @@ raise FileNotFoundError("profile.json")
 ✅ **Syntax validation**: Python files compile, JSON is valid
 ✅ **Import chains**: Modules can be imported
 ✅ **Integration paths**: Real PDF generation with example data
-❌ **Browser automation**: Requires Claude in Chrome extension (CI can't test)
+❌ **Browser automation**: Requires Claude in Chrome or Codex Browser/Chrome state (CI can't test)
 
 ### Test Organization
 ```
@@ -209,10 +209,10 @@ bash tests/integration_test.sh
 **CRITICAL**: Never commit personally identifiable information.
 
 **Gitignored files:**
-- `profile.json` — User's personal data
-- `roles/` — Company-specific configs (may contain emails, phone numbers)
-- `tracker.json` — Application history
-- `generated/` — PDFs with PII
+- `profile.json`: User's personal data
+- `roles/`: Company-specific configs (may contain emails, phone numbers)
+- `tracker.json`: Application history
+- `generated/`: PDFs with PII
 
 **Verification:**
 - Pre-commit hooks prevent accidental commits
@@ -413,7 +413,10 @@ User says: `/skill-name`, `natural language variant`
 - **Hyphenated**: `new-role` not `new_role`
 - **Imperative**: `apply` not `applicator`
 
-### Plugin Manifest (`plugin.json`)
+### Plugin Manifests
+
+Claude Code uses `plugin.json` and `.claude-plugin/plugin.json`:
+
 ```json
 {
   "name": "career-agent",
@@ -424,6 +427,19 @@ User says: `/skill-name`, `natural language variant`
 ```
 
 The `"skills"` array takes a single `./`-prefixed path to the **skills directory** (not individual skill paths). The Claude CLI discovers all `SKILL.md` files under that directory automatically. The `./` prefix is required by the Claude CLI validator.
+
+Codex uses `.codex-plugin/plugin.json`:
+
+```json
+{
+  "name": "career-agent",
+  "version": "1.0.0",
+  "description": "Brief description",
+  "skills": "./skills/"
+}
+```
+
+Codex skill frontmatter must include both `name` and `description`. The `name` must match the skill directory.
 
 **Version format**: Semantic versioning (major.minor.patch)
 

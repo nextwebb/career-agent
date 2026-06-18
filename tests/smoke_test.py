@@ -27,6 +27,22 @@ ROOT = Path(__file__).parent.parent
 EXPECTED_SKILLS = ["apply", "generate-cv", "new-role", "setup-profile", "source", "track"]
 
 
+def parse_skill_frontmatter(skill_file: Path) -> dict[str, str]:
+    lines = skill_file.read_text(encoding="utf-8").splitlines()
+    assert lines and lines[0].strip() == "---", f"{skill_file} missing YAML frontmatter"
+
+    end = next((i for i, line in enumerate(lines[1:], 1) if line.strip() == "---"), None)
+    assert end is not None, f"{skill_file} frontmatter is not closed"
+
+    metadata: dict[str, str] = {}
+    for line in lines[1:end]:
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        metadata[key.strip()] = value.strip().strip('"')
+    return metadata
+
+
 class TestProjectStructure:
     """Validate directory structure and required files exist."""
 
@@ -92,7 +108,27 @@ class TestSetupInstaller:
             """,
         )
 
-    def _run_setup_with_python(self, tmp_path, python_version, versioned_python=None):
+    def _write_host_shim(self, path, version):
+        self._write_executable(
+            path,
+            f"""\
+            #!/usr/bin/env sh
+            if [ "$1" = "--version" ]; then
+              echo "{version}"
+              exit 0
+            fi
+            exit 0
+            """,
+        )
+
+    def _run_setup_with_python(
+        self,
+        tmp_path,
+        python_version,
+        versioned_python=None,
+        host_commands=("claude",),
+        args=None,
+    ):
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir()
 
@@ -105,17 +141,12 @@ class TestSetupInstaller:
         for command, version in versioned_python.items():
             self._write_python_shim(bin_dir / command, version)
 
-        self._write_executable(
-            bin_dir / "claude",
-            """\
-            #!/usr/bin/env sh
-            if [ "$1" = "--version" ]; then
-              echo "2.1.153 (Claude Code)"
-              exit 0
-            fi
-            exit 0
-            """,
-        )
+        for command in ("claude", "codex"):
+            if command in host_commands:
+                version = "2.1.153 (Claude Code)" if command == "claude" else "codex-cli 0.140.0"
+                self._write_host_shim(bin_dir / command, version)
+            else:
+                self._write_missing_command_shim(bin_dir / command)
 
         node_bin = shutil.which("node")
         assert node_bin, "node is required for installer smoke tests"
@@ -128,7 +159,7 @@ class TestSetupInstaller:
         env["HOME"] and Path(env["HOME"]).mkdir()
 
         return subprocess.run(
-            [node_bin, str(ROOT / "bin" / "setup.js")],
+            [node_bin, str(ROOT / "bin" / "setup.js"), *(args or [])],
             cwd=tmp_path,
             env=env,
             capture_output=True,
@@ -155,6 +186,79 @@ class TestSetupInstaller:
         assert f"Python found: Python {python_version}" in output
         assert "Prerequisites met." in output
         assert (tmp_path / "profile.json").exists()
+
+    def test_setup_accepts_codex_only_environment(self, tmp_path):
+        """Installer should not require Claude when Codex is available."""
+        result = self._run_setup_with_python(
+            tmp_path,
+            "3.11.13",
+            host_commands=("codex",),
+        )
+
+        output = result.stdout + result.stderr
+        assert result.returncode == 0, output
+        assert "Codex CLI found: codex-cli 0.140.0" in output
+        assert "Claude Code CLI not found" in output
+        assert (tmp_path / "profile.json").exists()
+
+    def test_setup_rejects_missing_agent_hosts(self, tmp_path):
+        """Installer should fail when neither Claude nor Codex is available."""
+        result = self._run_setup_with_python(
+            tmp_path,
+            "3.11.13",
+            host_commands=(),
+        )
+
+        output = result.stdout + result.stderr
+        assert result.returncode == 1
+        assert "Neither Claude Code nor Codex CLI was found." in output
+        assert not (tmp_path / "profile.json").exists()
+
+    def test_setup_doctor_dispatches_to_doctor(self, tmp_path):
+        """`career-agent doctor` should run doctor behavior, not setup."""
+        result = self._run_setup_with_python(
+            tmp_path,
+            "3.11.13",
+            host_commands=("codex",),
+            args=["doctor"],
+        )
+
+        output = result.stdout + result.stderr
+        assert "career-agent health check" in output
+        assert "Setting up profile" not in output
+        assert not (tmp_path / "profile.json").exists()
+
+    def test_doctor_rejects_python_39(self, tmp_path):
+        """Doctor should enforce the documented Python 3.10+ minimum."""
+        result = self._run_setup_with_python(
+            tmp_path,
+            "3.9.6",
+            host_commands=("codex",),
+            args=["doctor"],
+        )
+
+        output = result.stdout + result.stderr
+        assert result.returncode == 1
+        assert "Python 3.10+" in output
+        assert "FAIL" in output
+
+    def test_doctor_reports_codex_without_claude(self, tmp_path):
+        """Doctor should report Claude and Codex status independently."""
+        (tmp_path / "profile.json").write_text('{"name": "Test User"}', encoding="utf-8")
+
+        result = self._run_setup_with_python(
+            tmp_path,
+            "3.11.13",
+            host_commands=("codex",),
+            args=["doctor"],
+        )
+
+        output = result.stdout + result.stderr
+        assert result.returncode == 0, output
+        assert "Codex CLI" in output
+        assert "codex-cli 0.140.0" in output
+        assert "Claude Code CLI" in output
+        assert "required only for Claude Code plugin usage" in output
 
     def test_setup_accepts_versioned_python_when_default_is_unsupported(self, tmp_path):
         """Installer should try supported versioned Python executables before failing."""
@@ -255,6 +359,38 @@ class TestJSONConfigs:
             f"  got: {sorted(data['skills'])}"
         )
 
+    def test_codex_plugin_json_valid(self):
+        """Verify .codex-plugin/plugin.json is the Codex plugin manifest."""
+        plugin_file = ROOT / ".codex-plugin" / "plugin.json"
+        assert plugin_file.exists(), "Missing .codex-plugin/plugin.json"
+
+        with open(plugin_file, encoding="utf-8") as f:
+            data = json.load(f)
+
+        required_fields = ["name", "version", "description", "skills", "interface"]
+        for field in required_fields:
+            assert field in data, f"Missing required field in .codex-plugin/plugin.json: {field}"
+
+        assert data["name"] == "career-agent", "Incorrect plugin name in Codex manifest"
+        assert data["skills"] == "./skills/", "Codex manifest skills must be './skills/'"
+        assert data["version"] == json.loads((ROOT / "package.json").read_text())["version"]
+
+    def test_release_versions_match(self):
+        """Release metadata should not drift across maintained manifests."""
+        package_version = json.loads((ROOT / "package.json").read_text())["version"]
+        manifest_version = json.loads((ROOT / ".release-please-manifest.json").read_text())["."]
+        plugin_version = json.loads((ROOT / "plugin.json").read_text())["version"]
+        claude_version = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text())[
+            "version"
+        ]
+        codex_version = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text())["version"]
+
+        pyproject_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        assert f'version = "{package_version}"' in pyproject_text
+        assert {manifest_version, plugin_version, claude_version, codex_version} == {
+            package_version
+        }
+
     def test_profile_example_valid(self):
         """Verify profile.example.json is valid JSON."""
         profile_file = ROOT / "profile.example.json"
@@ -327,6 +463,83 @@ class TestSKILLMarkdown:
             content = skill_file.read_text(encoding="utf-8")
             assert len(content) > 100, f"{skill_file.name} appears to be incomplete"
             assert "##" in content, f"{skill_file.name} missing section headers"
+
+    def test_skill_frontmatter_has_codex_metadata(self):
+        """Codex skills require name and description frontmatter."""
+        for skill_file in (ROOT / "skills").glob("*/SKILL.md"):
+            metadata = parse_skill_frontmatter(skill_file)
+            assert metadata.get("name") == skill_file.parent.name
+            assert metadata.get("description"), f"{skill_file} missing description"
+
+    def test_shared_skills_do_not_reference_claude_only_tools(self):
+        """Shared skills should not call Claude-only MCP tools or env vars."""
+        forbidden = [
+            "mcp__Claude_in_Chrome",
+            "mcp__workspace__web_fetch",
+            "CLAUDE_PLUGIN_ROOT",
+            "Claude-in-Chrome",
+        ]
+
+        for skill_file in (ROOT / "skills").glob("*/SKILL.md"):
+            content = skill_file.read_text(encoding="utf-8")
+            for token in forbidden:
+                assert token not in content, f"{skill_file} contains Claude-only token {token}"
+
+    def test_apply_sensitive_field_policy_present(self):
+        """The /apply policy should include the expanded human handoff boundary."""
+        content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
+        required_terms = [
+            "GDPR",
+            "data retention",
+            "talent pool",
+            "attestation",
+            "CAPTCHA",
+            "National IDs",
+            "SSN/tax IDs",
+            "passport",
+            "date of birth",
+            "bank",
+            "payroll",
+            "unsupported ATS",
+            "This policy overrides `role.custom_answers`",
+        ]
+        for term in required_terms:
+            assert term in content, f"/apply missing sensitive-field term: {term}"
+
+    def test_source_profile_recovery_points_to_setup_profile(self):
+        """/source should not direct missing-profile recovery to /new-role."""
+        content = (ROOT / "skills" / "source" / "SKILL.md").read_text(encoding="utf-8")
+        recovery_start = content.index("### Option C")
+        recovery_end = content.index("---", recovery_start)
+        recovery = content[recovery_start:recovery_end]
+
+        assert "/setup-profile" in recovery
+        assert "/new-role" not in recovery
+
+    def test_agents_md_exists_for_codex(self):
+        """Codex should have repository-level project guidance."""
+        agents_md = ROOT / "AGENTS.md"
+        assert agents_md.exists(), "Missing AGENTS.md"
+
+        content = agents_md.read_text(encoding="utf-8")
+        for term in ["career-agent", "profile.json", "roles/", "generated/", "Submit"]:
+            assert term in content
+
+    def test_npm_packlist_is_validated(self):
+        """npm pack should include runtime assets and exclude local artifacts."""
+        node_bin = shutil.which("node")
+        npm_bin = shutil.which("npm")
+        if not node_bin or not npm_bin:
+            pytest.skip("node and npm are required for package packlist validation")
+
+        result = subprocess.run(
+            [node_bin, str(ROOT / "scripts" / "check-package.js")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
 
 
 class TestGitignore:

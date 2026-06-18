@@ -1,4 +1,5 @@
 ---
+name: generate-cv
 description: Build ATS-optimised CV and cover letter PDFs tailored to a specific role using reportlab Platypus
 ---
 
@@ -10,13 +11,15 @@ Generate an ATS-optimised CV + cover letter PDF pair for a specific role.
 
 User says: `/generate-cv`, `generate my CV for`, `build my CV`, `create CV for`, `make my resume for`
 
+In Codex, invoke this skill with `$generate-cv`, the skills/plugin selector, or natural language. Slash-command examples are Claude Code aliases, not Codex built-ins.
+
 ## Arguments
 
 ```
 /generate-cv <role_id>
 ```
 
-`role_id` — matches a filename under `roles/<role_id>.json`. If not provided, list available role IDs from the `roles/` directory and ask the user to pick one.
+`role_id`: matches a filename under `roles/<role_id>.json`. If not provided, list available role IDs from the `roles/` directory and ask the user to pick one.
 
 ## Steps
 
@@ -30,9 +33,9 @@ Read `roles/<role_id>.json`. If it does not exist, tell the user to create it (o
 
 The role config's `variant` field is `A`, `B`, or `C`.
 
-- **A** — AI/LLM/Evaluation roles: order experience bullets by `impact_order` in `profile.variants.A`
-- **B** — Data Platform/Pipelines: order by `profile.variants.B.impact_order`
-- **C** — Senior Backend/APIs: order by `profile.variants.C.impact_order`
+- **A**: AI/LLM/Evaluation roles: order experience bullets by `impact_order` in `profile.variants.A`
+- **B**: Data Platform/Pipelines: order by `profile.variants.B.impact_order`
+- **C**: Senior Backend/APIs: order by `profile.variants.C.impact_order`
 
 For each job in `profile.experience`, check if the role config has `experience_overrides` for that job ID. If yes, use those bullets. If no, use the variant-specific bullets from `profile.experience[i].bullets[variant]`. Fall back to `default` if the variant key is missing.
 
@@ -41,7 +44,7 @@ For each job in `profile.experience`, check if the role config has `experience_o
 Run:
 
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/src/generate_application.py" --role <role_id>
+python3 src/generate_application.py --role <role_id>
 ```
 
 The script reads `profile.json` + `roles/<role_id>.json` and writes:
@@ -59,7 +62,7 @@ If `src/generate_application.py` does not exist yet, generate it now using the P
 **Layout:** single column, no tables, no images  
 **Font:** Helvetica (body 10pt, headings 12pt bold, name 16pt bold)  
 **Colours:** black body text, `#2563eb` for links  
-**Links:** clickable — email, LinkedIn, GitHub, blog/website  
+**Links:** clickable: email, LinkedIn, GitHub, blog/website
 **ATS-safe rules:**
 - No two-column layouts
 - No headers/footers that contain text outside the main Platypus story
@@ -89,15 +92,15 @@ After generation, report:
 ```
 ✅ CV:           generated/<prefix>_CV.pdf
 ✅ Cover letter: generated/<prefix>_CoverLetter.pdf
-Variant:        <A|B|C> — <label>
+Variant:        <A|B|C>: <label>
 Role:           <title> @ <company>
 ```
 
-Ask: "Ready to apply? Run `/apply <role_id>` to fill the ATS form."
+Ask: "Ready to apply? Use `/apply <role_id>` in Claude Code or `$apply <role_id>` in Codex. Codex `/apply` remains experimental until issue #65 verifies non-submitted ATS flows."
 
 ## Error handling
 
 - `profile.json` missing → stop, instruct user to create it
-- `roles/<role_id>.json` missing → stop, instruct user to create it or run `/new-role`
+- `roles/<role_id>.json` missing → stop, instruct user to create it, run `/new-role` in Claude Code, or invoke `$new-role` in Codex
 - `reportlab` not installed → `pip install reportlab --break-system-packages`
 - `generated/` directory missing → create it

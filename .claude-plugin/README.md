@@ -36,19 +36,20 @@ Or:
 
 ## What's Included
 
-The career-agent plugin provides 5 skills for automated job applications:
+The career-agent plugin provides 6 skills for local job application workflows:
 
+- `/setup-profile [path]` - Build profile.json from a CV, resume, or LinkedIn PDF
 - `/source [country] [role_type]` - Find verified open roles matching your profile
 - `/new-role [url]` - Scaffold a new role config interactively
 - `/generate-cv <role_id>` - Build ATS-optimized CV + cover letter PDFs
-- `/apply <role_id>` - Fill ATS forms via browser automation
+- `/apply <role_id>` - Fill safe ATS fields via browser automation and hand off sensitive fields
 - `/track [role_id] [status]` - View and update your application pipeline
 
 ## Requirements
 
 - Python 3.10+
 - `pip install reportlab`
-- Claude in Chrome extension (for /apply skill)
+- Claude in Chrome extension (for `/apply` browser automation)
 
 ## Documentation
 

@@ -1,4 +1,5 @@
 ---
+name: source
 description: Find verified open roles matching your profile, ranked by fit score with sponsorship and relocation signals
 ---
 
@@ -6,18 +7,20 @@ description: Find verified open roles matching your profile, ranked by fit score
 
 Find verified, currently-open roles that match your profile. Uses your CV, LinkedIn export, or profile.json as the candidate baseline. Optionally reads uploaded company/sponsorship documents as a starting source list.
 
-Returns at least 20 ranked, evidence-verified roles with fit scores, CV variant suggestions, cover letter angles, and sponsorship/relocation signals.
+Aims to return up to 20 ranked roles when enough matches can be verified, with fit scores, CV variant suggestions, cover letter angles, and sponsorship/relocation signals. Each role should cite the official job post or careers page, and blocked or inconclusive checks should be marked clearly. Fit scores are heuristic.
 
 ## Triggers
 
 User says: `/source`, `find me jobs`, `find roles for me`, `search for jobs`, `what jobs match my profile`, `find backend roles`, `find Python roles`, `source jobs`
 
+In Codex, invoke this skill with `$source`, the skills/plugin selector, or natural language. Slash-command examples are Claude Code aliases, not Codex built-ins.
+
 ## Arguments
 
 ```
-/source                                    — run with all defaults
-/source [country]                          — focus on a specific country or region
-/source [role_type]                        — focus on a role type (backend, data, AI)
+/source                                   : run with all defaults
+/source [country]                         : focus on a specific country or region
+/source [role_type]                       : focus on a role type (backend, data, AI)
 /source [country] [role_type]
 ```
 
@@ -29,11 +32,11 @@ Examples:
 /source remote AI infrastructure
 ```
 
-## Step 1 — Build the candidate profile
+## Step 1: Build the candidate profile
 
 Check inputs in this priority order:
 
-### Option A — profile.json exists
+### Option A: profile.json exists
 
 Read `profile.json`. Extract:
 - Name, years of experience, location, relocation openness
@@ -41,40 +44,40 @@ Read `profile.json`. Extract:
 - Experience (titles, companies, key bullets)
 - CV variants (A/B/C labels and their focus areas)
 
-### Option B — File uploaded by user
+### Option B: File uploaded by user
 
 Accept any of:
-- **LinkedIn PDF export** — File → Save as PDF from linkedin.com/in/yourprofile
-- **CV PDF or DOCX** — Any recent comprehensive CV
-- **Plain text resume** — Pasted directly into the conversation
+- **LinkedIn PDF export**: File → Save as PDF from linkedin.com/in/yourprofile
+- **CV PDF or DOCX**: Any recent comprehensive CV
+- **Plain text resume**: Pasted directly into the conversation
 
 Read the file and extract the same fields as Option A. If parsing is ambiguous, state your assumptions explicitly.
 
-### Option C — Neither exists
+### Option C: Neither exists
 
 Ask the user:
 > "To find matching roles I need your profile. Please either:
 > 1. Share your CV (PDF, DOCX, or paste it here)
 > 2. Upload your LinkedIn profile PDF (LinkedIn → More → Save to PDF)
-> 3. Or run `/new-role` first to set up your profile.json"
+> 3. Or run `/setup-profile` to build profile.json from your CV/LinkedIn export, or create profile.json manually from profile.example.json"
 
 Do not proceed without a profile source.
 
 ---
 
-## Step 2 — Load company source list (optional)
+## Step 2: Load company source list (optional)
 
 If the user uploads one or more PDF documents listing companies by country (e.g. visa-sponsoring companies, relocation-friendly employers):
 
 - Extract company names and countries from the uploaded documents
-- Treat these as a **starting source list only** — not as proof of current active hiring
+- Treat these as a **starting source list only**: not as proof of current active hiring
 - You will verify each company's actual careers page in Step 3
 
-If no documents are uploaded, proceed without a source list — search broadly using the candidate's profile and target parameters.
+If no documents are uploaded, proceed without a source list: search broadly using the candidate's profile and target parameters.
 
 ---
 
-## Step 3 — Run the sourcing analysis
+## Step 3: Run the sourcing analysis
 
 Act as a senior technical recruiter and job search strategist.
 
@@ -112,22 +115,22 @@ Prioritise any role where the candidate's background gives a clear advantage:
 
 ---
 
-## Step 4 — Verify each role
+## Step 4: Verify each role
 
 For every candidate role:
 
 1. Visit the company's **official careers page or job board** (Greenhouse, Lever, Workable, LinkedIn, etc.)
-2. Confirm the role is **currently open** — not expired, not archived
+2. Confirm the role is **currently open**: not expired, not archived
 3. Extract: title, location, work setup (remote / hybrid / onsite), application link
 4. Check the job post for explicit sponsorship / relocation language
-5. If the company came from an uploaded source list but the job post says nothing about sponsorship, note: *"Relocation/sponsorship claim from uploaded source list — not confirmed in job post"*
+5. If the company came from an uploaded source list but the job post says nothing about sponsorship, note: *"Relocation/sponsorship claim from uploaded source list: not confirmed in job post"*
 6. If the careers page has no matching roles today, skip it or add to Watched Companies
 
 ---
 
-## Step 5 — Return output
+## Step 5: Return output
 
-Return **at least 20 verified roles**, ranked in this order:
+Return **up to 20 verified roles**, ranked in this order. If fewer than 20 suitable roles can be verified, return the verified set and explain what was blocked or inconclusive.
 
 1. Best technical fit
 2. Strongest sponsorship / relocation signal
@@ -138,7 +141,7 @@ Return **at least 20 verified roles**, ranked in this order:
 ### Per-role format
 
 ```
-## [Rank]. [Company] — [Role Title]
+## [Rank]. [Company]: [Role Title]
 Location:       [City / Country / Remote]
 Work setup:     [Remote | Hybrid | Onsite | Relocation]
 Apply:          [Direct application URL]
@@ -152,7 +155,7 @@ Why it fits:
   [2–3 sentences linking candidate's specific experience to this role's requirements]
 
 Key gaps / risks:
-  [Honest assessment — missing skills, location complexity, competition level]
+  [Honest assessment: missing skills, location complexity, competition level]
 
 Suggested CV version:
   [Backend/Cloud | Data Platform | AI Infrastructure | LLM Evaluation | Hybrid Senior]
@@ -166,7 +169,7 @@ Cover letter angle:
 Companies from the source list that look promising but have no matching open roles today:
 
 ```
-- [Company] ([Country]) — Strong profile match. No current openings. Check back: [careers page URL]
+- [Company] ([Country]): Strong profile match. No current openings. Check back: [careers page URL]
 ```
 
 ---
@@ -181,7 +184,7 @@ Companies from the source list that look promising but have no matching open rol
 
 ---
 
-## After output — suggested next steps
+## After output: suggested next steps
 
 For each role the user wants to pursue:
 
@@ -192,4 +195,6 @@ For each role the user wants to pursue:
 /track <role_id> applied       ← log it in your pipeline
 ```
 
-The `/source` output feeds directly into `/new-role` — paste the application URL from any role above to scaffold its config automatically.
+In Codex, use `$new-role`, `$generate-cv`, `$apply`, and `$track` or invoke the installed skills through the selector. `/apply` in Codex remains experimental until issue #65 verifies non-submitted ATS flows.
+
+The `/source` output feeds directly into `/new-role`: paste the application URL from any role above to scaffold its config automatically.
