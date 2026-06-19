@@ -6,6 +6,7 @@
 
 ## Checklist
 - [ ] CI passes locally: `pytest tests/ && ruff check . && mypy src/`
+- [ ] Scope is minimal, schemas/types were verified where touched, and assumptions are documented
 - [ ] Conventional commit messages (`feat:`, `fix:`, `docs:`, `chore:`)
 - [ ] PR title is a release-parseable Conventional Commit with no `[codex]` or other agent prefix
 - [ ] SKILL.md updated if skill behaviour changed
