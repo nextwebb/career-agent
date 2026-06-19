@@ -1,0 +1,39 @@
+{
+  "_comment": "Copy to roles/<role_id>.json. The roles/ directory is gitignored.",
+  "role_id": "stripe_backend_2026",
+  "company": "Stripe",
+  "title": "Senior Backend Engineer",
+  "location": "Remote, Europe",
+  "url": "https://stripe.com/jobs/listing/senior-backend-engineer/...",
+  "ats_platform": "greenhouse",
+  "variant": "C",
+  "output_prefix": "Jane_Doe_Stripe_Backend_2026-06",
+  "custom_answers": {
+    "hear_about_us": "LinkedIn",
+    "visa_sponsorship": "No, I need sponsorship",
+    "work_authorization": "No",
+    "cities_available": ["Dublin", "Amsterdam"],
+    "why_company": "Optional free-text answer for a specific 'Why us?' field",
+    "salary_expectation": ""
+  },
+  "cover_letter": {
+    "salutation": "Dear Stripe Engineering Team,",
+    "paragraphs": [
+      "Opening paragraph — specific hook to the company/role...",
+      "Paragraph 2 — relevant experience, concrete evidence...",
+      "Paragraph 3 — fit with this specific JD, address key requirements...",
+      "Closing — availability, call to action."
+    ],
+    "closing": "Best regards,"
+  },
+  "experience_overrides": {
+    "_comment": "Optional: override specific bullets for this role. Leave empty to use profile defaults.",
+    "job_1": {
+      "bullets": [
+        "Overridden bullet 1 specific to this application...",
+        "Overridden bullet 2..."
+      ]
+    }
+  },
+  "notes": "Add any notes about this application here — e.g. referral contact, deadline, status."
+}

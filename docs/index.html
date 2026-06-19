@@ -521,7 +521,14 @@
     <div class="glass rounded-xl border border-obsidian-edge p-6 mb-6">
       <div class="font-mono text-label text-on-surface-variant uppercase tracking-widest mb-4">Codex setup</div>
       <p class="font-body text-body-sm text-on-surface-variant">
-        <code class="font-mono text-label text-safety-indigo">npx @nextwebb/career-agent</code> checks local prerequisites and creates local starter files. It does not install the Codex plugin. This package includes <code class="font-mono text-label text-safety-indigo">.codex-plugin/plugin.json</code> and Codex skill metadata. Installing it in Codex requires a configured Codex plugin source. Direct <code class="font-mono text-label text-safety-indigo">codex plugin marketplace add nextwebb/career-agent</code> installation is tracked in <a href="https://github.com/nextwebb/career-agent/issues/91" class="text-safety-indigo hover:underline">#91</a>. The setup check and Claude commands above are not Codex plugin setup.
+        The setup check verifies local prerequisites and may create starter files, but it does not install the Codex plugin. Install the Codex plugin from this repository's marketplace:
+      </p>
+      <div class="font-mono text-terminal text-on-surface space-y-2 mt-4">
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">codex</span> plugin marketplace add nextwebb/career-agent</div>
+        <div><span class="text-on-surface-variant">$ </span><span class="text-safety-indigo">codex</span> plugin add career-agent@career-agent</div>
+      </div>
+      <p class="font-body text-body-sm text-on-surface-variant mt-4">
+        The Claude commands above are Claude Code setup only.
       </p>
     </div>
 

@@ -166,9 +166,9 @@ ${BOLD}Next steps:${RESET}
      ${DIM}claude plugin install career-agent${RESET}
 
   Codex:
-     ${DIM}npx checks prerequisites and starter files; it does not install the Codex plugin.${RESET}
-     ${DIM}This package includes .codex-plugin/plugin.json for Codex plugin discovery.${RESET}
-     ${DIM}Use a verified configured Codex plugin source; direct nextwebb/career-agent marketplace install is tracked in #91.${RESET}
+     ${DIM}codex plugin marketplace add nextwebb/career-agent${RESET}
+     ${DIM}codex plugin add career-agent@career-agent${RESET}
+     ${DIM}The npx setup check does not install the Codex plugin; Claude marketplace commands are Claude Code only.${RESET}
 
   Then bootstrap your profile:
      ${DIM}/setup-profile       # Claude Code alias${RESET}
