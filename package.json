@@ -23,8 +23,10 @@
   ],
   "scripts": {
     "doctor": "node bin/doctor.js",
+    "check:codex-marketplace": "node scripts/sync-codex-marketplace.js --check",
     "check:codeowners": "node scripts/check-codeowners.js",
     "check:package": "node scripts/check-package.js",
+    "sync:codex-marketplace": "node scripts/sync-codex-marketplace.js",
     "setup:hooks": "git config core.hooksPath .githooks"
   },
   "keywords": [

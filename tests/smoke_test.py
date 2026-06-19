@@ -222,6 +222,10 @@ class TestSetupInstaller:
         assert result.returncode == 0, output
         assert "Codex CLI found: codex-cli 0.140.0" in output
         assert "Claude Code CLI not found" in output
+        assert "does not install the Codex plugin" in output
+        assert "codex plugin marketplace add nextwebb/career-agent" in output
+        assert "codex plugin add career-agent@career-agent" in output
+        assert "Codex plugin install and verification commands require Codex" not in output
         assert (tmp_path / "profile.json").exists()
 
     def test_setup_rejects_missing_agent_hosts(self, tmp_path):
@@ -293,7 +297,9 @@ class TestSetupInstaller:
 
         output = result.stdout + result.stderr
         assert result.returncode == 0, output
-        assert "it does not install the Codex plugin" in output
+        assert "does not install the Codex plugin" in output
+        assert "codex plugin marketplace add nextwebb/career-agent" in output
+        assert "codex plugin add career-agent@career-agent" in output
         assert "Codex plugin install and verification commands require Codex" not in output
 
     def test_setup_accepts_versioned_python_when_default_is_unsupported(self, tmp_path):
@@ -309,6 +315,32 @@ class TestSetupInstaller:
         assert "Python found: Python 3.11.13" in output
         assert "Prerequisites met." in output
         assert (tmp_path / "profile.json").exists()
+
+
+class TestPublicInstallCopy:
+    """Guard install docs against host setup ambiguity."""
+
+    def test_readme_separates_codex_setup_from_npx_and_claude_install(self):
+        content = (ROOT / "README.md").read_text(encoding="utf-8")
+        normalized = normalize_whitespace(content)
+
+        assert "### Codex setup" in content
+        assert "`npx @nextwebb/career-agent` checks local prerequisites" in content
+        assert "It does not install the Codex plugin." in content
+        assert "The Claude marketplace commands above are Claude Code setup only." in content
+        assert "Codex plugin install and verification commands require Codex" not in content
+        assert "plugin marketplace add nextwebb/career-agent" in normalized
+        assert "plugin add career-agent@career-agent" in normalized
+
+    def test_docs_site_separates_codex_setup_from_npx_and_claude_install(self):
+        content = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+        normalized = normalize_whitespace(content)
+
+        assert "it does not install the Codex plugin" in normalized
+        assert "Install the Codex plugin from this repository's marketplace" in normalized
+        assert "The Claude commands above are Claude Code setup only" in normalized
+        assert "plugin marketplace add nextwebb/career-agent" in normalized
+        assert "plugin add career-agent@career-agent" in normalized
 
 
 class TestPythonSyntax:
@@ -413,6 +445,65 @@ class TestJSONConfigs:
         assert data["skills"] == "./skills/", "Codex manifest skills must be './skills/'"
         assert data["version"] == json.loads((ROOT / "package.json").read_text())["version"]
 
+    def test_codex_marketplace_json_valid(self):
+        """Verify Codex marketplace metadata exposes the packaged plugin."""
+        marketplace_file = ROOT / ".agents" / "plugins" / "marketplace.json"
+        assert marketplace_file.exists(), "Missing Codex marketplace catalog"
+
+        data = json.loads(marketplace_file.read_text(encoding="utf-8"))
+        assert data["name"] == "career-agent"
+        assert data["interface"]["displayName"] == "career-agent"
+        assert len(data["plugins"]) == 1
+
+        plugin = data["plugins"][0]
+        assert plugin["name"] == "career-agent"
+        assert plugin["source"] == {
+            "source": "local",
+            "path": "./plugins/career-agent",
+        }
+        assert plugin["policy"] == {
+            "installation": "AVAILABLE",
+            "authentication": "ON_INSTALL",
+        }
+        assert plugin["category"] == "Productivity"
+
+    def test_codex_marketplace_copy_matches_canonical_files(self):
+        """Codex marketplace plugin files should not drift from root sources."""
+        copied_paths = [
+            ".codex-plugin/plugin.json",
+            "AGENTS.md",
+            "LICENSE",
+            "README.md",
+            "docs/apply-codex-chrome-verification.md",
+            "docs/source-methodology.md",
+            "profile.example.json",
+            "requirements.txt",
+            "roles.example/example_role.json",
+            "skills/apply/SKILL.md",
+            "skills/generate-cv/SKILL.md",
+            "skills/new-role/SKILL.md",
+            "skills/setup-profile/SKILL.md",
+            "skills/source/SKILL.md",
+            "skills/track/SKILL.md",
+            "src/cl_builder.py",
+            "src/cv_builder.py",
+            "src/generate_application.py",
+            "src/quality_gates.py",
+            "src/tracker.py",
+            "src/validation.py",
+        ]
+
+        plugin_root = ROOT / "plugins" / "career-agent"
+        assert plugin_root.exists(), "Missing Codex marketplace plugin copy"
+
+        for relative_path in copied_paths:
+            canonical = ROOT / relative_path
+            copied = plugin_root / relative_path
+            assert copied.exists(), f"Missing Codex marketplace copy: {relative_path}"
+            assert (
+                copied.read_bytes() == canonical.read_bytes()
+            ), f"Codex marketplace copy drifted: {relative_path}"
+
     def test_release_versions_match(self):
         """Release metadata should not drift across maintained manifests."""
         package_version = json.loads((ROOT / "package.json").read_text())["version"]
@@ -422,12 +513,33 @@ class TestJSONConfigs:
             "version"
         ]
         codex_version = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text())["version"]
+        marketplace_codex_version = json.loads(
+            (ROOT / "plugins" / "career-agent" / ".codex-plugin" / "plugin.json").read_text()
+        )["version"]
 
         pyproject_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         assert f'version = "{package_version}"' in pyproject_text
-        assert {manifest_version, plugin_version, claude_version, codex_version} == {
-            package_version
+        assert {
+            manifest_version,
+            plugin_version,
+            claude_version,
+            codex_version,
+            marketplace_codex_version,
+        } == {package_version}
+
+    def test_release_please_updates_all_versioned_manifests(self):
+        """Release Please should bump every maintained versioned manifest."""
+        config = json.loads((ROOT / ".github" / "release-please-config.json").read_text())
+        extra_file_paths = {item["path"] for item in config["packages"]["."]["extra-files"]}
+
+        required_paths = {
+            "plugin.json",
+            ".claude-plugin/plugin.json",
+            ".codex-plugin/plugin.json",
+            "plugins/career-agent/.codex-plugin/plugin.json",
+            "pyproject.toml",
         }
+        assert required_paths <= extra_file_paths
 
     def test_profile_example_valid(self):
         """Verify profile.example.json is valid JSON."""
@@ -1203,22 +1315,19 @@ class TestReadmeAndDocs:
         assert "career-agent" in content.lower(), "CLAUDE.md missing project context"
 
     def test_codex_setup_docs_separate_npx_from_plugin_install(self):
-        """Docs should not present npx or Claude commands as Codex plugin install."""
+        """Docs should present Codex install commands without making npx the installer."""
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         docs = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+        docs_text = docs.replace('<span class="text-safety-indigo">codex</span> ', "codex ")
 
         assert "### Codex setup" in readme
         assert "It does not install the Codex plugin." in readme
-        assert (
-            "Direct `codex plugin marketplace add nextwebb/career-agent` installation is tracked in [#91]"
-            in readme
-        )
+        assert "codex plugin marketplace add nextwebb/career-agent" in readme
+        assert "codex plugin add career-agent@career-agent" in readme
         assert "Codex setup" in docs
-        assert "It does not install the Codex plugin." in docs
-        assert "installation is tracked in" in docs
-
-        assert "codex plugin add career-agent@career-agent" not in readme
-        assert "codex plugin add career-agent@career-agent" not in docs
+        assert "does not install the Codex plugin" in docs
+        assert "codex plugin marketplace add nextwebb/career-agent" in docs_text
+        assert "codex plugin add career-agent@career-agent" in docs_text
 
 
 if __name__ == "__main__":
