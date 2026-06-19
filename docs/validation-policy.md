@@ -28,9 +28,27 @@ GitHub Actions gates are:
 - `Deploy GitHub Pages / Deploy docs/ to GitHub Pages`
 - `Release Please / release-please`
 
-Other local checks, such as `npm run check:package`, `npm run check:codeowners`,
-and `python3 -m pytest tests/smoke_test.py -q`, should be cited in pull request
-validation when they are relevant to the files changed.
+Other local checks, such as `npm run check:package`, `npm run check:docs`,
+`npm run check:codeowners`, and `python3 -m pytest tests/smoke_test.py -q`,
+should be cited in pull request validation when they are relevant to the files
+changed.
+
+## Docs Versioning Policy
+
+The GitHub Pages site under `docs/` is latest-only and describes npm `latest`.
+The Pages workflow may rewrite visible version labels from `package.json`, but it
+does not preserve historical docs snapshots.
+
+Pinned historical npm versions rely on the README, files, and metadata shipped
+inside that npm artifact, plus `CHANGELOG.md` and GitHub release notes. Add
+public docs snapshots only when install or runtime behavior materially diverges
+across supported major or minor release lines. Do not create public snapshots for
+every patch release.
+
+Docs and packaging checks should stay cheap and deterministic. They should catch
+drift between README/docs install guidance, `requirements.txt`, npm pack
+contents, and package metadata before publish without becoming broad prose
+policing.
 
 ## External App Suites
 

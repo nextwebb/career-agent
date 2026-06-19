@@ -143,6 +143,9 @@ jobs:
       - name: Validate npm package contents
         run: npm run check:package
 
+      - name: Validate docs/package consistency
+        run: npm run check:docs
+
       - name: Validate SKILL.md frontmatter
         run: |
           for skill in skills/*/SKILL.md; do

@@ -24,6 +24,7 @@
   "scripts": {
     "doctor": "node bin/doctor.js",
     "check:codeowners": "node scripts/check-codeowners.js",
+    "check:docs": "node scripts/check-docs-consistency.js",
     "check:package": "node scripts/check-package.js",
     "setup:hooks": "git config core.hooksPath .githooks"
   },
