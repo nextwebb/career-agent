@@ -146,6 +146,9 @@ jobs:
       - name: Validate Codex marketplace copy
         run: npm run check:codex-marketplace
 
+      - name: Validate docs/package consistency
+        run: npm run check:docs
+
       - name: Validate SKILL.md frontmatter
         run: |
           for skill in skills/*/SKILL.md; do
