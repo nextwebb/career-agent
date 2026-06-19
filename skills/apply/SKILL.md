@@ -69,7 +69,7 @@ Do not fill the field when any of that text suggests:
 - EEO, voluntary self-identification, demographic, gender, race, ethnicity, disability, veteran, or self-identification data
 - Passwords, credentials, API keys, tokens, or account recovery answers
 - National IDs, SSN/tax IDs, passport or visa document numbers, or date of birth
-- Bank, payment, payroll, or compensation account details
+- bank, payment, payroll, or compensation account details
 - Privacy, GDPR, data protection, data retention, talent pool, marketing, terms, consent, disclosure, background check, attestation, authorization, or certification checkboxes
 - CAPTCHA or anti-bot challenges
 - Any field that requires legal judgment, an attestation of truth, or uncertain interpretation
@@ -201,23 +201,6 @@ Tab: [tab ID or URL]
 ```
 
 Wait for user confirmation before any further action on this form.
-
-## Human-in-the-loop rules (always enforced)
-
-The agent NEVER:
-- Clicks Submit or any irreversible confirmation button
-- Fills EEO / voluntary self-identification fields (gender, race, ethnicity, veteran status, disability status)
-- Enters passwords or credentials of any kind
-- Enters national IDs, SSN/tax IDs, passport/visa document numbers, or dates of birth
-- Enters bank, payment, or payroll details
-- Selects privacy, GDPR, data-retention, talent-pool, terms, consent, or attestation checkboxes
-- Solves CAPTCHA or anti-bot challenges
-- Answers fields requiring legal judgment or uncertain interpretation
-
-The agent ALWAYS:
-- States exactly what it has filled and what the values are
-- Flags any field it is uncertain about rather than guessing
-- Waits for explicit user confirmation before any action after hand-off
 
 ## Platform quirks reference
 

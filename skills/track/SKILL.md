@@ -52,7 +52,7 @@ Run this automatically at the end of `/new-role`: every new role config should b
 python3 "<career_agent_root>/src/tracker.py" --update <role_id> --status <status>
 ```
 
-Run `--update <role_id> --status applied` automatically after a successful `/apply` handoff (when user confirms they clicked Submit).
+Run `--update <role_id> --status applied` automatically after the user confirms they clicked Submit.
 
 ### Add a note
 
@@ -66,7 +66,7 @@ python3 "<career_agent_root>/src/tracker.py" --note <role_id> "Recruiter called:
 |---|---|
 | `/new-role` completes | `--add <role_id>` (status: draft) |
 | `/generate-cv` completes | no change |
-| `/apply` handoff delivered | remind user to run `/track <role_id> applied` after Submit |
+| User confirms Submit after `/apply` handoff | `--update <role_id> --status applied` |
 | User reports outcome | `--update <role_id> --status <screen|interview|offer|rejected>` |
 
 ## tracker.json
