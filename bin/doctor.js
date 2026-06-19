@@ -117,7 +117,7 @@ if (claudeVersion) {
 if (codexVersion) {
   check("Codex CLI", "pass", codexVersion);
 } else {
-  check("Codex CLI", "warn", "Not found — required only for Codex plugin usage");
+  check("Codex CLI", "warn", "Not found — required for Codex usage; doctor does not install the Codex plugin");
 }
 
 if (!claudeVersion && !codexVersion) {

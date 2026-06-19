@@ -121,9 +121,11 @@ claude plugin marketplace add nextwebb/career-agent
 claude plugin install career-agent
 ```
 
-### Codex plugin metadata
+### Codex setup
 
-Codex metadata is packaged at `.codex-plugin/plugin.json`. Making it available in Codex depends on the Codex surface you use and the plugin source you configure. Do not treat `npx` or the Claude marketplace commands above as Codex plugin setup.
+`npx @nextwebb/career-agent` checks local prerequisites and creates local starter files. It does not install the Codex plugin.
+
+Codex metadata is packaged at `.codex-plugin/plugin.json`. Installing it in Codex requires a configured Codex plugin source. Direct `codex plugin marketplace add nextwebb/career-agent` installation is tracked in [#91](https://github.com/nextwebb/career-agent/issues/91). Do not treat `npx` or the Claude marketplace commands above as Codex plugin setup.
 
 Then bootstrap your profile:
 

@@ -283,6 +283,19 @@ class TestSetupInstaller:
         assert "Claude Code CLI" in output
         assert "required only for Claude Code plugin usage" in output
 
+    def test_setup_output_does_not_claim_codex_plugin_install(self, tmp_path):
+        """Setup output should not imply npx installed the Codex plugin."""
+        result = self._run_setup_with_python(
+            tmp_path,
+            "3.11.13",
+            host_commands=("codex",),
+        )
+
+        output = result.stdout + result.stderr
+        assert result.returncode == 0, output
+        assert "it does not install the Codex plugin" in output
+        assert "Codex plugin install and verification commands require Codex" not in output
+
     def test_setup_accepts_versioned_python_when_default_is_unsupported(self, tmp_path):
         """Installer should try supported versioned Python executables before failing."""
         result = self._run_setup_with_python(
@@ -1188,6 +1201,24 @@ class TestReadmeAndDocs:
 
         content = claude_md.read_text(encoding="utf-8")
         assert "career-agent" in content.lower(), "CLAUDE.md missing project context"
+
+    def test_codex_setup_docs_separate_npx_from_plugin_install(self):
+        """Docs should not present npx or Claude commands as Codex plugin install."""
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        docs = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+
+        assert "### Codex setup" in readme
+        assert "It does not install the Codex plugin." in readme
+        assert (
+            "Direct `codex plugin marketplace add nextwebb/career-agent` installation is tracked in [#91]"
+            in readme
+        )
+        assert "Codex setup" in docs
+        assert "It does not install the Codex plugin." in docs
+        assert "installation is tracked in" in docs
+
+        assert "codex plugin add career-agent@career-agent" not in readme
+        assert "codex plugin add career-agent@career-agent" not in docs
 
 
 if __name__ == "__main__":
