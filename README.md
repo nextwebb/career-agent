@@ -86,7 +86,7 @@ All checks must pass before merge. See [ENGINEERING_PRINCIPLES.md](ENGINEERING_P
 | Pipeline tracking | ✅ `/track` | ✅ `$track` or natural language |
 | ATS form filling | ✅ with Claude in Chrome | ⚠️ experimental; see [Codex Chrome verification](docs/apply-codex-chrome-verification.md) |
 
-Codex support means the package includes `.codex-plugin/plugin.json`, Codex-compatible skill metadata, host-neutral skill instructions, and Codex-aware setup checks. It does not mean `npx` installs the plugin into Codex. How you make the plugin available in Codex depends on the Codex surface and configured plugin source. Codex Chrome `/apply` support is evidence-gated: as of 2026-06-18, the committed matrix contains no live non-submitted ATS pass records, so Greenhouse, Lever, and Workable remain experimental in Codex Chrome with manual fallback guidance.
+Codex support means the package includes `.codex-plugin/plugin.json`, Codex-compatible skill metadata, host-neutral skill instructions, and Codex-aware setup checks. It does not mean `npx` installs the plugin into Codex. How you make the plugin available in Codex depends on the Codex surface and configured plugin source.
 
 ## Prerequisites
 
@@ -95,7 +95,7 @@ Codex support means the package includes `.codex-plugin/plugin.json`, Codex-comp
 - Node 18+ for the `npx` setup and doctor commands
 - Browser automation for `/apply`:
   - Claude Code: Claude in Chrome extension
-  - Codex: Browser for public pages, Chrome for signed-in browser state; Codex Chrome `/apply` remains experimental until the verification matrix has non-submitted evidence for the target ATS case
+  - Codex: Browser for public pages, Chrome for signed-in browser state; see [ATS platform support notes](#ats-platform-support-notes)
 
 ---
 
@@ -133,7 +133,7 @@ $setup-profile               # Codex skill invocation
 /source Germany backend      # Find and verify matching role leads
 /new-role                    # Create role config
 /generate-cv <role_id>       # Generate PDFs
-/apply <role_id>             # Browser form handoff, Codex Chrome evidence-gated
+/apply <role_id>             # Browser form handoff
 /track                       # View pipeline
 ```
 

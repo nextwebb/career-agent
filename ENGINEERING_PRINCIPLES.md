@@ -98,42 +98,26 @@ def rule():
 ## 3. Documentation Standards
 
 ### Module Docstrings
-Every module MUST have a docstring with:
-1. Brief description
-2. Usage example
-3. Key parameters/structure
+Use module docstrings when they add context a filename cannot carry:
+- The module's responsibility
+- Non-obvious data flow, safety constraints, or host assumptions
+- Operational caveats that affect callers
 
 **Example:**
 ```python
 """cv_builder.py: ATS-safe CV PDF builder.
 
-Reads personal data from profile.json; role-specific content from the role config dict.
-
-Usage:
-    from cv_builder import build_cv
-    build_cv(profile, config, "/path/to/output.pdf")
+Reads local profile data and role config content to generate reviewable PDFs.
 """
 ```
 
 ### Function Docstrings
-Public functions SHOULD have docstrings explaining:
-- Purpose
-- Parameters
-- Return value (if not obvious)
-- Keep docstrings concise. Do not add `Args`/`Returns` type inventories when type hints already carry that information.
+Public functions SHOULD have docstrings when names and type hints are not enough. Explain intent, side effects, constraints, and error behavior. Do not repeat argument types or payload inventories already expressed in code or schema files.
 
 **Example:**
 ```python
 def build_cv(profile: dict, config: dict, output_path: str) -> None:
-    """
-    Build a tailored CV PDF.
-
-    profile keys (from profile.json):
-        name, email, location, links, education
-
-    config keys (from roles/<id>.json):
-        company, title, headline, summary, experience, skills
-    """
+    """Build a tailored CV PDF without sending profile data to external services."""
 ```
 
 ### Comments
@@ -235,16 +219,6 @@ bash tests/integration_test.sh
 - **CodeQL**: Semantic analysis (runs daily)
 - **Trivy**: Secret detection + filesystem scanning
 - **No credentials in code**: Ever. Period.
-
-### Security Scanning Tools
-| Tool | Scope | Frequency |
-|------|-------|-----------|
-| bandit | Python security anti-patterns | Every PR |
-| safety | Dependency vulnerabilities | Daily |
-| CodeQL | Semantic code analysis | Daily + PR |
-| Trivy | Secrets, misconfigurations | Daily |
-
----
 
 ## 6. Commit Message Convention
 
@@ -487,7 +461,6 @@ if not PROFILE_PATH.exists():
 ## 12. Performance Considerations
 
 ### Current Scale
-- Small codebase (~500 lines)
 - Single-user tool (not web service)
 - PDF generation is I/O bound (not CPU)
 
@@ -496,28 +469,3 @@ if not PROFILE_PATH.exists():
 - **Don't prematurely optimize**
 - **Profile before optimizing**
 - No caching needed (single-use script)
-
----
-
-## 13. Future Considerations
-
-### Planned Improvements
-- [ ] Add more ATS platform support (Ashby, SmartRecruiters)
-- [ ] Improve type coverage (gradual typing)
-- [ ] Add unit tests for complex logic
-- [ ] Consider pytest-cov for coverage metrics
-
-### Not Planned
-- ❌ Web interface (CLI is the design)
-- ❌ Database persistence (JSON is sufficient)
-- ❌ Cloud deployment (local-first by design)
-- ❌ Multi-user support (single-user tool)
-
----
-
-## Questions?
-
-Open an issue or discussion on GitHub:
-https://github.com/nextwebb/career-agent/discussions
-
-Last updated: 2026-06-13
