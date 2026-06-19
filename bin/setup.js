@@ -128,7 +128,7 @@ if (claudeVersion) {
 if (codexVersion) {
   ok(`Codex CLI found: ${codexVersion}`);
 } else {
-  warn("Codex CLI not found. Codex plugin install and verification commands require Codex.");
+  warn("Codex CLI not found. Codex usage requires Codex, but this setup command does not install the Codex plugin.");
 }
 
 if (!claudeVersion && !codexVersion) {
@@ -166,8 +166,9 @@ ${BOLD}Next steps:${RESET}
      ${DIM}claude plugin install career-agent${RESET}
 
   Codex:
-     ${DIM}Install career-agent from a configured Codex marketplace or local plugin source.${RESET}
+     ${DIM}npx checks prerequisites and starter files; it does not install the Codex plugin.${RESET}
      ${DIM}This package includes .codex-plugin/plugin.json for Codex plugin discovery.${RESET}
+     ${DIM}Use a verified configured Codex plugin source; direct nextwebb/career-agent marketplace install is tracked in #91.${RESET}
 
   Then bootstrap your profile:
      ${DIM}/setup-profile       # Claude Code alias${RESET}

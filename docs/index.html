@@ -492,7 +492,7 @@
   <section class="max-w-narrative-width mx-auto px-gutter mb-section-gap" id="install">
     <h2 class="font-display text-h2-mobile md:text-h2 text-on-surface mb-4">Install</h2>
     <p class="font-body text-body text-on-surface-variant mb-8">
-      The setup command checks Python 3.10+, installs <code class="font-mono text-label text-safety-indigo">reportlab</code> when needed, detects Claude Code and Codex independently, and creates <code class="font-mono text-label text-safety-indigo">profile.json</code>. It does not install either plugin host for you.
+      The setup command checks Python 3.10+, installs required PDF dependencies when needed, detects Claude Code and Codex independently, and creates <code class="font-mono text-label text-safety-indigo">profile.json</code>. It does not install either plugin host or the Codex plugin for you.
     </p>
 
     <div class="glass rounded-xl border border-safety-indigo/30 p-6 glow-indigo-sm mb-6">
@@ -519,9 +519,9 @@
     </div>
 
     <div class="glass rounded-xl border border-obsidian-edge p-6 mb-6">
-      <div class="font-mono text-label text-on-surface-variant uppercase tracking-widest mb-4">Codex</div>
+      <div class="font-mono text-label text-on-surface-variant uppercase tracking-widest mb-4">Codex setup</div>
       <p class="font-body text-body-sm text-on-surface-variant">
-        This package includes <code class="font-mono text-label text-safety-indigo">.codex-plugin/plugin.json</code> and Codex skill metadata. Making it available in Codex depends on the Codex surface you use and the plugin source you configure. The setup check and Claude commands above are not Codex plugin setup.
+        <code class="font-mono text-label text-safety-indigo">npx @nextwebb/career-agent</code> checks local prerequisites and creates local starter files. It does not install the Codex plugin. This package includes <code class="font-mono text-label text-safety-indigo">.codex-plugin/plugin.json</code> and Codex skill metadata. Installing it in Codex requires a configured Codex plugin source. Direct <code class="font-mono text-label text-safety-indigo">codex plugin marketplace add nextwebb/career-agent</code> installation is tracked in <a href="https://github.com/nextwebb/career-agent/issues/91" class="text-safety-indigo hover:underline">#91</a>. The setup check and Claude commands above are not Codex plugin setup.
       </p>
     </div>
 
