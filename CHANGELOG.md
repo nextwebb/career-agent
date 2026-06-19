@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.1](https://github.com/nextwebb/career-agent/compare/v1.2.0...v1.2.1) (2026-06-19)
+
+
+### Documentation
+
+* document coding-agent change discipline ([#79](https://github.com/nextwebb/career-agent/issues/79)) ([46e91aa](https://github.com/nextwebb/career-agent/commit/46e91aa6f691aab14302cf214e46feefdd2944a7))
+* document release-safe PR titles ([#78](https://github.com/nextwebb/career-agent/issues/78)) ([aa0f443](https://github.com/nextwebb/career-agent/commit/aa0f4433875d50df9088b6717bdf26880466f88e))
+* prune guidance boilerplate ([#86](https://github.com/nextwebb/career-agent/issues/86)) ([8da64fb](https://github.com/nextwebb/career-agent/commit/8da64fbe1bdc2e8410fef5e69a6dabe21ec352a6))
+* prune redundant skill instructions ([#83](https://github.com/nextwebb/career-agent/issues/83)) ([1e7941b](https://github.com/nextwebb/career-agent/commit/1e7941bc2dd57fab03f1742078a4c3f04dd9fc87))
+
 ## [1.2.0](https://github.com/nextwebb/career-agent/compare/v1.1.5...v1.2.0) (2026-06-18)
 
 
