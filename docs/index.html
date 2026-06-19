@@ -149,6 +149,7 @@
   <section class="max-w-narrative-width mx-auto px-gutter py-section-gap flex flex-col gap-8">
     <div class="flex flex-wrap gap-2 font-mono text-label text-safety-indigo animate-fiu">
       <span class="px-2.5 py-1 border border-safety-indigo/30 rounded-full bg-safety-indigo/10">Claude Code + Codex</span>
+      <span class="px-2.5 py-1 border border-obsidian-edge rounded-full text-on-surface-variant">Latest docs for npm latest</span>
       <span class="px-2.5 py-1 border border-obsidian-edge rounded-full text-on-surface-variant">Python 3.10+</span>
       <span class="px-2.5 py-1 border border-obsidian-edge rounded-full text-on-surface-variant">MIT License</span>
       <span class="px-2.5 py-1 border border-obsidian-edge rounded-full text-on-surface-variant">v1.1.5</span>
@@ -492,7 +493,7 @@
   <section class="max-w-narrative-width mx-auto px-gutter mb-section-gap" id="install">
     <h2 class="font-display text-h2-mobile md:text-h2 text-on-surface mb-4">Install</h2>
     <p class="font-body text-body text-on-surface-variant mb-8">
-      The setup command checks Python 3.10+, installs required PDF dependencies when needed, detects Claude Code and Codex independently, and creates <code class="font-mono text-label text-safety-indigo">profile.json</code>. It does not install either plugin host or the Codex plugin for you.
+      The setup command checks Python 3.10+, installs PDF dependencies from <code class="font-mono text-label text-safety-indigo">requirements.txt</code> when needed, detects Claude Code and Codex independently, and creates <code class="font-mono text-label text-safety-indigo">profile.json</code>. It does not install either plugin host or the Codex plugin for you.
     </p>
 
     <div class="glass rounded-xl border border-safety-indigo/30 p-6 glow-indigo-sm mb-6">
@@ -599,7 +600,7 @@
           <span class="material-symbols-outlined faq-icon text-on-surface-variant shrink-0">add</span>
         </summary>
         <div class="px-6 pb-5 font-body text-body-sm text-on-surface-variant">
-          Python 3.10+ with <code class="font-mono text-label text-safety-indigo">reportlab</code> for PDF generation (<code class="font-mono text-label text-safety-indigo">pip install reportlab</code>). Node 18+ if you use the <code class="font-mono text-label text-safety-indigo">npx</code> setup check. For form filling, Claude Code uses Claude in Chrome. Codex uses Browser for public pages and Chrome for signed-in browser state, but Codex Chrome <code class="font-mono text-label text-safety-indigo">/apply</code> remains experimental until the verification matrix has non-submitted evidence for the target ATS case.
+          Python 3.10+ with <code class="font-mono text-label text-safety-indigo">reportlab</code> and <code class="font-mono text-label text-safety-indigo">pypdf</code> from <code class="font-mono text-label text-safety-indigo">requirements.txt</code>. Node 18+ if you use the <code class="font-mono text-label text-safety-indigo">npx</code> setup check. For form filling, Claude Code uses Claude in Chrome. Codex uses Browser for public pages and Chrome for signed-in browser state, but Codex Chrome <code class="font-mono text-label text-safety-indigo">/apply</code> remains experimental until the verification matrix has non-submitted evidence for the target ATS case.
         </div>
       </details>
 

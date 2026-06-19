@@ -2,6 +2,8 @@
 
 This is the GitHub Pages site for the [career-agent](https://github.com/nextwebb/career-agent) project.
 
+The public site is latest docs for npm `latest`. Pinned historical installs should use the README and files shipped in that npm artifact plus the changelog.
+
 ## Deployment
 
 This site is automatically deployed via GitHub Pages from the `docs/` folder on the `main` branch.
