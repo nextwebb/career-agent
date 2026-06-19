@@ -14,6 +14,7 @@ const required = [
   "docs/source-methodology.md",
   "plugin.json",
   "profile.example.json",
+  "requirements.txt",
   "roles.example/example_role.json",
   "skills/apply/SKILL.md",
   "skills/generate-cv/SKILL.md",
