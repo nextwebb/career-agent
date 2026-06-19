@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/nextwebb/career-agent/compare/v1.2.1...v1.2.2) (2026-06-19)
+
+
+### Fixes
+
+* include requirements in npm package ([#88](https://github.com/nextwebb/career-agent/issues/88)) ([2a0d64f](https://github.com/nextwebb/career-agent/commit/2a0d64f037582f6506fe8084e2f9c5388c1d85b0))
+
 ## [1.2.1](https://github.com/nextwebb/career-agent/compare/v1.2.0...v1.2.1) (2026-06-19)
 
 
