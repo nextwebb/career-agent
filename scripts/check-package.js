@@ -168,6 +168,8 @@ function main() {
       file.endsWith(".DS_Store") ||
       file === "profile.json" ||
       file === "tracker.json" ||
+      file.startsWith(".agents/") ||
+      file.startsWith("plugins/") ||
       file.startsWith("roles/") ||
       file.startsWith("generated/")
   );

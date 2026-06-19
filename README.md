@@ -121,11 +121,14 @@ claude plugin marketplace add nextwebb/career-agent
 claude plugin install career-agent
 ```
 
-### Codex setup
+### Codex plugin install
 
-`npx @nextwebb/career-agent` checks local prerequisites and creates local starter files. It does not install the Codex plugin.
+```bash
+codex plugin marketplace add nextwebb/career-agent
+codex plugin add career-agent@career-agent
+```
 
-Codex metadata is packaged at `.codex-plugin/plugin.json`. Installing it in Codex requires a configured Codex plugin source. Direct `codex plugin marketplace add nextwebb/career-agent` installation is tracked in [#91](https://github.com/nextwebb/career-agent/issues/91). Do not treat `npx` or the Claude marketplace commands above as Codex plugin setup.
+Codex metadata is packaged at `.codex-plugin/plugin.json`, and this repository exposes it through `.agents/plugins/marketplace.json` for Codex plugin installation. Do not treat `npx` or the Claude marketplace commands above as Codex plugin setup.
 
 Then bootstrap your profile:
 
@@ -265,6 +268,8 @@ career-agent/
 ├── plugin.json                      # Legacy/shared plugin manifest
 ├── .claude-plugin/plugin.json       # Claude Code plugin manifest
 ├── .codex-plugin/plugin.json        # Codex plugin manifest
+├── .agents/plugins/marketplace.json # Codex marketplace catalog
+├── plugins/career-agent/            # Codex marketplace plugin copy
 ├── requirements.txt                 # pip install reportlab and pypdf
 ├── profile.example.json             # Copy → profile.json (gitignored)
 ├── .gitignore

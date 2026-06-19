@@ -35,6 +35,7 @@ exclude = [
     "dist",
     "*.egg-info",
     ".claude",
+    "plugins/career-agent/src",
 ]
 
 [tool.ruff.lint]
@@ -107,6 +108,7 @@ exclude_dirs = [
     "tests/",
     ".venv/",
     "venv/",
+    "plugins/career-agent/src/",
 ]
 skips = [
     "B101",  # assert_used - we use asserts in tests

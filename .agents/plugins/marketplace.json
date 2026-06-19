@@ -1,0 +1,20 @@
+{
+  "name": "career-agent",
+  "interface": {
+    "displayName": "career-agent"
+  },
+  "plugins": [
+    {
+      "name": "career-agent",
+      "source": {
+        "source": "local",
+        "path": "./plugins/career-agent"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

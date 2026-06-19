@@ -413,6 +413,81 @@ class TestJSONConfigs:
         assert data["skills"] == "./skills/", "Codex manifest skills must be './skills/'"
         assert data["version"] == json.loads((ROOT / "package.json").read_text())["version"]
 
+    def test_codex_marketplace_catalog_valid(self):
+        """Verify Codex marketplace exposes the nested career-agent plugin."""
+        marketplace_file = ROOT / ".agents" / "plugins" / "marketplace.json"
+        assert marketplace_file.exists(), "Missing Codex marketplace catalog"
+
+        data = json.loads(marketplace_file.read_text(encoding="utf-8"))
+        assert data["name"] == "career-agent"
+        assert data["interface"]["displayName"] == "career-agent"
+        assert len(data["plugins"]) == 1
+
+        plugin = data["plugins"][0]
+        assert plugin["name"] == "career-agent"
+        assert plugin["source"] == {
+            "source": "local",
+            "path": "./plugins/career-agent",
+        }
+        assert plugin["policy"] == {
+            "installation": "AVAILABLE",
+            "authentication": "ON_INSTALL",
+        }
+        assert plugin["category"] == "Productivity"
+
+    def test_codex_marketplace_copy_does_not_drift(self):
+        """Nested marketplace plugin should match canonical Codex plugin files."""
+        marketplace_root = ROOT / "plugins" / "career-agent"
+        assert marketplace_root.exists(), "Missing nested Codex marketplace plugin"
+
+        mirrored_files = [
+            (".codex-plugin/plugin.json", ".codex-plugin/plugin.json"),
+            ("docs/apply-codex-chrome-verification.md", "docs/apply-codex-chrome-verification.md"),
+            ("docs/source-methodology.md", "docs/source-methodology.md"),
+            ("profile.example.json", "profile.example.json"),
+            ("requirements.txt", "requirements.txt"),
+            ("roles.example/example_role.json", "roles.example/example_role.json"),
+            ("src/cl_builder.py", "src/cl_builder.py"),
+            ("src/cv_builder.py", "src/cv_builder.py"),
+            ("src/generate_application.py", "src/generate_application.py"),
+            ("src/quality_gates.py", "src/quality_gates.py"),
+            ("src/tracker.py", "src/tracker.py"),
+            ("src/validation.py", "src/validation.py"),
+        ]
+
+        for canonical, nested in mirrored_files:
+            assert (marketplace_root / nested).read_text(encoding="utf-8") == (
+                ROOT / canonical
+            ).read_text(encoding="utf-8"), f"Marketplace copy drifted: {nested}"
+
+        for skill in EXPECTED_SKILLS:
+            canonical_skill = ROOT / "skills" / skill / "SKILL.md"
+            nested_skill = marketplace_root / "skills" / skill / "SKILL.md"
+            assert nested_skill.read_text(encoding="utf-8") == canonical_skill.read_text(
+                encoding="utf-8"
+            )
+
+    def test_codex_marketplace_copy_contains_runtime_files(self):
+        """Marketplace install should include files referenced by Codex skills."""
+        marketplace_root = ROOT / "plugins" / "career-agent"
+        required_files = [
+            ".codex-plugin/plugin.json",
+            "docs/apply-codex-chrome-verification.md",
+            "docs/source-methodology.md",
+            "profile.example.json",
+            "requirements.txt",
+            "roles.example/example_role.json",
+            "src/cl_builder.py",
+            "src/cv_builder.py",
+            "src/generate_application.py",
+            "src/quality_gates.py",
+            "src/tracker.py",
+            "src/validation.py",
+        ]
+
+        for file in required_files:
+            assert (marketplace_root / file).exists(), f"Missing marketplace runtime file: {file}"
+
     def test_release_versions_match(self):
         """Release metadata should not drift across maintained manifests."""
         package_version = json.loads((ROOT / "package.json").read_text())["version"]
@@ -1202,23 +1277,18 @@ class TestReadmeAndDocs:
         content = claude_md.read_text(encoding="utf-8")
         assert "career-agent" in content.lower(), "CLAUDE.md missing project context"
 
-    def test_codex_setup_docs_separate_npx_from_plugin_install(self):
-        """Docs should not present npx or Claude commands as Codex plugin install."""
+    def test_codex_marketplace_install_commands_documented(self):
+        """README and public docs should show the verified Codex marketplace install path."""
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         docs = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+        docs_text = docs.replace('<span class="text-safety-indigo">codex</span> ', "codex ")
 
-        assert "### Codex setup" in readme
-        assert "It does not install the Codex plugin." in readme
-        assert (
-            "Direct `codex plugin marketplace add nextwebb/career-agent` installation is tracked in [#91]"
-            in readme
-        )
-        assert "Codex setup" in docs
-        assert "It does not install the Codex plugin." in docs
-        assert "installation is tracked in" in docs
-
-        assert "codex plugin add career-agent@career-agent" not in readme
-        assert "codex plugin add career-agent@career-agent" not in docs
+        for command in [
+            "codex plugin marketplace add nextwebb/career-agent",
+            "codex plugin add career-agent@career-agent",
+        ]:
+            assert command in readme
+            assert command in docs_text
 
 
 if __name__ == "__main__":
