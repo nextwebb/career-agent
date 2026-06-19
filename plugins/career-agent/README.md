@@ -26,6 +26,8 @@ Design philosophy: keep the workflow lightweight, keep career data local, and ma
 
 **[📖 Live Demo & Docs](https://nextwebb.github.io/career-agent/)** | **[⭐ Star on GitHub](https://github.com/nextwebb/career-agent)**
 
+Public docs describe npm `latest`. For pinned installs, use the README and files shipped with that npm package version plus the changelog.
+
 ![career-agent demo](https://raw.githubusercontent.com/nextwebb/career-agent/main/demo.gif)
 
 ---

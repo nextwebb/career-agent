@@ -24,6 +24,13 @@ function assertIncludes(content, needle, label) {
   }
 }
 
+function stripHtml(content) {
+  return content
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function parseRequirements() {
   return read("requirements.txt")
     .split(/\r?\n/)
@@ -55,11 +62,12 @@ function readPackPaths() {
 
 const readme = read("README.md");
 const docsIndex = read("docs/index.html");
+const docsIndexText = stripHtml(docsIndex);
 const docsReadme = read("docs/README.md");
 const publicDocs = `${readme}\n${docsIndex}\n${docsReadme}`;
 
 assertIncludes(readme, `npx ${packageName}`, "README install docs");
-assertIncludes(docsIndex, `npx</span> ${packageName}`, "GitHub Pages install docs");
+assertIncludes(docsIndexText, `npx ${packageName}`, "GitHub Pages install docs");
 
 assertIncludes(readme, "Public docs describe npm `latest`", "README");
 assertIncludes(docsIndex, "Latest docs for npm", "GitHub Pages docs");
