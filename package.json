@@ -16,6 +16,7 @@
     "docs/assets",
     "plugin.json",
     "roles.example",
+    "requirements.txt",
     "skills",
     "src/*.py",
     "profile.example.json"
