@@ -513,12 +513,33 @@ class TestJSONConfigs:
             "version"
         ]
         codex_version = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text())["version"]
+        marketplace_codex_version = json.loads(
+            (ROOT / "plugins" / "career-agent" / ".codex-plugin" / "plugin.json").read_text()
+        )["version"]
 
         pyproject_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         assert f'version = "{package_version}"' in pyproject_text
-        assert {manifest_version, plugin_version, claude_version, codex_version} == {
-            package_version
+        assert {
+            manifest_version,
+            plugin_version,
+            claude_version,
+            codex_version,
+            marketplace_codex_version,
+        } == {package_version}
+
+    def test_release_please_updates_all_versioned_manifests(self):
+        """Release Please should bump every maintained versioned manifest."""
+        config = json.loads((ROOT / ".github" / "release-please-config.json").read_text())
+        extra_file_paths = {item["path"] for item in config["packages"]["."]["extra-files"]}
+
+        required_paths = {
+            "plugin.json",
+            ".claude-plugin/plugin.json",
+            ".codex-plugin/plugin.json",
+            "plugins/career-agent/.codex-plugin/plugin.json",
+            "pyproject.toml",
         }
+        assert required_paths <= extra_file_paths
 
     def test_profile_example_valid(self):
         """Verify profile.example.json is valid JSON."""
