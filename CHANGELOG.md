@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/nextwebb/career-agent/compare/v1.2.2...v1.3.0) (2026-06-19)
+
+
+### Features
+
+* expose Codex marketplace install path ([#97](https://github.com/nextwebb/career-agent/issues/97)) ([38155c6](https://github.com/nextwebb/career-agent/commit/38155c6a57578056da9461fa41dce56b67c1ba97))
+
+
+### Documentation
+
+* clarify Codex setup boundaries ([#96](https://github.com/nextwebb/career-agent/issues/96)) ([0853ebb](https://github.com/nextwebb/career-agent/commit/0853ebb550c1e8ca8d0b9e6ec360c26fda68480a))
+
 ## [1.2.2](https://github.com/nextwebb/career-agent/compare/v1.2.1...v1.2.2) (2026-06-19)
 
 
