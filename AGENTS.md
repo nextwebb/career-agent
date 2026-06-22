@@ -14,7 +14,7 @@
 - In PR or final summaries, separate confirmed facts, inferences, unknowns, and assumptions when evidence quality matters.
 - Use repo-relative commands in docs and skills unless a host-specific variable is explicitly required.
 - When changing skill behavior, update the relevant `skills/*/SKILL.md` file and add or adjust smoke/static checks.
-- Treat browser automation as high-risk. The agent must stop before Submit, irreversible confirmations, credentials, legal attestations, consent fields, EEO/voluntary self-identification, CAPTCHA, or ambiguous fields.
+- Treat browser automation as high-risk. The agent must stop before Submit, irreversible confirmations, credentials, legal attestations, consent fields, EEO/voluntary self-identification, CAPTCHA, or ambiguous fields — except when all pre-apply gates in `src/yolo.py` have passed, `record_submission.py` has been called with a pre-authorized approval token derived from `profile.yolo_mode.authorization_key`, and the profile explicitly permits autonomous submission for this platform and tier. This conditional is in CLAUDE.md and the apply SKILL.md; do not expand it without a linked issue.
 
 ## Verification
 

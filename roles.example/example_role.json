@@ -35,5 +35,9 @@
       ]
     }
   },
+  "application_tier": "selective",
+  "sponsorship_available": "unknown",
+  "remote_status": "unknown",
+  "required_skills": [],
   "notes": "Add any notes about this application here — e.g. referral contact, deadline, status."
 }

@@ -25,7 +25,18 @@ WORKSPACE_DIR = Path.cwd()
 TRACKER_PATH = WORKSPACE_DIR / "tracker.json"
 ROLES_DIR = WORKSPACE_DIR / "roles"
 
-STATUSES = ["draft", "applied", "screen", "interview", "offer", "rejected", "withdrawn"]
+STATUSES = [
+    "draft",
+    "applied",
+    "screen",
+    "interview",
+    "offer",
+    "rejected",
+    "withdrawn",
+    "autonomous_submitted",
+    "autonomous_ambiguous",
+    "autonomous_failed",
+]
 
 
 def load() -> list[Any]:
@@ -113,6 +124,9 @@ STATUS_ICONS = {
     "offer": "🎉",
     "rejected": "❌",
     "withdrawn": "↩️ ",
+    "autonomous_submitted": "🤖",
+    "autonomous_ambiguous": "⚠️ ",
+    "autonomous_failed": "🚫",
 }
 
 
@@ -126,13 +140,25 @@ def list_entries(filter_status: str | None = None) -> None:
         entries = [e for e in entries if e["status"] == filter_status]
 
     # Group by status
-    order = ["offer", "interview", "screen", "applied", "draft", "rejected", "withdrawn"]
+    order = [
+        "offer",
+        "interview",
+        "screen",
+        "applied",
+        "autonomous_submitted",
+        "autonomous_ambiguous",
+        "autonomous_failed",
+        "draft",
+        "rejected",
+        "withdrawn",
+    ]
     grouped: dict[str, list[Any]] = {s: [] for s in order}
     for e in entries:
         grouped.get(e["status"], grouped["draft"]).append(e)
 
     total = len(entries)
-    active = sum(1 for e in entries if e["status"] not in ("rejected", "withdrawn"))
+    inactive = {"rejected", "withdrawn", "autonomous_failed"}
+    active = sum(1 for e in entries if e["status"] not in inactive)
     print(f"\n  Applications: {total} total, {active} active\n")
 
     for status in order:
