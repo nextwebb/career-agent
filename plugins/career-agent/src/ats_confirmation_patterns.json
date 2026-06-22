@@ -25,8 +25,7 @@
     "url_contains": "?success",
     "text_contains": [
       "Your application has been submitted successfully",
-      "submitted successfully",
-      "Thank you"
+      "submitted successfully"
     ],
     "failure_text_contains": [
       "There are some issues with your application",
