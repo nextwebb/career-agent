@@ -181,7 +181,7 @@ ${BOLD}Next steps:${RESET}
 
   Browser form filling:
      ${DIM}/apply <role_id>     # Claude Code supported flow${RESET}
-     ${DIM}$apply <role_id>     # Codex experimental until issue #65 is verified${RESET}
+     ${DIM}$apply <role_id>     # Codex experimental; see docs/apply-codex-chrome-verification.md${RESET}
 
 ${DIM}Docs & issues: https://github.com/nextwebb/career-agent${RESET}
 `);

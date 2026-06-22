@@ -270,7 +270,9 @@ Do not pause at Step 12.
 experimental status established in Prerequisites 4–5. If running on Codex Chrome, the same
 evidence requirement applies: `docs/apply-codex-chrome-verification.md` must contain a
 non-submitted end-to-end pass record for the target ATS case. The gate battery is not a
-substitute for that evidence.
+substitute for that evidence. Passing all yolo gates does not promote a Codex Chrome ATS
+platform from experimental to stable — that promotion requires a committed evidence record in
+the verification matrix, independent of the gate battery outcome.
 
 ### Step D — Pre-submit record
 
