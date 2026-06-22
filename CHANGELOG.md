@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/nextwebb/career-agent/compare/v1.3.0...v1.4.0) (2026-06-22)
+
+
+### Features
+
+* yolo mode — autonomous submission with pre-authorized gate battery ([#102](https://github.com/nextwebb/career-agent/issues/102)) ([05e8e25](https://github.com/nextwebb/career-agent/commit/05e8e259d6a4d98de602011f309e9ab5f6562e35))
+
 ## [1.3.0](https://github.com/nextwebb/career-agent/compare/v1.2.2...v1.3.0) (2026-06-19)
 
 
