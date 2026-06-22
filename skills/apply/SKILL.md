@@ -266,18 +266,28 @@ Generate the workspace before gate 8 using `src/jobqa_workspace.py:generate_jobq
 Proceed with Steps 1–11 (load configs, navigate, classify, fill, upload, answer, scroll).
 Do not pause at Step 12.
 
+**Codex Chrome restriction applies here too.** Yolo mode does not bypass the Codex Chrome
+experimental status established in Prerequisites 4–5. If running on Codex Chrome, the same
+evidence requirement applies: `docs/apply-codex-chrome-verification.md` must contain a
+non-submitted end-to-end pass record for the target ATS case. The gate battery is not a
+substitute for that evidence.
+
 ### Step D — Pre-submit record
 
-Before clicking Submit, call `record_submission.py` to satisfy the job-application-quality
-`missing_submission_log` hard-fail criterion:
+Before clicking Submit, call `src/record_submission.py` (packaged with career-agent — no
+external dependency required) to write an audit log and satisfy the `missing_submission_log`
+hard-fail criterion:
 
 ```
-python record_submission.py \
+python <career_agent_root>/src/record_submission.py \
   <workspace_dir>/output/manifest.json \
   <ats_platform>:<job_url> \
   "yolo-pre-authorized:<authorization_key_prefix>" \
   audits/<role_id>_<timestamp>_submission.json
 ```
+
+If `jobqa` was not run (workspace has no `output/manifest.json`), pass the `role_id` string
+as the first argument instead — the script accepts either.
 
 If `record_submission.py` exits non-zero: **abort with `SUBMISSION_LOG_FAILED`, do NOT click Submit.**
 The `authorization_key_prefix` is the first 4 characters of `profile.yolo_mode.authorization_key`.
