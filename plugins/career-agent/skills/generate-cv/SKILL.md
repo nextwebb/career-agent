@@ -83,10 +83,14 @@ If the packaged script cannot be found, stop and report that the career-agent pa
 **Structure order:**
 1. Name + headline
 2. Contact line: email | phone | location | LinkedIn | GitHub | website
-3. Summary (variant-specific)
-4. Experience (reverse chronological, variant-ordered bullets)
-5. Core Skills
-6. Education
+3. Professional Summary (variant-specific)
+4. Core Skills
+5. Professional Experience (reverse chronological, variant-ordered bullets)
+6. Additional Relevant Experience *(optional — flat bullet list of older/minor roles)*
+7. Selected Impact
+8. Projects *(optional)*
+9. Certifications & Community & Learning *(optional — from profile.certifications)*
+10. Education
 
 **Cover letter structure:**
 1. Applicant name + contact line (top)
