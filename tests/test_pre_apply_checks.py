@@ -448,3 +448,37 @@ class TestCompositeGate:
             registry_path=confirmation_registry,
             autonomous=True,
         )  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# Canary: Workable "Thank you" false-positive regression
+# Issue #107: "Thank you" in Workable text_contains triggers confirmed on
+# form pages, validation errors, and generic copy — before any submission.
+# ---------------------------------------------------------------------------
+
+
+class TestWorkableThankYouFalsePositive:
+    def test_workable_thank_you_does_not_confirm(self):
+        """
+        Regression: 'Thank you' must NOT classify a Workable page as confirmed.
+
+        'Thank you for your interest' appears on the form page itself and in
+        validation-error states. Without ?success in the URL or a specific
+        submission phrase, the outcome is ambiguous — not confirmed.
+
+        Uses the production registry (src/ats_confirmation_patterns.json) so
+        this test is red while 'Thank you' is present and green after removal.
+
+        Issue #107.
+        """
+        result = check_confirmation_pattern(
+            ats_platform="workable",
+            final_url="https://apply.workable.com/company/j/ABC123/apply/",
+            page_text="Thank you for your interest",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "ambiguous", (
+            "Expected 'ambiguous' but got 'confirmed'. "
+            "Remove 'Thank you' from Workable text_contains in "
+            "src/ats_confirmation_patterns.json (issue #107)."
+        )
