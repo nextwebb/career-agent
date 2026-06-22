@@ -111,5 +111,13 @@
       "label": "Cloud & Infra",
       "items": "AWS (Lambda · ECS · S3 · SQS · Step Functions) · Terraform · Docker · GitHub Actions"
     }
-  ]
+  ],
+  "yolo_mode": {
+    "_comment": "Autonomous submission mode. Disabled by default. Set authorization_key to the output of: python -c \"import hashlib; print(hashlib.sha256('career-agent-yolo:<your-email>'.encode()).hexdigest()[:32])\"",
+    "enabled": false,
+    "authorization_key": "",
+    "permitted_tiers": ["volume"],
+    "excluded_companies": [],
+    "daily_cap": 5
+  }
 }

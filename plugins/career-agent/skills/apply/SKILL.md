@@ -221,3 +221,112 @@ Wait for user confirmation before any further action on this form.
 - Cross-origin iframe blocking tools: navigate directly to the embed URL as a top-level page
 - Unsupported ATS, CAPTCHA, login wall, hidden required field, or ambiguous consent/legal field: stop and hand off with the exact field label and URL
 - Multiple file inputs, multi-step flow, or hidden required fields that cannot be confidently classified: stop and hand off with screenshots and the field labels found
+
+---
+
+## Yolo mode (autonomous submission)
+
+Yolo mode allows the agent to Submit without per-application human confirmation.
+It is opt-in, requires deliberate profile setup, and passes every application
+through a gate battery before any Submit action.
+
+**All gate failures fall to HITL — not hard abort.** The user sees what blocked.
+
+### Step A — Yolo detection
+
+Read `profile.yolo_mode`. If absent or `enabled: false`, use standard HITL flow (Step 12 above).
+
+Call `src/yolo.py:is_yolo_enabled(profile)`. If it returns `False` (key mismatch or disabled):
+- Report: `YOLO_AUTH_FAILED — falling back to HITL`
+- Proceed with standard HITL flow; do not abort
+
+### Step B — Pre-apply gates (autonomous mode)
+
+Run gates 1–2 using `run_pre_apply_checks(autonomous=True)`:
+1. `check_duplicate()` — halt: `DUPLICATE`
+2. `check_artifacts_exist()` + `check_platform_supported()` — halt: `PLATFORM_CHECK_FAILED`
+
+If either fails, fall to HITL.
+
+Then run the yolo gate battery via `src/yolo.py:run_yolo_gates(profile, role_config, workspace_dir, tracker_path)`:
+
+3. Tier in `permitted_tiers` — halt: `TIER_NOT_PERMITTED`, fall to HITL
+4. Company not in `excluded_companies` — halt: `COMPANY_EXCLUDED`, fall to HITL
+5. Daily cap check — halt: `DAILY_CAP_REACHED`
+6. Cover letter present — halt: `COVER_LETTER_REQUIRED`
+7. Cover letter specificity — halt: `QUALITY_GATE_FAILED`
+8. jobqa workspace gate (`jobqa run <workspace_dir>`) — halt: `JOBQA_GATE_FAILED: {errors}`
+   - jobqa warnings pass through and are logged in the sidecar
+   - If `jobqa` is not in PATH: skip this gate, log a warning, continue
+
+Generate the workspace before gate 8 using `src/jobqa_workspace.py:generate_jobqa_workspace()`.
+
+### Step C — Autonomous form fill
+
+Proceed with Steps 1–11 (load configs, navigate, classify, fill, upload, answer, scroll).
+Do not pause at Step 12.
+
+**Codex Chrome restriction applies here too.** Yolo mode does not bypass the Codex Chrome
+experimental status established in Prerequisites 4–5. If running on Codex Chrome, the same
+evidence requirement applies: `docs/apply-codex-chrome-verification.md` must contain a
+non-submitted end-to-end pass record for the target ATS case. The gate battery is not a
+substitute for that evidence.
+
+### Step D — Pre-submit record
+
+Before clicking Submit, call `src/record_submission.py` (packaged with career-agent — no
+external dependency required) to write an audit log and satisfy the `missing_submission_log`
+hard-fail criterion:
+
+```
+python <career_agent_root>/src/record_submission.py \
+  <workspace_dir>/output/manifest.json \
+  <ats_platform>:<job_url> \
+  "yolo-pre-authorized:<authorization_key_prefix>" \
+  audits/<role_id>_<timestamp>_submission.json
+```
+
+If `jobqa` was not run (workspace has no `output/manifest.json`), pass the `role_id` string
+as the first argument instead — the script accepts either.
+
+If `record_submission.py` exits non-zero: **abort with `SUBMISSION_LOG_FAILED`, do NOT click Submit.**
+The `authorization_key_prefix` is the first 4 characters of `profile.yolo_mode.authorization_key`.
+
+### Step E — Submit and confirm
+
+Click Submit once. Call `check_confirmation_pattern(ats_platform, final_url, page_text)`:
+
+- `confirmed` → proceed to Step F
+- `ambiguous` → write sidecar `outcome: ambiguous`, tracker `autonomous_ambiguous`, **halt, do not retry**
+- `failed` → write sidecar `outcome: failed`, tracker `autonomous_failed`, halt
+
+### Step F — Post-submit
+
+1. Take a screenshot of the confirmation page
+2. Write audit sidecar via `src/audit.py:write_sidecar()` with `outcome: confirmed`
+3. Update tracker status to `autonomous_submitted`
+
+Report:
+```
+🤖 Autonomous submission completed: <title> @ <company>
+   Outcome: confirmed
+   Confirmation: <excerpt>
+   Sidecar: audits/<role_id>_<timestamp>_submission.json
+   Remaining: EEO fields (not filled — human action required if asked later)
+```
+
+### Yolo mode halt codes
+
+| Code | Meaning | Action |
+|---|---|---|
+| `YOLO_AUTH_FAILED` | Key mismatch or yolo disabled | Fall to HITL |
+| `DUPLICATE` | URL already in tracker | Halt |
+| `PLATFORM_CHECK_FAILED` | Artifacts missing or platform unverified | Fall to HITL |
+| `TIER_NOT_PERMITTED` | Role tier not in permitted_tiers | Fall to HITL |
+| `COMPANY_EXCLUDED` | Company in excluded_companies | Fall to HITL |
+| `DAILY_CAP_REACHED` | Autonomous cap met today | Halt |
+| `COVER_LETTER_REQUIRED` | No cover letter paragraphs | Fall to HITL |
+| `QUALITY_GATE_FAILED` | Placeholder or non-specific cover letter | Fall to HITL |
+| `WORKSPACE_GENERATION_FAILED` | Translator raised an error | Fall to HITL |
+| `JOBQA_GATE_FAILED` | jobqa exited non-zero | Fall to HITL |
+| `SUBMISSION_LOG_FAILED` | record_submission.py exited non-zero | Abort — do NOT click Submit |
