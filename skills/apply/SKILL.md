@@ -97,20 +97,40 @@ After filling each field, verify the value is present before moving to the next 
 
 Locate the CV file input using visible labels such as "resume upload", "CV upload", or "attach resume".
 
-**Greenhouse hidden file inputs:**
+**Primary upload method — base64 DataTransfer injection (all platforms):**
 
-```javascript
-// Evaluate before file upload if the browser tool supports JavaScript.
-const el = document.querySelector('input[type="file"]');
-el.style.opacity = '1';
-el.style.display = 'block';
+The `mcp__claude-in-chrome__file_upload` tool requires a Claude Desktop version that passes file contents directly; older versions fail with "no longer accepts host filesystem paths." Use the base64 injection instead:
+
+```python
+# Step 1 — encode the PDF in Python
+import base64
+with open("generated/<output_prefix>_CV.pdf", "rb") as f:
+    b64 = base64.b64encode(f.read()).decode()
 ```
 
-Then upload the file through the browser tool's file-upload action.
+```javascript
+// Step 2 — inject via javascript_tool
+(function() {
+  const b64 = "<INSERT_BASE64_STRING>";
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const file = new File([bytes], "<filename>.pdf", { type: "application/pdf" });
+  const input = document.querySelectorAll('input[type="file"]')[<index>];
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  const tracker = input._valueTracker;
+  if (tracker) tracker.setValue('');
+  ['change','input'].forEach(ev => input.dispatchEvent(new Event(ev, {bubbles:true})));
+  return `files=${input.files.length}`;
+})()
+```
 
-**Workable:** file inputs are visible by default.
-
-**Lever:** locate the resume file input by label.
+**Confirmed behaviour by platform (2026-06-22):**
+- **Lever:** injection works. UI shows "✅ Success!" with filename. Use `inputs[0]` (single file input).
+- **Greenhouse:** unhide the input first (`el.style.opacity='1'; el.style.display='block'`), then inject. Expected to work — not yet confirmed end-to-end.
+- **Workable:** injection sets `input.files` but Workable's `react-dropzone` component does **not** re-render. The file is in the DOM but the UI still shows "Choose file". Manual upload required on Workable until a `react-dropzone` compatible injection is confirmed. Use `inputs[1]` (index 0 is the photo input).
 
 Upload path: `generated/<output_prefix>_CV.pdf`
 

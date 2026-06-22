@@ -35,9 +35,10 @@ Philosophy: keep the workflow lightweight and local-first, put deterministic gat
 
 ## Known ATS quirks
 
-- **Greenhouse hidden file inputs**: JS `el.style.opacity='1'; el.style.display='block'` before file upload
+- **File upload (all platforms)**: `mcp__claude-in-chrome__file_upload` is broken on Claude Desktop versions that haven't implemented the `files` parameter. Use the base64 → `DataTransfer` → `dispatchEvent('change')` workaround in `skills/apply/SKILL.md` Step 5. Confirmed working on Lever (2026-06-22). Workable's `react-dropzone` does not re-render from this injection — manual CV upload required on Workable until resolved.
+- **Greenhouse hidden file inputs**: JS `el.style.opacity='1'; el.style.display='block'` before file upload (then apply the base64 workaround above)
 - **Greenhouse React comboboxes** (country, city): click toggle → type to filter → click option: direct value injection alone does not trigger React state
-- **Workable file inputs**: visible by default
+- **Workable file inputs**: `inputs[1]` is the CV input (index 0 is photo); `react-dropzone` does not respond to DataTransfer injection — requires manual upload
 - **Lever**: no file upload for cover letter: paste cover letter text into the platform's text field
 
 ## Human-in-the-loop rules
