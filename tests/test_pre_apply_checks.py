@@ -431,6 +431,47 @@ class TestCompositeGate:
                 autonomous=True,
             )
 
+    def test_autonomous_mode_blocks_when_ats_platform_is_unknown(
+        self,
+        empty_tracker: Path,
+        generated_dir_with_pdfs: Path,
+        confirmation_registry: Path,
+    ):
+        """
+        Canary for issue #106: autonomous=True + ats_platform="unknown" must raise
+        UnsupportedPlatformError.
+
+        check_platform_supported early-returns for ats_platform="unknown" regardless
+        of mode, so without a guard in run_pre_apply_checks the autonomous path
+        silently passed and proceeded to browser automation — a double-submission risk.
+
+        HITL mode (autonomous=False) with ats_platform="unknown" must still pass.
+        """
+        # HITL: unknown ATS is fine — manual handoff
+        run_pre_apply_checks(
+            role_id="mystery_role",
+            job_url="https://example.com/jobs/999",
+            ats_platform="unknown",
+            output_prefix="TestCo_SeniorBackend",
+            generated_dir=generated_dir_with_pdfs,
+            tracker_path=empty_tracker,
+            registry_path=confirmation_registry,
+            autonomous=False,
+        )  # must not raise
+
+        # Autonomous: unknown ATS must be blocked
+        with pytest.raises(UnsupportedPlatformError, match="unknown"):
+            run_pre_apply_checks(
+                role_id="mystery_role",
+                job_url="https://example.com/jobs/999",
+                ats_platform="unknown",
+                output_prefix="TestCo_SeniorBackend",
+                generated_dir=generated_dir_with_pdfs,
+                tracker_path=empty_tracker,
+                registry_path=confirmation_registry,
+                autonomous=True,
+            )
+
     def test_all_gates_pass_for_clean_application(
         self,
         empty_tracker: Path,
