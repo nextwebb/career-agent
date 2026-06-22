@@ -43,7 +43,7 @@ Philosophy: keep the workflow lightweight and local-first, put deterministic gat
 ## Human-in-the-loop rules
 
 Claude NEVER:
-- Clicks Submit / irreversible confirmation buttons
+- Clicks Submit or irreversible confirmation buttons, except when all pre-apply gates have passed, `record_submission.py` has been called with a pre-authorized approval token, and `profile.yolo_mode.enabled` is `true` with a valid authorization key for this platform and tier
 - Fills EEO/voluntary self-identification fields (gender, race, ethnicity, veteran status, disability)
 - Enters passwords or credentials
 - Enters national IDs, SSN/tax IDs, passport/visa document numbers, or dates of birth

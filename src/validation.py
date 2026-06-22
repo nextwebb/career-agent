@@ -104,6 +104,34 @@ def validate_profile(data: dict, strict: bool = False) -> tuple[bool, list[str]]
                 if variant_key not in valid_variants:
                     errors.append(f"Unknown variant '{variant_key}'. Valid variants: A, B, C")
 
+    # Validate yolo_mode if present
+    if "yolo_mode" in data:
+        yolo = data["yolo_mode"]
+        if not isinstance(yolo, dict):
+            errors.append("'yolo_mode' must be a dictionary")
+        else:
+            if "enabled" in yolo and not isinstance(yolo["enabled"], bool):
+                errors.append("'yolo_mode.enabled' must be a boolean")
+            if "authorization_key" in yolo and not isinstance(yolo["authorization_key"], str):
+                errors.append("'yolo_mode.authorization_key' must be a string")
+            if "permitted_tiers" in yolo:
+                if not isinstance(yolo["permitted_tiers"], list):
+                    errors.append("'yolo_mode.permitted_tiers' must be a list")
+                else:
+                    valid_tiers = {"volume", "selective", "priority"}
+                    for tier in yolo["permitted_tiers"]:
+                        if tier not in valid_tiers:
+                            errors.append(
+                                f"Unknown tier '{tier}' in yolo_mode.permitted_tiers. "
+                                f"Valid: {', '.join(sorted(valid_tiers))}"
+                            )
+            if "excluded_companies" in yolo and not isinstance(yolo["excluded_companies"], list):
+                errors.append("'yolo_mode.excluded_companies' must be a list")
+            if "daily_cap" in yolo and (
+                not isinstance(yolo["daily_cap"], int) or yolo["daily_cap"] < 1
+            ):
+                errors.append("'yolo_mode.daily_cap' must be a positive integer")
+
     # Validate impact_statements if present
     if "impact_statements" in data:
         if not isinstance(data["impact_statements"], dict):
@@ -156,11 +184,20 @@ def validate_role_config(data: dict, strict: bool = False) -> tuple[bool, list[s
             errors.append(f"Invalid variant '{data['variant']}'. Must be one of: A, B, C")
 
     # Validate ATS platform
+    # Note: "workable" (Workable.com) != "workday" (Workday HCM) — these are different platforms
     if "ats_platform" in data:
         if not isinstance(data["ats_platform"], str):
             errors.append("'ats_platform' must be a string")
         else:
-            valid_platforms = {"greenhouse", "lever", "workable", "unknown"}
+            valid_platforms = {
+                "greenhouse",
+                "greenhouse_eu",
+                "lever",
+                "workable",
+                "ashby",
+                "teamtailor",
+                "unknown",
+            }
             platform = data["ats_platform"].lower()
             if platform not in valid_platforms:
                 errors.append(
@@ -183,6 +220,42 @@ def validate_role_config(data: dict, strict: bool = False) -> tuple[bool, list[s
             errors.append("'output_prefix' must be a string")
         elif not prefix:
             errors.append("'output_prefix' cannot be empty")
+
+    # Validate application_tier if present
+    if "application_tier" in data:
+        valid_tiers = {"volume", "selective", "priority"}
+        if data["application_tier"] not in valid_tiers:
+            errors.append(
+                f"Invalid 'application_tier' '{data['application_tier']}'. "
+                f"Must be one of: {', '.join(sorted(valid_tiers))}"
+            )
+
+    # Validate sponsorship_available if present
+    if "sponsorship_available" in data:
+        valid_sponsorship = {"available", "unavailable", "unknown"}
+        if data["sponsorship_available"] not in valid_sponsorship:
+            errors.append(
+                f"Invalid 'sponsorship_available' '{data['sponsorship_available']}'. "
+                f"Must be one of: {', '.join(sorted(valid_sponsorship))}"
+            )
+
+    # Validate remote_status if present
+    if "remote_status" in data:
+        valid_remote = {"global", "regional", "onsite", "hybrid", "unknown"}
+        if data["remote_status"] not in valid_remote:
+            errors.append(
+                f"Invalid 'remote_status' '{data['remote_status']}'. "
+                f"Must be one of: {', '.join(sorted(valid_remote))}"
+            )
+
+    # Validate required_skills if present
+    if "required_skills" in data:
+        if not isinstance(data["required_skills"], list):
+            errors.append("'required_skills' must be a list")
+        else:
+            for i, skill in enumerate(data["required_skills"]):
+                if not isinstance(skill, str):
+                    errors.append(f"'required_skills[{i}]' must be a string")
 
     # Validate custom_answers if present
     if "custom_answers" in data and not isinstance(data["custom_answers"], dict):

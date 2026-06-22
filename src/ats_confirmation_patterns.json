@@ -1,0 +1,94 @@
+{
+  "_comment": "Verified ATS confirmation patterns. Built empirically from real HITL submissions. A platform is added only after a confirmed submission was observed. Do not add entries speculatively.",
+  "_schema": {
+    "url_contains": "Substring that must appear in the final URL after submit",
+    "text_contains": "One or more substrings that must appear in the visible page text",
+    "failure_text_contains": "Substrings that indicate a known failure (e.g. duplicate, error)"
+  },
+  "lever": {
+    "_verified": "2026-06-22",
+    "_evidence": "Yuno (dc30ae7b-9c0f-426f-ae77-c58d9e4f6d6d) and Aircall submissions confirmed via URL redirect",
+    "url_contains": "/thanks",
+    "text_contains": [
+      "Thank you for applying",
+      "Application received",
+      "application-confirmation"
+    ],
+    "failure_text_contains": [
+      "error-message",
+      "Something went wrong"
+    ]
+  },
+  "workable": {
+    "_verified": "2026-06-22",
+    "_evidence": "Climax Studios (A03E9A31FE) submission confirmed via ?success query param and 'submitted successfully' text",
+    "url_contains": "?success",
+    "text_contains": [
+      "Your application has been submitted successfully",
+      "submitted successfully",
+      "Thank you"
+    ],
+    "failure_text_contains": [
+      "There are some issues with your application",
+      "Please revisit your data"
+    ]
+  },
+  "greenhouse": {
+    "_verified": "2026-06-22",
+    "_evidence": "Showpad, Monzo, Forter, TooGoodToGo, OpenUp confirmed via confirmation page text",
+    "url_contains": "",
+    "text_contains": [
+      "Application submitted",
+      "Thank you for applying",
+      "Thank you for your interest",
+      "received your application"
+    ],
+    "failure_text_contains": [
+      "already applied",
+      "duplicate application"
+    ]
+  },
+  "greenhouse_eu": {
+    "_verified": "2026-06-22",
+    "_evidence": "JetBrains Agentic Behavior, JetBrains AI for Code, Kayzen submissions confirmed",
+    "url_contains": "",
+    "text_contains": [
+      "Application submitted",
+      "Thank you for applying",
+      "Thank you for your interest",
+      "received your application"
+    ],
+    "failure_text_contains": [
+      "already applied",
+      "duplicate application"
+    ]
+  },
+  "ashby": {
+    "_verified": "2026-06-22",
+    "_evidence": "Poolside and Kraken submissions confirmed via confirmation page",
+    "url_contains": "",
+    "text_contains": [
+      "Application submitted",
+      "Thank you",
+      "We'll be in touch"
+    ],
+    "failure_text_contains": [
+      "already applied",
+      "error"
+    ]
+  },
+  "teamtailor": {
+    "_verified": "2026-06-22",
+    "_evidence": "BUX submission — 'You already applied' response confirmed duplicate detection pattern",
+    "url_contains": "",
+    "text_contains": [
+      "Thank you for your application",
+      "application has been received",
+      "We have received your application"
+    ],
+    "failure_text_contains": [
+      "You already applied for this job",
+      "already applied"
+    ]
+  }
+}
