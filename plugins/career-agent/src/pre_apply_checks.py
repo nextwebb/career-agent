@@ -138,10 +138,13 @@ def check_platform_supported(
     The confirmation pattern registry is built empirically from real runs;
     a platform is added only after a successful HITL test confirms the pattern.
 
-    In HITL mode this gate is advisory — it warns but does not block.
+    In HITL mode, ats_platform="unknown" is allowed — the apply skill will hand
+    off to the user for manual submission. This function has no concept of mode;
+    the autonomous guard lives in run_pre_apply_checks.
     """
     if ats_platform in ("unknown", ""):
-        # "unknown" is allowed in HITL mode (manual handoff)
+        # "unknown" is allowed in HITL mode (manual handoff).
+        # run_pre_apply_checks raises before calling here when autonomous=True.
         return
 
     registry = load_confirmation_registry(registry_path)
@@ -228,6 +231,11 @@ def run_pre_apply_checks(
     check_artifacts_exist(output_prefix, generated_dir)
 
     if autonomous:
+        if ats_platform in ("unknown", ""):
+            raise UnsupportedPlatformError(
+                "Cannot run in autonomous mode: ats_platform is 'unknown'. "
+                "Set a known ATS platform in the role config before enabling yolo_mode."
+            )
         # In autonomous mode, unsupported platform is a hard block
         check_platform_supported(ats_platform, registry_path)
 
