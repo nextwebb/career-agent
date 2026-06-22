@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/nextwebb/career-agent/compare/v1.4.0...v1.5.0) (2026-06-22)
+
+
+### Features
+
+* **cv:** align section order to reference CV layout ([#105](https://github.com/nextwebb/career-agent/issues/105)) ([bff95bb](https://github.com/nextwebb/career-agent/commit/bff95bb2ad00ba36657b75420af5e38a84b10aeb))
+
+
+### Documentation
+
+* **apply:** document base64 upload workaround and Workable react-dropzone limitation ([#104](https://github.com/nextwebb/career-agent/issues/104)) ([baa5d43](https://github.com/nextwebb/career-agent/commit/baa5d438fa74aee278db115a5efb06d9bd981674))
+
 ## [1.4.0](https://github.com/nextwebb/career-agent/compare/v1.3.0...v1.4.0) (2026-06-22)
 
 
