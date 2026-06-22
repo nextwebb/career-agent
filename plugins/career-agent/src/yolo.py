@@ -239,11 +239,14 @@ def run_yolo_gates(
 
     warnings: list[str] = []
     if workspace_dir.exists():
-        try:
-            report = run_jobqa_gate(workspace_dir)
-            qa = report.get("qa_report", {})
-            warnings = [str(w) for w in qa.get("warnings", [])]
-        except JobQAGateError:
-            raise
+        if not shutil.which("jobqa"):
+            warnings.append("jobqa not in PATH — workspace gate skipped")
+        else:
+            try:
+                report = run_jobqa_gate(workspace_dir)
+                qa = report.get("qa_report", {})
+                warnings = [str(w) for w in qa.get("warnings", [])]
+            except JobQAGateError:
+                raise
 
     return warnings

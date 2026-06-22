@@ -328,10 +328,11 @@ class TestCompositeGateBattery:
         warnings = run_yolo_gates(profile, role, workspace, empty_tracker)
         assert warnings == []
 
-    def test_jobqa_gate_raises_when_workspace_exists_and_jobqa_missing(
+    def test_jobqa_gate_skipped_when_workspace_exists_and_jobqa_missing(
         self, empty_tracker: Path, tmp_path: Path
     ):
-        """If workspace exists but jobqa is not installed, JobQAGateError is raised."""
+        """If workspace exists but jobqa is not installed, run_yolo_gates must NOT
+        raise — it should return a warnings list containing a skip message."""
         import shutil
 
         if shutil.which("jobqa"):
@@ -341,5 +342,50 @@ class TestCompositeGateBattery:
         role = _make_role(company="Acme Corp")
         workspace = tmp_path / "workspace"
         workspace.mkdir()
-        with pytest.raises(JobQAGateError, match="jobqa not found"):
+        warnings = run_yolo_gates(profile, role, workspace, empty_tracker)
+        assert any("jobqa not in PATH" in w for w in warnings)
+
+
+# ---------------------------------------------------------------------------
+# jobqa PATH-check gate (issue #109 canary tests)
+# ---------------------------------------------------------------------------
+
+
+class TestJobqaPathCheck:
+    def test_run_yolo_gates_skips_jobqa_when_not_installed(
+        self, empty_tracker: Path, tmp_path: Path
+    ):
+        """When jobqa is not in PATH, run_yolo_gates must NOT raise; it should return
+        a warnings list that contains a message about jobqa not being in PATH."""
+        from unittest.mock import patch
+
+        profile = _make_profile()
+        role = _make_role(company="Acme Corp")
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+
+        with patch("shutil.which", return_value=None):
+            warnings = run_yolo_gates(profile, role, workspace, empty_tracker)
+
+        assert any(
+            "jobqa not in PATH" in w for w in warnings
+        ), f"Expected a 'jobqa not in PATH' warning but got: {warnings}"
+
+    def test_run_yolo_gates_raises_when_jobqa_fails(self, empty_tracker: Path, tmp_path: Path):
+        """When jobqa is in PATH but run_jobqa_gate raises JobQAGateError,
+        run_yolo_gates must re-raise that error."""
+        from unittest.mock import patch
+
+        profile = _make_profile()
+        role = _make_role(company="Acme Corp")
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/jobqa"),
+            patch(
+                "yolo.run_jobqa_gate", side_effect=JobQAGateError("JOBQA_GATE_FAILED: qa failed")
+            ),
+            pytest.raises(JobQAGateError),
+        ):
             run_yolo_gates(profile, role, workspace, empty_tracker)
