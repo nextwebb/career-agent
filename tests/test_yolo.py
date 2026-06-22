@@ -367,13 +367,11 @@ class TestJobqaPathCheck:
         with patch("shutil.which", return_value=None):
             warnings = run_yolo_gates(profile, role, workspace, empty_tracker)
 
-        assert any("jobqa not in PATH" in w for w in warnings), (
-            f"Expected a 'jobqa not in PATH' warning but got: {warnings}"
-        )
+        assert any(
+            "jobqa not in PATH" in w for w in warnings
+        ), f"Expected a 'jobqa not in PATH' warning but got: {warnings}"
 
-    def test_run_yolo_gates_raises_when_jobqa_fails(
-        self, empty_tracker: Path, tmp_path: Path
-    ):
+    def test_run_yolo_gates_raises_when_jobqa_fails(self, empty_tracker: Path, tmp_path: Path):
         """When jobqa is in PATH but run_jobqa_gate raises JobQAGateError,
         run_yolo_gates must re-raise that error."""
         from unittest.mock import patch
@@ -385,7 +383,9 @@ class TestJobqaPathCheck:
 
         with (
             patch("shutil.which", return_value="/usr/bin/jobqa"),
-            patch("yolo.run_jobqa_gate", side_effect=JobQAGateError("JOBQA_GATE_FAILED: qa failed")),
+            patch(
+                "yolo.run_jobqa_gate", side_effect=JobQAGateError("JOBQA_GATE_FAILED: qa failed")
+            ),
+            pytest.raises(JobQAGateError),
         ):
-            with pytest.raises(JobQAGateError):
-                run_yolo_gates(profile, role, workspace, empty_tracker)
+            run_yolo_gates(profile, role, workspace, empty_tracker)
