@@ -63,14 +63,16 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         certifications  list[str]   Certification lines (optional)
 
     config keys (from roles/<id>.json):
-        company         str
-        title           str
-        headline        str   Subtitle line under name
-        openness        str   Availability line (optional)
-        summary         str   HTML-safe summary paragraph
-        impact_statements list[{title, body}]
-        experience      list[{title, company_line, client_line?, bullets: list[str]}]
-        skills          list[{label, items}]
+        company                  str
+        title                    str
+        headline                 str   Subtitle line under name
+        openness                 str   Availability line (optional)
+        summary                  str   HTML-safe summary paragraph
+        skills                   list[{label, items}]
+        experience               list[{title, company_line, client_line?, bullets: list[str]}]
+        additional_experience    list[str]  One-liner per older/minor role (optional)
+        impact_statements        list[{title, body}]
+        projects                 list[{title, tech_line, bullets: list[str]}]  (optional)
     """
     full_name = _get_name(profile)
     doc = SimpleDocTemplate(
@@ -177,25 +179,18 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         sp(10),
     ]
 
-    # ── Summary ──────────────────────────────────────────────────────────────
-    story += section("Summary")
+    # ── Professional Summary ─────────────────────────────────────────────────
+    story += section("Professional Summary")
     story += [Paragraph(config["summary"], SUMMARY), sp(6)]
 
-    # ── Selected Impact ──────────────────────────────────────────────────────
-    story += section("Selected Impact")
-    for item in config["impact_statements"]:
-        story.append(
-            KeepTogether(
-                [
-                    Paragraph(f'<b><font color="#2563eb">{item["title"]}</font></b>', IMPACT_H),
-                    Paragraph(item["body"], IMPACT_B),
-                ]
-            )
-        )
-    story.append(sp(2))
+    # ── Core Skills ──────────────────────────────────────────────────────────
+    story += section("Core Skills")
+    for skill in config["skills"]:
+        story.append(Paragraph(f"<b>{skill['label']}</b>:&nbsp;&nbsp;{skill['items']}", SK))
+    story.append(sp(4))
 
-    # ── Experience ───────────────────────────────────────────────────────────
-    story += section("Experience")
+    # ── Professional Experience ───────────────────────────────────────────────
+    story += section("Professional Experience")
     for role in config["experience"]:
         header_parts = [Paragraph(role["title"], JOB_TITLE)]
         if role.get("company_line"):
@@ -210,16 +205,43 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
             story.append(bul(b))
         story.append(sp(4))
 
-    # ── Skills ───────────────────────────────────────────────────────────────
-    story += section("Core Skills")
-    for skill in config["skills"]:
-        story.append(Paragraph(f"<b>{skill['label']}</b>:&nbsp;&nbsp;{skill['items']}", SK))
-    story.append(sp(4))
+    # ── Additional Relevant Experience (optional) ─────────────────────────────
+    additional = config.get("additional_experience", [])
+    if additional:
+        story += section("Additional Relevant Experience")
+        for line in additional:
+            story.append(bul(line))
+        story.append(sp(4))
 
-    # ── Certifications (optional) ────────────────────────────────────────────
+    # ── Selected Impact ──────────────────────────────────────────────────────
+    story += section("Selected Impact")
+    for item in config["impact_statements"]:
+        story.append(
+            KeepTogether(
+                [
+                    Paragraph(f'<b><font color="#2563eb">{item["title"]}</font></b>', IMPACT_H),
+                    Paragraph(item["body"], IMPACT_B),
+                ]
+            )
+        )
+    story.append(sp(2))
+
+    # ── Projects (optional) ───────────────────────────────────────────────────
+    projects = config.get("projects", [])
+    if projects:
+        story += section("Projects")
+        for proj in projects:
+            story.append(Paragraph(proj["title"], JOB_TITLE))
+            if proj.get("tech_line"):
+                story.append(Paragraph(proj["tech_line"], CLIENT))
+            for b in proj.get("bullets", []):
+                story.append(bul(b))
+            story.append(sp(4))
+
+    # ── Certifications & Community & Learning (optional) ─────────────────────
     certs = profile.get("certifications", [])
     if certs:
-        story += section("Certifications &amp; Community")
+        story += section("Certifications &amp; Community &amp; Learning")
         for cert in certs:
             story.append(bul(cert))
         story.append(sp(4))

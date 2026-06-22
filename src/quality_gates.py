@@ -232,7 +232,12 @@ def run_quality_gates(
     else:
         results.append(GateResult(OK, "no_placeholder_text", "No placeholder text detected."))
 
-    required_sections = ["Summary", "Experience", "Core Skills", "Education"]
+    required_sections = [
+        "Professional Summary",
+        "Core Skills",
+        "Professional Experience",
+        "Education",
+    ]
     missing_sections = [
         section for section in required_sections if section.lower() not in cv_text.lower()
     ]
@@ -247,7 +252,14 @@ def run_quality_gates(
     else:
         results.append(GateResult(OK, "cv_required_sections", "Required CV sections are present."))
 
-    if _ordered(cv_text, ["Summary", "Experience", "Core Skills", "Education"]):
+    canonical_order = [
+        "Professional Summary",
+        "Core Skills",
+        "Professional Experience",
+        "Selected Impact",
+        "Education",
+    ]
+    if _ordered(cv_text, canonical_order):
         results.append(GateResult(OK, "cv_section_order", "CV sections are in expected order."))
     else:
         results.append(
