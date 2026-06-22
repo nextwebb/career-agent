@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.1](https://github.com/nextwebb/career-agent/compare/v1.5.0...v1.5.1) (2026-06-22)
+
+
+### Fixes
+
+* **confirmation:** remove 'Thank you' from Workable text_contains to prevent false positives (closes [#107](https://github.com/nextwebb/career-agent/issues/107)) ([#110](https://github.com/nextwebb/career-agent/issues/110)) ([c792138](https://github.com/nextwebb/career-agent/commit/c7921380c3677fc58e0e2b575720b9aed97248f3))
+* **pre-apply:** block autonomous mode when ats_platform is unknown (closes [#106](https://github.com/nextwebb/career-agent/issues/106)) ([#117](https://github.com/nextwebb/career-agent/issues/117)) ([98d293e](https://github.com/nextwebb/career-agent/commit/98d293e5e27d7cab1731d28c8f67683ffff82061))
+* **yolo:** skip jobqa gate when not installed, only re-raise on actual failure (closes [#109](https://github.com/nextwebb/career-agent/issues/109)) ([#118](https://github.com/nextwebb/career-agent/issues/118)) ([a4c6df0](https://github.com/nextwebb/career-agent/commit/a4c6df06491fd07b4a63bf4ed28d357ddcd25c2e))
+
+
+### Documentation
+
+* **codex-chrome:** sync experimental status with current evidence ([#116](https://github.com/nextwebb/career-agent/issues/116)) ([d0aa8d4](https://github.com/nextwebb/career-agent/commit/d0aa8d4546868e07442ec0b817a2a1de4bb6346a)), closes [#100](https://github.com/nextwebb/career-agent/issues/100)
+
 ## [1.5.0](https://github.com/nextwebb/career-agent/compare/v1.4.0...v1.5.0) (2026-06-22)
 
 
