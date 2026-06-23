@@ -1204,7 +1204,6 @@ class TestPackagedScriptWorkspace:
         assert list(generated_dir.glob("*_CoverLetter.pdf"))
 
     def test_generate_application_dry_run_prints_redacted_apply_plan(self, tmp_path):
-        """--dry-run should validate inputs and print an apply plan without writing PDFs."""
         roles_dir = tmp_path / "roles"
         roles_dir.mkdir()
         shutil.copy(

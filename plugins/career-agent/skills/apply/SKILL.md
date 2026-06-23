@@ -188,7 +188,7 @@ async function injectFileFromUrl(container, url, filename) {
   ['change', 'input'].forEach(ev => input.dispatchEvent(new Event(ev, { bubbles: true })));
   return input.files.length;
 }
-// e.g. await injectFileFromUrl(container, 'http://127.0.0.1:' + port + '/Peterson_CV.pdf', 'Peterson_CV.pdf')
+// e.g. await injectFileFromUrl(container, 'http://127.0.0.1:' + port + '/<output_prefix>_CV.pdf', '<output_prefix>_CV.pdf')
 ```
 
 `http://127.0.0.1` is a "potentially trustworthy origin" under the Secure Contexts spec, so Chrome permits the fetch from an HTTPS ATS page.
@@ -251,7 +251,7 @@ If both CV and cover-letter slots exist, invoke this separately per label-scoped
 
 **Observed behaviour by platform (do not overclaim):**
 - **Lever:** previous non-submitting runs observed visible filename success after upload.
-- **Greenhouse:** label-scope the input; unhide before inject when needed; use a remount guard. The 2026-06-23 Monzo run observed visible resume upload success, but did not re-prove a separate cover-letter upload slot.
+- **Greenhouse:** label-scope the input; unhide before inject when needed; use a remount guard. Resume upload has been observed succeed in a prior run; the separate cover-letter upload slot has not been re-proven end-to-end on this skill version and remains a known gap.
 - **Workable:** `react-dropzone` does not re-render from DataTransfer injection — UI shows "Choose file" despite `input.files` being set. Manual upload required until a Workable-compatible injection is confirmed.
 
 After injection, re-query the file input after every upload by re-reading the container. Verify the filename appears on screen after upload. Record upload method, payload size, field label, remount/reacquire count, distinct filenames per slot, visible filename result, and elapsed ms.
