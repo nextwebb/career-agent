@@ -164,15 +164,19 @@ with socket.socket() as s:
 
 server = http.server.HTTPServer(('127.0.0.1', port), CORSHandler)
 os.chdir('/path/to/generated/')
-# Run serve_forever in a NON-daemon worker so an accidental process exit before
-# server.shutdown() surfaces as a hung process instead of silently killing the
-# server while the in-page fetch is still in flight. The agent's Python process
-# must stay alive throughout the apply run; call server.shutdown() and
-# thread.join() after the upload is verified.
+# Non-daemon worker: silent thread-kill at process exit would lose in-flight
+# uploads. Wrap browser work in try/finally so shutdown runs on every exit
+# path (success, browser-tool exception, sensitive-field handoff, user abort)
+# — otherwise the server keeps serving applicant PDFs on 127.0.0.1 until the
+# process is killed manually.
 thread = threading.Thread(target=server.serve_forever)
 thread.start()
-# ... drive browser via javascript_tool, await all uploads ...
-# server.shutdown(); thread.join()
+try:
+    # ... drive browser via javascript_tool, await all uploads ...
+    pass
+finally:
+    server.shutdown()
+    thread.join()
 ```
 
 In-page JS via `javascript_tool`:
