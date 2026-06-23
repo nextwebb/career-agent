@@ -163,10 +163,20 @@ with socket.socket() as s:
     port = s.getsockname()[1]
 
 server = http.server.HTTPServer(('127.0.0.1', port), CORSHandler)
-thread = threading.Thread(target=server.serve_forever, daemon=True)
 os.chdir('/path/to/generated/')
+# Non-daemon worker: silent thread-kill at process exit would lose in-flight
+# uploads. Wrap browser work in try/finally so shutdown runs on every exit
+# path (success, browser-tool exception, sensitive-field handoff, user abort)
+# — otherwise the server keeps serving applicant PDFs on 127.0.0.1 until the
+# process is killed manually.
+thread = threading.Thread(target=server.serve_forever)
 thread.start()
-# use port below; call server.shutdown() when done
+try:
+    # ... drive browser via javascript_tool, await all uploads ...
+    pass
+finally:
+    server.shutdown()
+    thread.join()
 ```
 
 In-page JS via `javascript_tool`:
