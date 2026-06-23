@@ -7,6 +7,7 @@ then optionally opens the application URL in your browser.
 
 Usage:
     python src/generate_application.py --role stripe_backend
+    python src/generate_application.py --role stripe_backend --dry-run
     python src/generate_application.py --all
     python src/generate_application.py --all --open
     python src/generate_application.py --list
@@ -23,8 +24,6 @@ Output PDFs:     ./generated/ in the current workspace
 """
 
 import argparse
-
-# Check for reportlab early
 import importlib.util
 import json
 import sys
@@ -34,7 +33,9 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, cast
 
-if importlib.util.find_spec("reportlab") is None:
+HAS_REPORTLAB = importlib.util.find_spec("reportlab") is not None
+
+if not HAS_REPORTLAB and "--dry-run" not in sys.argv and "--list" not in sys.argv:
     print("ERROR: reportlab is not installed.")
     print("Install it with:  pip install -r requirements.txt")
     print("Or directly:      pip install reportlab")
@@ -47,8 +48,6 @@ PROFILE_PATH = WORKSPACE_DIR / "profile.json"
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from cl_builder import build_cover_letter
-from cv_builder import build_cv
 from quality_gates import QualityGateError, format_quality_report, run_quality_gates
 from validation import (
     ValidationError,
@@ -181,13 +180,18 @@ def _resolve_experience(profile: dict[str, Any], config: dict[str, Any]) -> list
     return resolved
 
 
-def prepare_generation_config(profile: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+def prepare_generation_config(
+    profile: dict[str, Any],
+    config: dict[str, Any],
+    create_output_dir: bool = True,
+) -> dict[str, Any]:
     """Resolve profile defaults, selected variant content, and role overrides."""
 
     prepared = deepcopy(config)
     variant = str(prepared.get("variant", ""))
 
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    if create_output_dir:
+        OUTPUT_DIR.mkdir(exist_ok=True)
 
     # Merge profile variant data into config for CV generation
     if variant and "variants" in profile:
@@ -209,12 +213,130 @@ def prepare_generation_config(profile: dict[str, Any], config: dict[str, Any]) -
     return prepared
 
 
+def _present(value: Any) -> str:
+    """Return a redacted presence marker for dry-run output."""
+
+    if isinstance(value, dict):
+        return "present" if any(str(item).strip() for item in value.values()) else "missing"
+    if isinstance(value, list):
+        return "present" if any(str(item).strip() for item in value) else "missing"
+    return "present" if str(value or "").strip() else "missing"
+
+
+def _profile_name_parts(profile: dict[str, Any]) -> tuple[Any, Any]:
+    name = profile.get("name", {})
+    if isinstance(name, dict):
+        return name.get("first", ""), name.get("last", "")
+    parts = str(name).split()
+    return (parts[0] if parts else "", parts[-1] if len(parts) > 1 else "")
+
+
+def _file_status(path: Path) -> str:
+    if not path.exists():
+        return "missing"
+    return f"exists, {path.stat().st_size} bytes"
+
+
+def _package_version() -> str:
+    root = Path(__file__).resolve().parent.parent
+    candidates = [
+        root / "package.json",
+        root / "plugin.json",
+        root / ".codex-plugin" / "plugin.json",
+    ]
+    for path in candidates:
+        if not path.exists():
+            continue
+        try:
+            version = json.loads(path.read_text(encoding="utf-8")).get("version")
+        except json.JSONDecodeError:
+            continue
+        if version:
+            return str(version)
+    return "unknown"
+
+
+def print_apply_dry_run(profile: dict[str, Any], role_id: str) -> None:
+    """Print a redacted apply plan without creating PDFs or opening a browser."""
+
+    config = prepare_generation_config(profile, load_role(role_id), create_output_dir=False)
+    prefix = config["output_prefix"]
+    cv_path = OUTPUT_DIR / f"{prefix}_CV.pdf"
+    cl_path = OUTPUT_DIR / f"{prefix}_CoverLetter.pdf"
+    first_name, last_name = _profile_name_parts(profile)
+    links = profile.get("links", {})
+    custom_answers = config.get("custom_answers", {})
+    apply_skill_path = Path(__file__).resolve().parent.parent / "skills" / "apply" / "SKILL.md"
+
+    safe_fields = [
+        ("First name", _present(first_name)),
+        ("Last name", _present(last_name)),
+        ("Email", _present(profile.get("email"))),
+        ("Phone", _present(profile.get("phone"))),
+        ("Location / City", _present(profile.get("location"))),
+        ("LinkedIn URL", _present(links.get("linkedin") if isinstance(links, dict) else "")),
+        ("GitHub URL", _present(links.get("github") if isinstance(links, dict) else "")),
+        ("Portfolio / website", _present(links.get("website") if isinstance(links, dict) else "")),
+        ("Hear-about-us answer", _present(custom_answers.get("hear_about_us"))),
+        ("Non-sensitive long-answer drafts", _present(custom_answers.get("why_company"))),
+    ]
+    handoff_fields = [
+        "Browser/tool setup failure",
+        "Unsupported ATS or login wall",
+        "Right-to-work or work authorization",
+        "Visa sponsorship",
+        "US-person/tax status",
+        "Salary or compensation when phrased as an attestation",
+        "Privacy notice, GDPR, data retention, or consent checkboxes",
+        "Demographic, EEO, disability, veteran, or self-identification fields",
+        "CAPTCHA",
+        "Submit or final confirmation",
+    ]
+
+    print(f"\n{'─' * 60}")
+    print(f"  Apply dry run: {config['company']} — {config['title']}")
+    print(f"{'─' * 60}")
+    print(f"Role ID: {role_id}")
+    print(f"Target URL: {config.get('url', '')}")
+    print(f"ATS platform: {config.get('ats_platform', 'unknown')}")
+    print(f"Package version: {_package_version()}")
+    print("Generator path: <career_agent_root>/src/generate_application.py")
+    print(
+        "Apply skill path: "
+        f"{'<career_agent_root>/skills/apply/SKILL.md' if apply_skill_path.exists() else 'not found'}"
+    )
+    print("\nFiles:")
+    print(f"  CV: generated/<redacted>_CV.pdf ({_file_status(cv_path)})")
+    print(f"  Cover letter: generated/<redacted>_CoverLetter.pdf ({_file_status(cl_path)})")
+    print("\nPlanned safe fields (values redacted):")
+    for label, status in safe_fields:
+        print(f"  - {label}: {status}")
+    print("\nPlanned upload strategy:")
+    print("  - Prefer native browser file upload when the selected browser surface supports it.")
+    print("  - For Chrome-extension-only paths, use localhost fetch or chunked storage.")
+    print("  - Do not send one large inline base64 string through Runtime.evaluate.")
+    print("  - Re-query file inputs after each upload and verify visible filenames.")
+    print("\nHandoff fields / stop boundaries:")
+    for label in handoff_fields:
+        print(f"  - {label}")
+    print("\nDry run only: no PDFs generated, browser opened, files uploaded, or tracker updated.")
+
+
 def generate(
     profile: dict[str, Any],
     role_id: str,
     open_url: bool = False,
     quality_gates: bool = True,
 ) -> tuple[str, str]:
+    if not HAS_REPORTLAB:
+        print("ERROR: reportlab is not installed.")
+        print("Install it with:  pip install -r requirements.txt")
+        print("Or directly:      pip install reportlab")
+        sys.exit(1)
+
+    from cl_builder import build_cover_letter
+    from cv_builder import build_cv
+
     config = prepare_generation_config(profile, load_role(role_id))
     prefix = config["output_prefix"]
     cv_path = str(OUTPUT_DIR / f"{prefix}_CV.pdf")
@@ -278,6 +400,11 @@ def main():
         "--open", action="store_true", help="Open each job URL in your browser after generating"
     )
     parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print a redacted apply preflight plan without generating PDFs or opening a browser",
+    )
+    parser.add_argument(
         "--no-quality-gates",
         action="store_true",
         help="Generate PDFs without deterministic quality gates (diagnostics only)",
@@ -288,6 +415,9 @@ def main():
         list_roles()
         return
 
+    if args.dry_run and args.open:
+        parser.error("--dry-run cannot be combined with --open")
+
     profile = load_profile()
 
     if args.all:
@@ -295,6 +425,10 @@ def main():
         if not role_ids:
             print("No role configs found in ./roles/")
             sys.exit(1)
+        if args.dry_run:
+            for role_id in role_ids:
+                print_apply_dry_run(profile, role_id)
+            return
         results = []
         try:
             for i, role_id in enumerate(role_ids):
@@ -323,6 +457,9 @@ def main():
         return
 
     if args.role:
+        if args.dry_run:
+            print_apply_dry_run(profile, args.role)
+            return
         try:
             cv, cl = generate(
                 profile,

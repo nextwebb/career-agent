@@ -144,6 +144,7 @@ $setup-profile               # Codex skill invocation
 /source Germany backend      # Find and verify matching role leads
 /new-role                    # Create role config
 /generate-cv <role_id>       # Generate PDFs
+/apply <role_id> --dry-run   # Redacted no-browser apply preflight
 /apply <role_id>             # Browser form handoff
 /track                       # View pipeline
 ```
@@ -327,6 +328,7 @@ Ensure `reportlab` and `pypdf` are installed and use the correct flag syntax:
 ```bash
 pip install -r requirements.txt
 python src/generate_application.py --role <role_id>   # correct
+python src/generate_application.py --role <role_id> --dry-run  # preflight only
 python src/generate_application.py <role_id>           # wrong: positional args not accepted
 ```
 

@@ -675,6 +675,54 @@ class TestSKILLMarkdown:
         assert classifier_index < fill_index
         assert "Any other non-sensitive personal fields visible after classification" in content
 
+    def test_apply_greenhouse_issue_120_contracts_present(self):
+        """/apply should encode the Greenhouse reliability fixes from issue #120."""
+        content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
+        normalized = normalize_whitespace(content)
+
+        required_terms = [
+            "### 0. Preflight and dry-run plan",
+            "sandboxCwd must be an absolute file URI",
+            "Open a fresh tab/page for every ATS run",
+            "stale installed plugin copy differs from repo HEAD",
+            "native prototype setter",
+            "bubbled `input` and `change` events",
+            "verify after blur and after scrolling away/back",
+            "browser-native file upload",
+            "Do not inject one large inline base64 string into `Runtime.evaluate`",
+            "localhost server",
+            "small chunks",
+            "re-query the file input after every upload",
+            "remount/reacquire count",
+            "distinct filenames",
+            "field container's visible label",
+            "Never click a generic `[aria-label=\"Toggle flyout\"]`",
+            "Google Drive",
+            "structured, redacted observation",
+            "final proof that Submit was not clicked",
+        ]
+        for term in required_terms:
+            assert term in content, f"/apply missing issue #120 contract: {term}"
+
+        forbidden_fragments = [
+            'const b64 = "<INSERT_BASE64_STRING>"',
+            "document.querySelectorAll('input[type=\"file\"]')[<index>]",
+            "Primary upload method — base64 DataTransfer injection",
+            "Expected to work — not yet confirmed end-to-end",
+            "Confirmed behaviour by platform",
+            "End-to-end confirmed",
+            "document.querySelector('[aria-label*=\"phone\" i] input, input[aria-autocomplete=\"list\"]')",
+        ]
+        for fragment in forbidden_fragments:
+            assert fragment not in content
+
+        assert normalized.index("### 0. Preflight and dry-run plan") < normalized.index(
+            "### 1. Load configs"
+        )
+        assert normalized.index("### 3. Sensitive-field classifier") < normalized.index(
+            "### 4. Fill safe personal fields"
+        )
+
     def test_apply_codex_chrome_verification_matrix_present(self):
         """Codex Chrome /apply support should be tied to structured evidence."""
         doc = ROOT / "docs" / "apply-codex-chrome-verification.md"
@@ -1151,6 +1199,69 @@ class TestPackagedScriptWorkspace:
         generated_dir = tmp_path / "generated"
         assert list(generated_dir.glob("*_CV.pdf"))
         assert list(generated_dir.glob("*_CoverLetter.pdf"))
+
+    def test_generate_application_dry_run_prints_redacted_apply_plan(self, tmp_path):
+        """--dry-run should validate inputs and print an apply plan without writing PDFs."""
+        roles_dir = tmp_path / "roles"
+        roles_dir.mkdir()
+        shutil.copy(
+            ROOT / "tests/fixtures/non_pii/profile.synthetic.json", tmp_path / "profile.json"
+        )
+        role = json.loads(
+            (ROOT / "tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        role["output_prefix"] = "Alex_Example_Private_Output"
+        (roles_dir / "synthetic_quality_gate_pass.json").write_text(
+            json.dumps(role), encoding="utf-8"
+        )
+
+        for script_path in [
+            ROOT / "src" / "generate_application.py",
+            ROOT / "plugins" / "career-agent" / "src" / "generate_application.py",
+        ]:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--role",
+                    "synthetic_quality_gate_pass",
+                    "--dry-run",
+                ],
+                cwd=tmp_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            assert result.returncode == 0, result.stderr or result.stdout
+            assert "Apply dry run:" in result.stdout
+            assert "Package version:" in result.stdout
+            assert "Package version: unknown" not in result.stdout
+            assert "Apply skill path:" in result.stdout
+            assert "Planned safe fields (values redacted):" in result.stdout
+            assert "Planned upload strategy:" in result.stdout
+            assert (
+                "Do not send one large inline base64 string through Runtime.evaluate."
+                in result.stdout
+            )
+            assert "Handoff fields / stop boundaries:" in result.stdout
+            assert (
+                "Dry run only: no PDFs generated, browser opened, files uploaded, or tracker updated."
+                in result.stdout
+            )
+            for leaked in [
+                "Synthetic role used only to validate generated PDF quality gates.",
+                "Alex_Example_Private_Output",
+                "alex.example@example.com",
+                "+15550100000",
+                str(tmp_path),
+                str(script_path),
+            ]:
+                assert leaked not in result.stdout
+
+        assert not (tmp_path / "generated").exists()
 
 
 class TestPdfQualityGates:

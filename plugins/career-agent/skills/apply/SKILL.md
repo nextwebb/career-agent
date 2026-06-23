@@ -17,9 +17,11 @@ In Codex, invoke this skill with `$apply`, the skills/plugin selector, or natura
 
 ```
 /apply <role_id>
+/apply <role_id> --dry-run
 ```
 
 `role_id`: matches `roles/<role_id>.json`. If not provided, list available role IDs and ask the user to pick one.
+`--dry-run`: print a redacted preflight plan via `src/generate_application.py --role <role_id> --dry-run`; do not open a browser, generate PDFs, upload files, update tracker state, or print raw applicant values.
 
 ## Prerequisites
 
@@ -28,10 +30,26 @@ Check before starting:
 1. `profile.json` exists: if not, stop and ask user to create it
 2. `roles/<role_id>.json` exists: if not, stop and direct user to run `/new-role <url>`
 3. `generated/<output_prefix>_CV.pdf` exists: if not, run `/generate-cv <role_id>` first
-4. A browser surface is available. In Codex, use Browser for public ATS pages and Chrome only when signed-in browser state, cookies, extensions, or file URL access are required. Codex Chrome `/apply` remains experimental unless `docs/apply-codex-chrome-verification.md` contains a non-submitted evidence record for the exact ATS case and URL pattern.
-5. For Codex Chrome runs, review `docs/apply-codex-chrome-verification.md` before filling. If the ATS case is unverified, failed, ambiguous, or missing from the matrix, tell the user it is experimental and stop or proceed only with a manual fallback/handoff plan that never submits.
+4. A browser surface is available. Preflight the selected browser surface before any ATS navigation. Browser setup failures, including metadata errors such as `sandboxCwd must be an absolute file URI`, are browser/tool setup failures; report them distinctly from ATS automation failures and stop or use only an explicitly approved fallback.
+5. Open a fresh tab/page for every ATS run before navigating. Never reuse an arbitrary active tab. If the user explicitly asks to continue in an existing SPA tab, first clear `window.onbeforeunload`, patch `history.pushState` / `history.replaceState` only for the navigation attempt, and verify within 3 seconds that the URL changed. If navigation is blocked, stop with a setup-specific handoff reason.
+6. In Codex, use Browser for public ATS pages and Chrome only when signed-in browser state, cookies, extensions, or file URL access are required. Codex Chrome `/apply` remains experimental unless `docs/apply-codex-chrome-verification.md` contains a non-submitted evidence record for the exact ATS case and URL pattern.
+7. For Codex Chrome runs, review `docs/apply-codex-chrome-verification.md` before filling. If the ATS case is unverified, failed, ambiguous, or missing from the matrix, tell the user it is experimental and stop or proceed only with a manual fallback/handoff plan that never submits.
 
 ## Steps
+
+### 0. Preflight and dry-run plan
+
+Resolve the active package/plugin version and the active `skills/apply/SKILL.md` path before browser work. If a stale installed plugin copy differs from repo HEAD, report that drift before proceeding.
+
+If the user requested `--dry-run`, run:
+
+```
+python3 <career_agent_root>/src/generate_application.py --role <role_id> --dry-run
+```
+
+Then stop. The dry run prints target URL, ATS platform, package/skill path, planned safe fields with redacted values, planned handoff fields, file paths, file sizes when files exist, and upload strategy. It does not open a browser, generate PDFs, upload files, update tracker state, or print raw applicant values.
+
+For a live fill, preflight the selected browser surface, open a fresh tab/page (Prerequisites 5), and start elapsed-time logging before navigation.
 
 ### 1. Load configs
 
@@ -78,7 +96,25 @@ This policy overrides `role.custom_answers`. If a custom answer key or mapped fi
 
 ### 4. Fill safe personal fields
 
-Locate each text input, classify it using the sensitive-field policy above, click into safe fields only, and type the value. Do NOT rely on direct form value injection alone; it may not trigger React onChange events on Greenhouse or Workable.
+Locate each text input, classify it using the sensitive-field policy above, click into safe fields only, and type the value.
+
+**Do NOT set `.value` directly on a React-controlled input.** React 16+ uses a synthetic event system — direct DOM assignment does not trigger `onChange`, so the controlled value does not update and the field visually reverts. Use the native prototype setter pattern instead:
+
+```javascript
+function setReactValue(el, value) {
+  const proto = el instanceof HTMLTextAreaElement
+    ? HTMLTextAreaElement.prototype
+    : HTMLInputElement.prototype;
+  const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+  if (!setter) throw new Error('missing native value setter');
+  setter.call(el, value);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+  el.blur();
+}
+```
+
+After each call, scroll away and back, then verify the visible value persists — this is why the function dispatches bubbled `input` and `change` events rather than setting `.value` alone. If the value still reverts, fall back to `click()` + character-by-character `type()`.
 
 Fill in this order:
 1. First name
@@ -91,50 +127,126 @@ Fill in this order:
 8. Portfolio / website (if field exists)
 9. Any other non-sensitive personal fields visible after classification
 
-After filling each field, verify the value is present before moving to the next section.
+After filling each field, verify after blur and after scrolling away/back that the value is present and persists before moving to the next section.
 
 ### 5. Upload CV
 
-Locate the CV file input using visible labels such as "resume upload", "CV upload", or "attach resume".
+Locate the CV file input by the field container's visible label such as "resume upload", "CV upload", or "attach resume". Scope the selector to that label's container — do not use `document.querySelectorAll('input[type="file"]')[0]` or any global index.
 
-**Primary upload method — base64 DataTransfer injection (all platforms):**
+**Primary upload method — browser-native file upload when available:**
 
-The `mcp__claude-in-chrome__file_upload` tool requires a Claude Desktop version that passes file contents directly; older versions fail with "no longer accepts host filesystem paths." Use the base64 injection instead:
+Use the browser surface's native file upload path when available, such as Playwright `setInputFiles()` or an equivalent browser-client file chooser API. This avoids large `Runtime.evaluate` payloads and gives the browser a normal file selection event.
+
+Upload path: `generated/<output_prefix>_CV.pdf`
+
+**Chrome-extension fallback — bounded transport only:**
+
+Do not inject one large inline base64 string into `Runtime.evaluate` as a JS string literal. A 13 KB PDF produces a ~17 K-char base64 string; combined with `atob()` decoding and `Uint8Array` construction in a single CDP evaluate call, this blocks the renderer event loop synchronously and trips the CDP timeout (30 s outer / 40 s evaluate), disconnecting the debugger session.
+
+If the browser surface cannot perform native file upload, use one of these bounded transports:
+
+**Option A — localhost server fetch (preferred):**
+
+Before browser automation, start a temporary HTTP server for the `generated/` directory:
 
 ```python
-# Step 1 — encode the PDF in Python
-import base64
-with open("generated/<output_prefix>_CV.pdf", "rb") as f:
-    b64 = base64.b64encode(f.read()).decode()
+import threading, http.server, os, socket
+
+class CORSHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        super().end_headers()
+    def log_message(self, *a): pass
+
+with socket.socket() as s:
+    s.bind(('127.0.0.1', 0))
+    port = s.getsockname()[1]
+
+server = http.server.HTTPServer(('127.0.0.1', port), CORSHandler)
+thread = threading.Thread(target=server.serve_forever, daemon=True)
+os.chdir('/path/to/generated/')
+thread.start()
+# use port below; call server.shutdown() when done
 ```
 
+In-page JS via `javascript_tool`:
+
 ```javascript
-// Step 2 — inject via javascript_tool
-(function() {
-  const b64 = "<INSERT_BASE64_STRING>";
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const file = new File([bytes], "<filename>.pdf", { type: "application/pdf" });
-  const input = document.querySelectorAll('input[type="file"]')[<index>];
+async function injectFileFromUrl(container, url, filename) {
+  const buf = await fetch(url).then(r => {
+    if (!r.ok) throw new Error('file fetch failed: ' + r.status);
+    return r.arrayBuffer();
+  });
+  const file = new File([buf], filename, { type: 'application/pdf' });
+  const input = container.querySelector('input[type="file"]');
+  if (!input) throw new Error('missing scoped file input');
   const dt = new DataTransfer();
   dt.items.add(file);
   input.files = dt.files;
   const tracker = input._valueTracker;
   if (tracker) tracker.setValue('');
-  ['change','input'].forEach(ev => input.dispatchEvent(new Event(ev, {bubbles:true})));
-  return `files=${input.files.length}`;
-})()
+  ['change', 'input'].forEach(ev => input.dispatchEvent(new Event(ev, { bubbles: true })));
+  return input.files.length;
+}
+// e.g. await injectFileFromUrl(container, 'http://127.0.0.1:' + port + '/Peterson_CV.pdf', 'Peterson_CV.pdf')
 ```
 
-**Confirmed behaviour by platform (2026-06-22):**
-- **Lever:** injection works. UI shows "✅ Success!" with filename. Use `inputs[0]` (single file input).
-- **Greenhouse:** unhide the input first (`el.style.opacity='1'; el.style.display='block'`), then inject. Expected to work — not yet confirmed end-to-end.
-- **Workable:** injection sets `input.files` but Workable's `react-dropzone` component does **not** re-render. The file is in the DOM but the UI still shows "Choose file". Manual upload required on Workable until a `react-dropzone` compatible injection is confirmed. Use `inputs[1]` (index 0 is the photo input).
+`http://127.0.0.1` is a "potentially trustworthy origin" under the Secure Contexts spec, so Chrome permits the fetch from an HTTPS ATS page.
 
-Upload path: `generated/<output_prefix>_CV.pdf`
+**Option B — localStorage chunking in small chunks (fallback):**
 
-Verify the filename appears on screen after upload. Take a screenshot.
+Split the base64 string into ~4 KB chunks across several `javascript_tool` calls, assemble in a final call, then clear storage:
+
+```javascript
+// Calls 1–N: store chunks
+localStorage.setItem('_ca_chunk_0', chunk0);
+localStorage.setItem('_ca_chunk_1', chunk1);
+
+// Final call: assemble, inject, clean up
+const b64 = ['_ca_chunk_0', '_ca_chunk_1']
+  .map(k => localStorage.getItem(k)).join('');
+['_ca_chunk_0', '_ca_chunk_1'].forEach(k => localStorage.removeItem(k));
+const binary = atob(b64);
+const bytes = new Uint8Array(binary.length);
+for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+const file = new File([bytes], '<filename>.pdf', { type: 'application/pdf' });
+// then DataTransfer inject as in Option A
+```
+
+**Greenhouse remount handling:**
+
+Greenhouse's React reconciler may replace the `<input type="file">` DOM node after a `change` event, clearing `input.files` on the new node. Use a `MutationObserver` on the upload container to detect and re-inject:
+
+```javascript
+function injectWithRemountGuard(container, fileObj) {
+  function inject(input) {
+    input.style.opacity = '1';
+    input.style.display = 'block';
+    const dt = new DataTransfer();
+    dt.items.add(fileObj);
+    input.files = dt.files;
+    const tracker = input._valueTracker;
+    if (tracker) tracker.setValue('');
+    ['change', 'input'].forEach(ev => input.dispatchEvent(new Event(ev, { bubbles: true })));
+  }
+  const obs = new MutationObserver(() => {
+    const fresh = container.querySelector('input[type="file"]');
+    if (fresh && fresh.files.length === 0) { inject(fresh); obs.disconnect(); }
+  });
+  obs.observe(container, { childList: true, subtree: true });
+  setTimeout(() => obs.disconnect(), 3000);
+  inject(container.querySelector('input[type="file"]'));
+}
+```
+
+If both CV and cover-letter slots exist, invoke this separately per label-scoped container with the correct `File` object. Verify the visible filename after each injection — a mismatched or empty filename means the inject did not hold.
+
+**Observed behaviour by platform (do not overclaim):**
+- **Lever:** previous non-submitting runs observed visible filename success after upload.
+- **Greenhouse:** label-scope the input; unhide before inject when needed; use a remount guard. The 2026-06-23 Monzo run observed visible resume upload success, but did not re-prove a separate cover-letter upload slot.
+- **Workable:** `react-dropzone` does not re-render from DataTransfer injection — UI shows "Choose file" despite `input.files` being set. Manual upload required until a Workable-compatible injection is confirmed.
+
+After injection, re-query the file input after every upload by re-reading the container. Verify the filename appears on screen after upload. Record upload method, payload size, field label, remount/reacquire count, distinct filenames per slot, visible filename result, and elapsed ms.
 
 ### 6. Upload cover letter (if field exists)
 
@@ -149,10 +261,12 @@ Check if a cover letter upload field or text area exists.
 **"How did you hear about this opportunity?"**
 Use value from `role.custom_answers.hear_about_us`. Common values: `"LinkedIn"`, `"Referral"`, `"Company website"`.
 
-For React-based dropdowns (Greenhouse): click the dropdown toggle, type to filter, then click the matching option. Do not rely on direct form value injection alone.
+For React-based dropdowns (Greenhouse): scope the control to the field container's visible label, use `setReactValue` or `click()` + `type()` inside that container, then click the matching option. Do not rely on direct form value injection alone.
 
 **Work authorisation / sponsorship:**
 Use `role.custom_answers.work_authorization` and `role.custom_answers.visa_sponsorship`.
+
+Hand off US-person status, tax status, right-to-work confirmations, immigration attestations, and any authorization question phrased as a certification, legal declaration, or consent. Do not infer these answers from location or resume history.
 
 **Location / cities available:**
 Use `role.custom_answers.cities_available` array.
@@ -170,15 +284,26 @@ For any free-text question that maps to a key in `role.custom_answers` (e.g. `wh
 
 ### 9. Handle country / city comboboxes (Greenhouse)
 
-Greenhouse uses React comboboxes for country and city. Standard approach:
+Greenhouse uses React comboboxes for country and city. Use label-scoped controls only — never positional refs or unscoped global selectors:
 
-1. Locate the combobox toggle button
-2. Click it to open
-3. Type the country or city name to filter
-4. Locate the option in the dropdown list
-5. Click the option
+1. Locate the field container by its visible label text ("Country", "Location", "City", or the exact question label).
+2. Inside that container only, find `input[role="combobox"]`, `[aria-autocomplete="list"]`, or the container's listbox trigger.
+3. **Never click a generic `[aria-label="Toggle flyout"]` without first confirming it is inside the intended field container.** The Google Drive / Resume file-picker uses the same flyout pattern and sits adjacent to the phone/country field in Greenhouse's accessibility tree. Clicking the wrong element opens a Google Drive modal that blocks all further automation until dismissed.
+4. Click the scoped input/trigger, type the intended value with React-safe events, locate the matching option in the opened listbox, and click it.
+5. Verify selected visible text after blur and after scrolling away/back.
 
-Verify the value is selected before continuing.
+**Phone country combobox:** The phone country selector is adjacent to the Resume/Google Drive file-picker toggle in the DOM. Scope to the phone container:
+
+```javascript
+const phoneContainer = [...document.querySelectorAll('[class*="phone" i], [data-qa*="phone" i]')]
+  .find(el => el.querySelector('input'));
+if (!phoneContainer) throw new Error('phone container not found; hand off phone country selector');
+const phoneInput = phoneContainer.querySelector('input[role="combobox"], [aria-autocomplete="list"], input');
+if (!phoneInput) throw new Error('phone combobox not found inside scoped phone container');
+// Click phoneInput, type country name, click the matching listbox option
+```
+
+If the flyout that opens shows file/Drive icons rather than country names, close it immediately, record a selector failure, and hand off the phone field.
 
 ### 10. Verify radio buttons
 
@@ -199,6 +324,8 @@ Scroll the full form from top to bottom. Take a screenshot at each major section
 - CV upload is confirmed
 - All visible required questions are answered
 
+Record a structured, redacted observation per section: timestamp, browser surface, field label, action type, selector strategy, upload method and payload size, remount/reacquire count, visible filename result, React state verification result, and final proof that Submit was not clicked.
+
 ### 12. Hand off
 
 **Stop here. Do not click Submit.**
@@ -206,16 +333,16 @@ Scroll the full form from top to bottom. Take a screenshot at each major section
 Report to the user:
 
 ```
-✅ Form filled for <title> @ <company>
-✅ CV uploaded: <filename>
-✅ Cover letter: <uploaded|pasted|not required>
+Form filled for <title> @ <company>
+CV uploaded: <filename>
+Cover letter: <uploaded|pasted|not required>
 
 Fields filled:
   - [list every field you filled with the value]
 
 Remaining (your action required):
-  🔲 Sensitive, consent, attestation, legal, or EEO fields
-  🔲 Click Submit
+  Sensitive, consent, attestation, legal, or EEO fields
+  Click Submit
 
 Tab: [tab ID or URL]
 ```
@@ -224,23 +351,27 @@ Wait for user confirmation before any further action on this form.
 
 ## Platform quirks reference
 
-| Platform | File input | React combobox | Cover letter |
-|---|---|---|---|
-| Greenhouse (direct) | Hidden: unhide via JS before upload | Click toggle → type → click option | File upload field |
-| Greenhouse (embed) | Same as above | Same | Same |
-| Greenhouse (EU domain) | Treat as Greenhouse only after URL/domain verification | Same | Same |
-| Lever | Visible | N/A | Text paste only |
-| Workable | Visible | Direct value injection can miss React state; fall back to click+type | File upload or text |
+| Platform | File input | React state | React combobox | Cover letter |
+|---|---|---|---|---|
+| Greenhouse (direct) | Label-scoped; unhide before inject; MutationObserver remount guard | Native setter + `input`/`change` events; verify after blur | Label-scoped only; never bare `Toggle flyout`; phone field scoped to phone container | File upload field |
+| Greenhouse (embed) | Same; open embed URL as top-level page | Same | Same | Same |
+| Greenhouse (EU domain) | Treat as Greenhouse after URL verification | Same | Same | Same |
+| Lever | Label-scoped visible upload; DataTransfer confirmed working | Verify after blur | N/A | Text paste only — no file upload field |
+| Workable | `inputs[1]` is CV (index 0 is photo); `react-dropzone` ignores DataTransfer injection — manual upload required | Verify after blur/step change | Scoped click+type fallback | File upload or text |
 
 ## Error handling
 
+- Browser setup or metadata failure: report as a browser/tool preflight failure, not an ATS automation failure; stop
+- Existing SPA tab blocks navigation: open a fresh tab; if explicitly requested tab remains blocked, stop and hand off
 - Page not loading: take screenshot, check URL, try navigating again
-- File upload failing on Greenhouse: run the JS unhide snippet, retry
-- React field not accepting value: switch to click+type
+- File upload failing on Greenhouse: re-query label-scoped input after React remount; use MutationObserver guard; verify visible filename
+- React field not accepting value: use native prototype setter + bubbled events, verify after blur/scroll
+- Dropdown not opening: scope to field container; use `setReactValue` or click+type; never use unscoped value assignment alone
 - Radio not registering: re-click as standalone (not in a batch), re-verify via JS
-- Cross-origin iframe blocking tools: navigate directly to the embed URL as a top-level page
-- Unsupported ATS, CAPTCHA, login wall, hidden required field, or ambiguous consent/legal field: stop and hand off with the exact field label and URL
-- Multiple file inputs, multi-step flow, or hidden required fields that cannot be confidently classified: stop and hand off with screenshots and the field labels found
+- Cross-origin iframe blocking tools: navigate directly to embed URL as a top-level page
+- Greenhouse `Toggle flyout` opens Google Drive / file-provider UI: close immediately, record selector failure, hand off the field
+- CDP timeout / debugger disconnect: reduce payload size — do not inject large inline base64; use localhost fetch or chunked localStorage
+- Unsupported ATS, CAPTCHA, login wall, or ambiguous consent/legal field: stop and hand off with exact field label and URL
 
 ---
 
@@ -262,41 +393,41 @@ Call `src/yolo.py:is_yolo_enabled(profile)`. If it returns `False` (key mismatch
 
 ### Step B — Pre-apply gates (autonomous mode)
 
-Run gates 1–2 using `run_pre_apply_checks(autonomous=True)`:
-1. `check_duplicate()` — halt: `DUPLICATE`
-2. `check_artifacts_exist()` + `check_platform_supported()` — halt: `PLATFORM_CHECK_FAILED`
+Run gates 1-2 using `run_pre_apply_checks(autonomous=True)`:
+1. `check_duplicate()` -- halt: `DUPLICATE`
+2. `check_artifacts_exist()` + `check_platform_supported()` -- halt: `PLATFORM_CHECK_FAILED`
 
 If either fails, fall to HITL.
 
 Then run the yolo gate battery via `src/yolo.py:run_yolo_gates(profile, role_config, workspace_dir, tracker_path)`:
 
-3. Tier in `permitted_tiers` — halt: `TIER_NOT_PERMITTED`, fall to HITL
-4. Company not in `excluded_companies` — halt: `COMPANY_EXCLUDED`, fall to HITL
-5. Daily cap check — halt: `DAILY_CAP_REACHED`
-6. Cover letter present — halt: `COVER_LETTER_REQUIRED`
-7. Cover letter specificity — halt: `QUALITY_GATE_FAILED`
-8. jobqa workspace gate (`jobqa run <workspace_dir>`) — halt: `JOBQA_GATE_FAILED: {errors}`
+3. Tier in `permitted_tiers` -- halt: `TIER_NOT_PERMITTED`, fall to HITL
+4. Company not in `excluded_companies` -- halt: `COMPANY_EXCLUDED`, fall to HITL
+5. Daily cap check -- halt: `DAILY_CAP_REACHED`
+6. Cover letter present -- halt: `COVER_LETTER_REQUIRED`
+7. Cover letter specificity -- halt: `QUALITY_GATE_FAILED`
+8. jobqa workspace gate (`jobqa run <workspace_dir>`) -- halt: `JOBQA_GATE_FAILED: {errors}`
    - jobqa warnings pass through and are logged in the sidecar
    - If `jobqa` is not in PATH: skip this gate, log a warning, continue
 
 Generate the workspace before gate 8 using `src/jobqa_workspace.py:generate_jobqa_workspace()`.
 
-### Step C — Autonomous form fill
+### Step C -- Autonomous form fill
 
-Proceed with Steps 1–11 (load configs, navigate, classify, fill, upload, answer, scroll).
+Proceed with Steps 0-11 (preflight, load configs, navigate, classify, fill, upload, answer, scroll).
 Do not pause at Step 12.
 
 **Codex Chrome restriction applies here too.** Yolo mode does not bypass the Codex Chrome
-experimental status established in Prerequisites 4–5. If running on Codex Chrome, the same
+experimental status established in Prerequisites 6-7. If running on Codex Chrome, the same
 evidence requirement applies: `docs/apply-codex-chrome-verification.md` must contain a
 non-submitted end-to-end pass record for the target ATS case. The gate battery is not a
 substitute for that evidence. Passing all yolo gates does not promote a Codex Chrome ATS
-platform from experimental to stable — that promotion requires a committed evidence record in
+platform from experimental to stable -- that promotion requires a committed evidence record in
 the verification matrix, independent of the gate battery outcome.
 
-### Step D — Pre-submit record
+### Step D -- Pre-submit record
 
-Before clicking Submit, call `src/record_submission.py` (packaged with career-agent — no
+Before clicking Submit, call `src/record_submission.py` (packaged with career-agent -- no
 external dependency required) to write an audit log and satisfy the `missing_submission_log`
 hard-fail criterion:
 
@@ -309,20 +440,20 @@ python <career_agent_root>/src/record_submission.py \
 ```
 
 If `jobqa` was not run (workspace has no `output/manifest.json`), pass the `role_id` string
-as the first argument instead — the script accepts either.
+as the first argument instead -- the script accepts either.
 
 If `record_submission.py` exits non-zero: **abort with `SUBMISSION_LOG_FAILED`, do NOT click Submit.**
 The `authorization_key_prefix` is the first 4 characters of `profile.yolo_mode.authorization_key`.
 
-### Step E — Submit and confirm
+### Step E -- Submit and confirm
 
 Click Submit once. Call `check_confirmation_pattern(ats_platform, final_url, page_text)`:
 
-- `confirmed` → proceed to Step F
-- `ambiguous` → write sidecar `outcome: ambiguous`, tracker `autonomous_ambiguous`, **halt, do not retry**
-- `failed` → write sidecar `outcome: failed`, tracker `autonomous_failed`, halt
+- `confirmed` -> proceed to Step F
+- `ambiguous` -> write sidecar `outcome: ambiguous`, tracker `autonomous_ambiguous`, **halt, do not retry**
+- `failed` -> write sidecar `outcome: failed`, tracker `autonomous_failed`, halt
 
-### Step F — Post-submit
+### Step F -- Post-submit
 
 1. Take a screenshot of the confirmation page
 2. Write audit sidecar via `src/audit.py:write_sidecar()` with `outcome: confirmed`
@@ -330,11 +461,11 @@ Click Submit once. Call `check_confirmation_pattern(ats_platform, final_url, pag
 
 Report:
 ```
-🤖 Autonomous submission completed: <title> @ <company>
+Autonomous submission completed: <title> @ <company>
    Outcome: confirmed
    Confirmation: <excerpt>
    Sidecar: audits/<role_id>_<timestamp>_submission.json
-   Remaining: EEO fields (not filled — human action required if asked later)
+   Remaining: EEO fields (not filled -- human action required if asked later)
 ```
 
 ### Yolo mode halt codes
@@ -351,4 +482,4 @@ Report:
 | `QUALITY_GATE_FAILED` | Placeholder or non-specific cover letter | Fall to HITL |
 | `WORKSPACE_GENERATION_FAILED` | Translator raised an error | Fall to HITL |
 | `JOBQA_GATE_FAILED` | jobqa exited non-zero | Fall to HITL |
-| `SUBMISSION_LOG_FAILED` | record_submission.py exited non-zero | Abort — do NOT click Submit |
+| `SUBMISSION_LOG_FAILED` | record_submission.py exited non-zero | Abort -- do NOT click Submit |
