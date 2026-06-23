@@ -412,9 +412,9 @@ class TestJSONConfigs:
     def test_claude_plugin_json_valid(self):
         """Verify .claude-plugin/plugin.json is the canonical marketplace manifest."""
         plugin_file = ROOT / ".claude-plugin" / "plugin.json"
-        assert (
-            plugin_file.exists()
-        ), "Missing .claude-plugin/plugin.json (canonical marketplace manifest)"
+        assert plugin_file.exists(), (
+            "Missing .claude-plugin/plugin.json (canonical marketplace manifest)"
+        )
 
         with open(plugin_file, encoding="utf-8") as f:
             data = json.load(f)
@@ -500,9 +500,9 @@ class TestJSONConfigs:
             canonical = ROOT / relative_path
             copied = plugin_root / relative_path
             assert copied.exists(), f"Missing Codex marketplace copy: {relative_path}"
-            assert (
-                copied.read_bytes() == canonical.read_bytes()
-            ), f"Codex marketplace copy drifted: {relative_path}"
+            assert copied.read_bytes() == canonical.read_bytes(), (
+                f"Codex marketplace copy drifted: {relative_path}"
+            )
 
     def test_release_versions_match(self):
         """Release metadata should not drift across maintained manifests."""
@@ -682,6 +682,7 @@ class TestSKILLMarkdown:
 
         required_terms = [
             "### 0. Preflight and dry-run plan",
+            "Do not generate PDFs for `--dry-run`",
             "sandboxCwd must be an absolute file URI",
             "Open a fresh tab/page for every ATS run",
             "stale installed plugin copy differs from repo HEAD",
@@ -692,11 +693,13 @@ class TestSKILLMarkdown:
             "Do not inject one large inline base64 string into `Runtime.evaluate`",
             "localhost server",
             "small chunks",
+            "Do not write PDF chunks to persistent ATS `localStorage`",
+            "sessionStorage.setItem",
             "re-query the file input after every upload",
             "remount/reacquire count",
             "distinct filenames",
             "field container's visible label",
-            "Never click a generic `[aria-label=\"Toggle flyout\"]`",
+            'Never click a generic `[aria-label="Toggle flyout"]`',
             "Google Drive",
             "structured, redacted observation",
             "final proof that Submit was not clicked",
@@ -711,7 +714,8 @@ class TestSKILLMarkdown:
             "Expected to work — not yet confirmed end-to-end",
             "Confirmed behaviour by platform",
             "End-to-end confirmed",
-            "document.querySelector('[aria-label*=\"phone\" i] input, input[aria-autocomplete=\"list\"]')",
+            'document.querySelector(\'[aria-label*="phone" i] input, input[aria-autocomplete="list"]\')',
+            "localStorage.setItem",
         ]
         for fragment in forbidden_fragments:
             assert fragment not in content
@@ -1400,9 +1404,9 @@ class TestRequirementsTxt:
 
         for line in lines:
             # Should have version constraint
-            assert any(
-                op in line for op in ["==", ">=", "~=", "<="]
-            ), f"Requirement '{line}' should specify version constraint"
+            assert any(op in line for op in ["==", ">=", "~=", "<="]), (
+                f"Requirement '{line}' should specify version constraint"
+            )
 
 
 class TestReadmeAndDocs:
