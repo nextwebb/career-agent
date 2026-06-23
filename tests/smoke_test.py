@@ -412,9 +412,9 @@ class TestJSONConfigs:
     def test_claude_plugin_json_valid(self):
         """Verify .claude-plugin/plugin.json is the canonical marketplace manifest."""
         plugin_file = ROOT / ".claude-plugin" / "plugin.json"
-        assert plugin_file.exists(), (
-            "Missing .claude-plugin/plugin.json (canonical marketplace manifest)"
-        )
+        assert (
+            plugin_file.exists()
+        ), "Missing .claude-plugin/plugin.json (canonical marketplace manifest)"
 
         with open(plugin_file, encoding="utf-8") as f:
             data = json.load(f)
@@ -500,9 +500,9 @@ class TestJSONConfigs:
             canonical = ROOT / relative_path
             copied = plugin_root / relative_path
             assert copied.exists(), f"Missing Codex marketplace copy: {relative_path}"
-            assert copied.read_bytes() == canonical.read_bytes(), (
-                f"Codex marketplace copy drifted: {relative_path}"
-            )
+            assert (
+                copied.read_bytes() == canonical.read_bytes()
+            ), f"Codex marketplace copy drifted: {relative_path}"
 
     def test_release_versions_match(self):
         """Release metadata should not drift across maintained manifests."""
@@ -1404,9 +1404,9 @@ class TestRequirementsTxt:
 
         for line in lines:
             # Should have version constraint
-            assert any(op in line for op in ["==", ">=", "~=", "<="]), (
-                f"Requirement '{line}' should specify version constraint"
-            )
+            assert any(
+                op in line for op in ["==", ">=", "~=", "<="]
+            ), f"Requirement '{line}' should specify version constraint"
 
 
 class TestReadmeAndDocs:

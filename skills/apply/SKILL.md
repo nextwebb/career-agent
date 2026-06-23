@@ -29,7 +29,7 @@ Check before starting:
 
 1. `profile.json` exists: if not, stop and ask user to create it
 2. `roles/<role_id>.json` exists: if not, stop and direct user to run `/new-role <url>`
-3. `generated/<output_prefix>_CV.pdf` exists: if not, run `/generate-cv <role_id>` first
+3. For live fills only, `generated/<output_prefix>_CV.pdf` exists: if not, run `/generate-cv <role_id>` first. Do not generate PDFs for `--dry-run`; the dry-run plan reports missing artifacts without creating them.
 4. A browser surface is available. Preflight the selected browser surface before any ATS navigation. Browser setup failures, including metadata errors such as `sandboxCwd must be an absolute file URI`, are browser/tool setup failures; report them distinctly from ATS automation failures and stop or use only an explicitly approved fallback.
 5. Open a fresh tab/page for every ATS run before navigating. Never reuse an arbitrary active tab. If the user explicitly asks to continue in an existing SPA tab, first clear `window.onbeforeunload`, patch `history.pushState` / `history.replaceState` only for the navigation attempt, and verify within 3 seconds that the URL changed. If navigation is blocked, stop with a setup-specific handoff reason.
 6. In Codex, use Browser for public ATS pages and Chrome only when signed-in browser state, cookies, extensions, or file URL access are required. Codex Chrome `/apply` remains experimental unless `docs/apply-codex-chrome-verification.md` contains a non-submitted evidence record for the exact ATS case and URL pattern.
@@ -47,7 +47,7 @@ If the user requested `--dry-run`, run:
 python3 <career_agent_root>/src/generate_application.py --role <role_id> --dry-run
 ```
 
-Then stop. The dry run prints target URL, ATS platform, package/skill path, planned safe fields with redacted values, planned handoff fields, file paths, file sizes when files exist, and upload strategy. It does not open a browser, generate PDFs, upload files, update tracker state, or print raw applicant values.
+Then stop. The dry run prints target URL, ATS platform, package/skill path, planned safe fields with redacted values, planned handoff fields, redacted artifact status, file sizes when files exist, and upload strategy. It does not open a browser, generate PDFs, upload files, update tracker state, or print raw applicant values.
 
 For a live fill, preflight the selected browser surface, open a fresh tab/page (Prerequisites 5), and start elapsed-time logging before navigation.
 
@@ -193,24 +193,32 @@ async function injectFileFromUrl(container, url, filename) {
 
 `http://127.0.0.1` is a "potentially trustworthy origin" under the Secure Contexts spec, so Chrome permits the fetch from an HTTPS ATS page.
 
-**Option B — localStorage chunking in small chunks (fallback):**
+**Option B — sessionStorage chunking in small chunks (fallback):**
 
-Split the base64 string into ~4 KB chunks across several `javascript_tool` calls, assemble in a final call, then clear storage:
+Use only when localhost fetch is unavailable. Split the base64 string into ~4 KB chunks across several `javascript_tool` calls, assemble in a final call, then clear storage. Do not write PDF chunks to persistent ATS `localStorage`.
 
 ```javascript
-// Calls 1–N: store chunks
-localStorage.setItem('_ca_chunk_0', chunk0);
-localStorage.setItem('_ca_chunk_1', chunk1);
+// Before call 1: remove leftovers from any interrupted attempt
+Object.keys(sessionStorage)
+  .filter(k => k.startsWith('_ca_chunk_'))
+  .forEach(k => sessionStorage.removeItem(k));
+
+// Calls 1-N: store chunks for this tab/session only
+sessionStorage.setItem('_ca_chunk_0', chunk0);
+sessionStorage.setItem('_ca_chunk_1', chunk1);
 
 // Final call: assemble, inject, clean up
-const b64 = ['_ca_chunk_0', '_ca_chunk_1']
-  .map(k => localStorage.getItem(k)).join('');
-['_ca_chunk_0', '_ca_chunk_1'].forEach(k => localStorage.removeItem(k));
-const binary = atob(b64);
-const bytes = new Uint8Array(binary.length);
-for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-const file = new File([bytes], '<filename>.pdf', { type: 'application/pdf' });
-// then DataTransfer inject as in Option A
+const chunkKeys = ['_ca_chunk_0', '_ca_chunk_1'];
+try {
+  const b64 = chunkKeys.map(k => sessionStorage.getItem(k) || '').join('');
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const file = new File([bytes], '<filename>.pdf', { type: 'application/pdf' });
+  // then DataTransfer inject as in Option A
+} finally {
+  chunkKeys.forEach(k => sessionStorage.removeItem(k));
+}
 ```
 
 **Greenhouse remount handling:**
@@ -370,7 +378,7 @@ Wait for user confirmation before any further action on this form.
 - Radio not registering: re-click as standalone (not in a batch), re-verify via JS
 - Cross-origin iframe blocking tools: navigate directly to embed URL as a top-level page
 - Greenhouse `Toggle flyout` opens Google Drive / file-provider UI: close immediately, record selector failure, hand off the field
-- CDP timeout / debugger disconnect: reduce payload size — do not inject large inline base64; use localhost fetch or chunked localStorage
+- CDP timeout / debugger disconnect: reduce payload size — do not inject large inline base64; use localhost fetch or chunked sessionStorage
 - Unsupported ATS, CAPTCHA, login wall, or ambiguous consent/legal field: stop and hand off with exact field label and URL
 
 ---
