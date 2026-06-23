@@ -163,10 +163,16 @@ with socket.socket() as s:
     port = s.getsockname()[1]
 
 server = http.server.HTTPServer(('127.0.0.1', port), CORSHandler)
-thread = threading.Thread(target=server.serve_forever, daemon=True)
 os.chdir('/path/to/generated/')
+# Run serve_forever in a NON-daemon worker so an accidental process exit before
+# server.shutdown() surfaces as a hung process instead of silently killing the
+# server while the in-page fetch is still in flight. The agent's Python process
+# must stay alive throughout the apply run; call server.shutdown() and
+# thread.join() after the upload is verified.
+thread = threading.Thread(target=server.serve_forever)
 thread.start()
-# use port below; call server.shutdown() when done
+# ... drive browser via javascript_tool, await all uploads ...
+# server.shutdown(); thread.join()
 ```
 
 In-page JS via `javascript_tool`:
