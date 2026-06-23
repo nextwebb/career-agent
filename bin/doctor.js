@@ -146,7 +146,7 @@ check(
 check(
   "Codex browser automation",
   "warn",
-  "Use Browser for public pages and Chrome for signed-in state; Codex /apply remains experimental and should use docs/apply-codex-chrome-verification.md as risk context"
+  "Use Browser for public pages and Chrome for signed-in state; Codex /apply remains experimental until docs/apply-codex-chrome-verification.md contains a non-submitted end-to-end pass record for the target ATS case"
 );
 
 console.log("─".repeat(55));

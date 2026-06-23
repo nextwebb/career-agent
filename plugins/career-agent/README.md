@@ -232,15 +232,15 @@ The role config picks a variant. The CV builder selects the matching experience 
 
 These are implementation notes for supported ATS patterns, not a guarantee that every live form variant will work. Verify each form before filling, and stop on unsupported ATS pages, login walls, CAPTCHA, ambiguous consent, or hidden fields that cannot be classified.
 
-Codex Chrome `/apply` is not stable by assumption. Use the [Codex Chrome verification matrix](docs/apply-codex-chrome-verification.md) as risk context for Codex runs. Missing target-specific evidence does not by itself block an experimental human-in-the-loop attempt, but browser setup must pass before ATS navigation and page observations alone do not constitute an end-to-end automation pass. Failed, ambiguous, or unsupported platforms should use manual fallback and handoff.
+Codex Chrome `/apply` is not stable by assumption. Use the [Codex Chrome verification matrix](docs/apply-codex-chrome-verification.md) to decide whether a platform has non-submitting evidence for a Codex run. Page observations from Codex Chrome runs are recorded in that document, but page observations alone do not constitute an end-to-end automation pass — no ATS platform has a committed non-submitting fill-and-upload record for Codex Chrome, so all named ATS rows below remain experimental for Codex Chrome. Failed, ambiguous, or unverified platforms should use manual fallback and handoff.
 
 | Platform | General behavior | Codex Chrome status |
 |---|---|---|
-| Greenhouse (direct) | Fill safe fields, upload resume, answer safe custom questions | Experimental; record new non-submitting evidence after use |
-| Greenhouse (iframe embed) | Use the embed URL as a top-level page, not a company iframe | Experimental; record new non-submitting evidence after use |
+| Greenhouse (direct) | Fill safe fields, upload resume, answer safe custom questions | Experimental until a non-submitted evidence record exists |
+| Greenhouse (iframe embed) | Use the embed URL as a top-level page, not a company iframe | Experimental until a non-submitted evidence record exists |
 | Greenhouse (EU domain) | Keep `ats_platform` normalized to `greenhouse` unless a separate supported value is intentionally added and tested | Experimental until EU URL/domain handling is verified |
-| Lever | Upload resume, paste cover-letter text when a field exists, answer safe custom questions | Experimental; record new non-submitting evidence after use |
-| Workable | Use `/apply/` URL, upload resume, handle dropdowns and multi-step forms carefully | Experimental; record new non-submitting evidence after use |
+| Lever | Upload resume, paste cover-letter text when a field exists, answer safe custom questions | Experimental until a non-submitted evidence record exists |
+| Workable | Use `/apply/` URL, upload resume, handle dropdowns and multi-step forms carefully | Experimental until a non-submitted evidence record exists |
 | Unknown/unsupported ATS | Stop and provide manual guidance | Unsupported for automation |
 | More | PRs welcome | Experimental until verified |
 

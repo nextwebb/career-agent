@@ -129,7 +129,7 @@ Role:           <title> @ <company>
 Quality gates:  PASS/WARN/FAIL summary
 ```
 
-Ask: "Ready to apply? Use `/apply <role_id>` in Claude Code or `$apply <role_id>` in Codex. Codex Chrome `/apply` remains experimental; use the verification matrix as risk context and stop before sensitive controls or Submit."
+Ask: "Ready to apply? Use `/apply <role_id>` in Claude Code or `$apply <role_id>` in Codex. Codex Chrome `/apply` remains experimental until the verification matrix has non-submitted evidence for the target ATS case."
 
 ## Error handling
 

@@ -32,8 +32,8 @@ Check before starting:
 3. For live fills only, `generated/<output_prefix>_CV.pdf` exists: if not, run `/generate-cv <role_id>` first. Do not generate PDFs for `--dry-run`; the dry-run plan reports missing artifacts without creating them.
 4. A browser surface is available. Preflight the selected browser surface before any ATS navigation. Browser setup failures, including metadata errors such as `sandboxCwd must be an absolute file URI`, are browser/tool setup failures; report them distinctly from ATS automation failures and stop or use only an explicitly approved fallback.
 5. Open a fresh tab/page for every ATS run before navigating. Never reuse an arbitrary active tab. If the user explicitly asks to continue in an existing SPA tab, first clear `window.onbeforeunload`, patch `history.pushState` / `history.replaceState` only for the navigation attempt, and verify within 3 seconds that the URL changed. If navigation is blocked, stop with a setup-specific handoff reason.
-6. In Codex, use Browser for public ATS pages and Chrome only when signed-in browser state, cookies, extensions, or file URL access are required. Codex Chrome `/apply` remains experimental and must pass browser setup preflight before any ATS navigation.
-7. For Codex Chrome runs, review `docs/apply-codex-chrome-verification.md` as risk context before filling. Missing target-specific evidence does not by itself block an experimental human-in-the-loop run, but setup failures, unsupported ATS pages, failed or ambiguous platform evidence, sensitive fields, consent/legal controls, CAPTCHA, and Submit still require stop or handoff.
+6. In Codex, use Browser for public ATS pages and Chrome only when signed-in browser state, cookies, extensions, or file URL access are required. Codex Chrome `/apply` remains experimental unless `docs/apply-codex-chrome-verification.md` contains a non-submitted evidence record for the exact ATS case and URL pattern.
+7. For Codex Chrome runs, review `docs/apply-codex-chrome-verification.md` before filling. If the ATS case is unverified, failed, ambiguous, or missing from the matrix, tell the user it is experimental and stop or proceed only with a manual fallback/handoff plan that never submits.
 
 ## Steps
 
@@ -71,7 +71,7 @@ Open `role.url` in the available browser surface.
 
 - **Greenhouse embed** (when `role.url` contains `boards.greenhouse.io/embed`):
   Navigate directly to the embed URL as a top-level page: do NOT try to interact with it inside an iframe on a company careers page. Cross-origin iframes block all DOM tools.
-- **Greenhouse EU domain**: treat a confirmed Greenhouse EU application URL as `ats_platform: "greenhouse"` unless the repo intentionally adds and tests a separate supported value. In Codex Chrome, keep EU-domain automation experimental and record any new EU-domain result in the verification matrix.
+- **Greenhouse EU domain**: treat a confirmed Greenhouse EU application URL as `ats_platform: "greenhouse"` unless the repo intentionally adds and tests a separate supported value. In Codex Chrome, keep EU-domain automation experimental until the verification matrix records a non-submitted pass for that URL/domain pattern.
 - **Workable**: URL must end in `/apply/`: e.g. `https://apply.workable.com/<company>/j/<id>/apply/`
 - **Lever**: URL is typically `https://jobs.lever.co/<company>/<uuid>/apply`
 
@@ -426,11 +426,11 @@ Proceed with Steps 0-11 (preflight, load configs, navigate, classify, fill, uplo
 Do not pause at Step 12.
 
 **Codex Chrome restriction applies here too.** Yolo mode does not bypass the Codex Chrome
-experimental status established in Prerequisites 6-7. If running on Codex Chrome, browser
-setup preflight, platform support checks, sensitive-field stops, audit logging, and
-confirmation detection still apply. The gate battery is not a substitute for browser
-preflight evidence. Passing all yolo gates does not promote a Codex Chrome ATS platform
-from experimental to stable; stable promotion requires committed non-submitting evidence in
+experimental status established in Prerequisites 6-7. If running on Codex Chrome, the same
+evidence requirement applies: `docs/apply-codex-chrome-verification.md` must contain a
+non-submitted end-to-end pass record for the target ATS case. The gate battery is not a
+substitute for that evidence. Passing all yolo gates does not promote a Codex Chrome ATS
+platform from experimental to stable -- that promotion requires a committed evidence record in
 the verification matrix, independent of the gate battery outcome.
 
 ### Step D -- Pre-submit record
