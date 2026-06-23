@@ -35,9 +35,9 @@ Philosophy: keep the workflow lightweight and local-first, put deterministic gat
 
 ## Known ATS quirks
 
-- **File upload (all platforms)**: `mcp__claude-in-chrome__file_upload` is broken on Claude Desktop versions that haven't implemented the `files` parameter. Use the base64 → `DataTransfer` → `dispatchEvent('change')` workaround in `skills/apply/SKILL.md` Step 5. Confirmed working on Lever (2026-06-22). Workable's `react-dropzone` does not re-render from this injection — manual CV upload required on Workable until resolved.
-- **Greenhouse hidden file inputs**: JS `el.style.opacity='1'; el.style.display='block'` before file upload (then apply the base64 workaround above)
-- **Greenhouse React comboboxes** (country, city): click toggle → type to filter → click option: direct value injection alone does not trigger React state
+- **File upload — primary path**: prefer the browser surface's native file upload API (e.g. Playwright `setInputFiles()`). For Chrome-extension paths, use a localhost HTTP server fetch or chunked `localStorage` — do NOT send a large inline base64 string to `Runtime.evaluate` (a 13 KB PDF produces a ~17 K-char literal that blocks the renderer and trips the CDP 30 s timeout). See `skills/apply/SKILL.md` Step 5. `mcp__claude-in-chrome__file_upload` requires base64 data, not filesystem paths (`paths` parameter is deprecated). Workable's `react-dropzone` does not re-render from DataTransfer injection — manual upload required.
+- **Greenhouse file inputs**: label-scope the input to the CV or cover-letter field container; unhide with `el.style.opacity='1'; el.style.display='block'` before injection when needed; re-query after upload because React may replace the `<input>` node after a `change` event. Per-slot verification of distinct filenames is required when both CV and cover-letter slots exist.
+- **Greenhouse React comboboxes** (country, city, phone): label-scope to field container; never click a bare `[aria-label="Toggle flyout"]` — the adjacent Google Drive file-picker uses the same pattern. Phone country: scope to `[class*="phone"]` container. Direct value injection does not trigger React state — use native prototype setter or click+type.
 - **Workable file inputs**: `inputs[1]` is the CV input (index 0 is photo); `react-dropzone` does not respond to DataTransfer injection — requires manual upload
 - **Lever**: no file upload for cover letter: paste cover letter text into the platform's text field
 
