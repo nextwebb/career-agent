@@ -35,11 +35,9 @@ from typing import Any, cast
 
 HAS_REPORTLAB = importlib.util.find_spec("reportlab") is not None
 
-if not HAS_REPORTLAB and "--dry-run" not in sys.argv and "--list" not in sys.argv:
-    print("ERROR: reportlab is not installed.")
-    print("Install it with:  pip install -r requirements.txt")
-    print("Or directly:      pip install reportlab")
-    sys.exit(1)
+# Reportlab is only required for actual PDF generation. --dry-run and --list
+# never reach generate(), so we defer the missing-dependency error to generate()
+# itself rather than gating the module load on a fragile sys.argv inspection.
 
 WORKSPACE_DIR = Path.cwd()
 ROLES_DIR = WORKSPACE_DIR / "roles"
@@ -259,7 +257,15 @@ def _package_version() -> str:
 def print_apply_dry_run(profile: dict[str, Any], role_id: str) -> None:
     """Print a redacted apply plan without creating PDFs or opening a browser."""
 
-    config = prepare_generation_config(profile, load_role(role_id), create_output_dir=False)
+    # Redact tracebacks: an unhandled exception here would surface absolute
+    # role/profile paths from the user's home, defeating the no-raw-values contract.
+    try:
+        config = prepare_generation_config(profile, load_role(role_id), create_output_dir=False)
+    except Exception as error:
+        print(f"\nERROR: Could not prepare dry-run plan for role '{role_id}'.")
+        print(f"  Cause: {type(error).__name__}")
+        print("  Fix the role config or profile and re-run --dry-run.")
+        sys.exit(2)
     prefix = config["output_prefix"]
     cv_path = OUTPUT_DIR / f"{prefix}_CV.pdf"
     cl_path = OUTPUT_DIR / f"{prefix}_CoverLetter.pdf"
@@ -267,6 +273,14 @@ def print_apply_dry_run(profile: dict[str, Any], role_id: str) -> None:
     links = profile.get("links", {})
     custom_answers = config.get("custom_answers", {})
     apply_skill_path = Path(__file__).resolve().parent.parent / "skills" / "apply" / "SKILL.md"
+    # Surface plugin-vs-repo drift in the preflight without leaking absolute paths.
+    # If __file__ is under plugins/career-agent/, label it so users can spot a
+    # stale installed plugin copy diverging from repo HEAD.
+    script_resolved = Path(__file__).resolve()
+    is_plugin_copy = "plugins/career-agent" in script_resolved.as_posix()
+    root_marker = (
+        "<career_agent_root>/plugins/career-agent" if is_plugin_copy else "<career_agent_root>"
+    )
 
     safe_fields = [
         ("First name", _present(first_name)),
@@ -300,10 +314,10 @@ def print_apply_dry_run(profile: dict[str, Any], role_id: str) -> None:
     print(f"Target URL: {config.get('url', '')}")
     print(f"ATS platform: {config.get('ats_platform', 'unknown')}")
     print(f"Package version: {_package_version()}")
-    print("Generator path: <career_agent_root>/src/generate_application.py")
+    print(f"Generator path: {root_marker}/src/generate_application.py")
     print(
         "Apply skill path: "
-        f"{'<career_agent_root>/skills/apply/SKILL.md' if apply_skill_path.exists() else 'not found'}"
+        f"{root_marker + '/skills/apply/SKILL.md' if apply_skill_path.exists() else 'not found'}"
     )
     print("\nFiles:")
     print(f"  CV: generated/<redacted>_CV.pdf ({_file_status(cv_path)})")

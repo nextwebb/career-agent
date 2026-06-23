@@ -228,6 +228,7 @@ Greenhouse's React reconciler may replace the `<input type="file">` DOM node aft
 ```javascript
 function injectWithRemountGuard(container, fileObj) {
   function inject(input) {
+    if (!input) return;
     input.style.opacity = '1';
     input.style.display = 'block';
     const dt = new DataTransfer();
@@ -237,9 +238,12 @@ function injectWithRemountGuard(container, fileObj) {
     if (tracker) tracker.setValue('');
     ['change', 'input'].forEach(ev => input.dispatchEvent(new Event(ev, { bubbles: true })));
   }
+  // Keep observing until the 3 s safety timeout: Greenhouse can remount the input
+  // more than once (initial change-event + later form-level validation), so we
+  // re-inject every time the slot reappears empty, not just on the first remount.
   const obs = new MutationObserver(() => {
     const fresh = container.querySelector('input[type="file"]');
-    if (fresh && fresh.files.length === 0) { inject(fresh); obs.disconnect(); }
+    if (fresh && fresh.files.length === 0) inject(fresh);
   });
   obs.observe(container, { childList: true, subtree: true });
   setTimeout(() => obs.disconnect(), 3000);
@@ -379,7 +383,8 @@ Wait for user confirmation before any further action on this form.
 - Cross-origin iframe blocking tools: navigate directly to embed URL as a top-level page
 - Greenhouse `Toggle flyout` opens Google Drive / file-provider UI: close immediately, record selector failure, hand off the field
 - CDP timeout / debugger disconnect: reduce payload size — do not inject large inline base64; use localhost fetch or chunked sessionStorage
-- Unsupported ATS, CAPTCHA, login wall, or ambiguous consent/legal field: stop and hand off with exact field label and URL
+- Unsupported ATS, CAPTCHA, login wall, hidden required field, or ambiguous consent/legal field: stop and hand off with exact field label and URL
+- Multiple file inputs, multi-step flow, or hidden required fields that cannot be confidently classified: stop and hand off with screenshots and the field labels found
 
 ---
 

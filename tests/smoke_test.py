@@ -702,6 +702,8 @@ class TestSKILLMarkdown:
             "Google Drive",
             "structured, redacted observation",
             "final proof that Submit was not clicked",
+            "hidden required field",
+            "Multiple file inputs, multi-step flow",
         ]
         for term in required_terms:
             assert term in content, f"/apply missing Greenhouse reliability contract: {term}"
