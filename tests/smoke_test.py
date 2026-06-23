@@ -675,8 +675,7 @@ class TestSKILLMarkdown:
         assert classifier_index < fill_index
         assert "Any other non-sensitive personal fields visible after classification" in content
 
-    def test_apply_greenhouse_issue_120_contracts_present(self):
-        """/apply should encode the Greenhouse reliability fixes from issue #120."""
+    def test_apply_greenhouse_reliability_contracts_present(self):
         content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
         normalized = normalize_whitespace(content)
 
@@ -705,7 +704,7 @@ class TestSKILLMarkdown:
             "final proof that Submit was not clicked",
         ]
         for term in required_terms:
-            assert term in content, f"/apply missing issue #120 contract: {term}"
+            assert term in content, f"/apply missing Greenhouse reliability contract: {term}"
 
         forbidden_fragments = [
             'const b64 = "<INSERT_BASE64_STRING>"',
@@ -727,8 +726,7 @@ class TestSKILLMarkdown:
             "### 4. Fill safe personal fields"
         )
 
-    def test_apply_codex_chrome_verification_matrix_present(self):
-        """Codex Chrome /apply support should be tied to structured evidence."""
+    def test_apply_codex_chrome_policy_preserves_runtime_preflight(self):
         doc = ROOT / "docs" / "apply-codex-chrome-verification.md"
         assert doc.exists(), "Missing Codex Chrome /apply verification matrix"
 
@@ -743,6 +741,7 @@ class TestSKILLMarkdown:
             "Lever",
             "Workable",
             "Unknown or unsupported ATS",
+            "Codex Chrome setup preflight",
             "Safety boundaries",
         }
         assert required_cases <= rows_by_case.keys()
@@ -758,12 +757,20 @@ class TestSKILLMarkdown:
             row = rows_by_case[case]
             assert row["Codex Chrome status"] == "Experimental"
             assert row["Evidence status"] == "Live page observed 2026-06-18; no upload/fill"
-            assert "Manual fallback" in row["Stable support decision"]
+            assert (
+                "Manual fallback" in row["Stable support decision"]
+                or "Experimental HITL" in row["Stable support decision"]
+            )
 
         unsupported = rows_by_case["Unknown or unsupported ATS"]
         assert unsupported["Codex Chrome status"] == "Unsupported for automation"
         assert "Live unsupported ATS page observed 2026-06-18" in unsupported["Evidence status"]
         assert "Do not automate" in unsupported["Stable support decision"]
+
+        setup = rows_by_case["Codex Chrome setup preflight"]
+        assert setup["Codex Chrome status"] == "Required preflight"
+        assert "Blocked 2026-06-23" in setup["Evidence status"]
+        assert "browser setup failure" in setup["Stable support decision"]
 
         safety = rows_by_case["Safety boundaries"]
         assert safety["Codex Chrome status"] == "Required stop boundary"
@@ -790,10 +797,11 @@ class TestSKILLMarkdown:
 
         skill_content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
         assert "docs/apply-codex-chrome-verification.md" in skill_content
-        assert "non-submitted evidence record" in skill_content
+        assert "Missing target-specific evidence does not by itself block" in skill_content
+        assert "must pass browser setup preflight before any ATS navigation" in skill_content
+        assert "Submit still require stop or handoff" in skill_content
 
     def test_apply_codex_chrome_live_observations_remain_experimental(self):
-        """Live page observations must not be inflated into stable automation claims."""
         content = (ROOT / "docs" / "apply-codex-chrome-verification.md").read_text(encoding="utf-8")
         normalized = normalize_whitespace(content)
 
@@ -804,15 +812,19 @@ class TestSKILLMarkdown:
             "### Lever - 2026-06-18",
             "### Workable - 2026-06-18",
             "### Unknown or unsupported ATS - 2026-06-18",
+            "### Codex Chrome setup preflight - 2026-06-23",
         ]:
             assert heading in content, f"missing live observation record: {heading}"
 
         for term in [
+            "promotion evidence, not a hard prerequisite",
+            "Missing target-specific evidence keeps a run experimental",
             "partial non-submitting observations, not evidence of successful end-to-end ATS automation",
             "no applicant data was entered",
             "no PDF was uploaded",
             "Submit was not clicked",
             "live ATS upload would transmit a file to the employer ATS",
+            "blocked setup preflight, not verified automation",
             "Result: experimental partial observation, not verified automation",
             "Result: unsupported for automation",
         ]:

@@ -249,6 +249,6 @@ For each role the user wants to pursue:
 /track <role_id> applied       ← log it in your pipeline
 ```
 
-In Codex, use `$new-role`, `$generate-cv`, `$apply`, and `$track` or invoke the installed skills through the selector. Codex Chrome `/apply` remains experimental until the verification matrix has non-submitted evidence for the target ATS case.
+In Codex, use `$new-role`, `$generate-cv`, `$apply`, and `$track` or invoke the installed skills through the selector. Codex Chrome `/apply` remains experimental; use the verification matrix as risk context and stop before sensitive controls or Submit.
 
 The `/source` output feeds directly into `/new-role`: paste the application URL from any role above to scaffold its config automatically.

@@ -9,16 +9,22 @@ The run did not fill applicant data, upload files, advance multi-step flows, or
 click Submit. These are therefore partial non-submitting observations, not
 evidence of successful end-to-end ATS automation.
 
-Do not promote Codex Chrome `/apply` support beyond experimental until a
-non-submitted test record exists for the platform and URL pattern that includes
-a generated PDF upload result, field-fill result, handoff result, and final
-state proving Submit was not clicked.
+This matrix is promotion evidence, not a hard prerequisite for every
+human-in-the-loop Codex Chrome attempt. Missing target-specific evidence keeps a
+run experimental; it does not by itself block a user-approved attempt after
+browser setup preflight passes. Do not promote Codex Chrome `/apply` support
+beyond experimental until a non-submitted test record exists for the platform
+and URL pattern that includes a generated PDF upload result, field-fill result,
+handoff result, and final state proving Submit was not clicked.
 
 ## Verification Rules
 
 - Use Codex Chrome only when the workflow needs signed-in browser state,
   cookies, extensions, or file picker behavior that Codex Browser cannot
   provide.
+- Preflight the Codex Chrome extension before any ATS navigation. If browser
+  setup fails, record the failure as blocked evidence and use Browser or manual
+  handoff instead.
 - Stop before Submit, final confirmation, irreversible actions, credentials,
   legal attestations, consent fields, EEO, voluntary self-identification,
   demographic, disability, veteran, CAPTCHA, or ambiguous fields.
@@ -37,10 +43,11 @@ state proving Submit was not clicked.
 |---|---|---|---|---|
 | Greenhouse direct | `https://job-boards.greenhouse.io/<company>/jobs/<id>` or equivalent direct Greenhouse application URL | Experimental | Live page observed 2026-06-18; no upload/fill | Manual fallback if upload, combobox, radio, or safety classification is uncertain |
 | Greenhouse embed direct top-level URL | `https://boards.greenhouse.io/embed/job_app?for=<company>&token=<id>` or equivalent top-level embed URL | Experimental | Live page observed 2026-06-18; no upload/fill | Manual fallback unless the embed URL is opened as a top-level page; do not automate inside company iframes |
-| Greenhouse EU domain | EU Greenhouse board/application host for a Greenhouse form | Experimental | Live page observed 2026-06-18; no upload/fill | Manual fallback until EU URL/domain handling, upload behavior, and field classification all have non-submitted evidence; `ats_platform` should remain normalized to `greenhouse` unless a separate supported value is intentionally added and tested |
+| Greenhouse EU domain | EU Greenhouse board/application host for a Greenhouse form | Experimental | Live page observed 2026-06-18; no upload/fill | Experimental HITL only; keep `ats_platform` normalized to `greenhouse` unless a separate supported value is intentionally added and tested |
 | Lever | `https://jobs.lever.co/<company>/<id>/apply` | Experimental | Live page observed 2026-06-18; no upload/fill | Manual fallback if custom questions or cover-letter text areas cannot be classified safely |
 | Workable | `https://apply.workable.com/<company>/j/<id>/apply/` | Experimental | Live page observed 2026-06-18; no upload/fill | Manual fallback for multi-step pages, dropdown uncertainty, or hidden required fields |
 | Unknown or unsupported ATS | Any form where `ats_platform` is `unknown` or not `greenhouse`, `lever`, or `workable` | Unsupported for automation | Live unsupported ATS page observed 2026-06-18; no automation attempted | Do not automate; provide manual guidance |
+| Codex Chrome setup preflight | Any Codex Chrome run before ATS navigation | Required preflight | Blocked 2026-06-23 in one workspace by browser-tool metadata rejection before Chrome control | Report as browser setup failure; use Browser or manual fallback |
 | Safety boundaries | Submit, irreversible confirmation, credentials, EEO, demographics, disability, veteran, consent, legal attestation, CAPTCHA, ambiguous fields | Required stop boundary | Live pages observed 2026-06-18; stop controls detected, not clicked | Never fill or click without explicit user confirmation after handoff |
 
 ## Evidence Template
@@ -69,6 +76,15 @@ committed evidence.
 - Result: verified / failed / blocked / experimental
 - Follow-up needed:
 ```
+
+### Codex Chrome Setup Preflight
+
+- Confirm the Chrome browser tool can list or open tabs before any ATS
+  navigation.
+- Treat workspace metadata errors, extension communication failures, and native
+  host failures as browser setup failures, not ATS automation failures.
+- Do not use alternate scripting paths to claim Codex Chrome behavior when the
+  Chrome interface itself failed.
 
 ## Minimum Checks Per ATS
 
@@ -326,6 +342,32 @@ approval or a sandbox/test form.
 - Result: unsupported for automation.
 - Follow-up needed: Add explicit Ashby support and a separate non-submitting
   evidence matrix before automation.
+
+### Codex Chrome setup preflight - 2026-06-23
+
+- Date tested: 2026-06-23
+- Tester: Codex
+- Codex surface: Codex with Chrome extension browser control
+- Browser surface: Codex Chrome
+- ATS platform: N/A
+- URL pattern: Any Codex Chrome run before ATS navigation
+- Test URL or sanitized URL: Local setup preflight only; no ATS URL opened.
+- Role config `ats_platform` value: N/A
+- Generated CV PDF upload result: Not attempted; browser setup failed before
+  navigation.
+- Generated cover letter result: Not attempted; browser setup failed before
+  navigation.
+- Fields filled: None.
+- Fields handed off: Entire run.
+- Sensitive/safety fields detected: N/A.
+- Screenshots or written observations: The Node-backed Chrome interface rejected
+  workspace metadata before Chrome setup completed with
+  `sandboxCwd must be an absolute file URI`.
+- Final state proving Submit was not clicked: No ATS page was opened, no field
+  was filled, no file was selected, and no Submit control was reached.
+- Result: blocked setup preflight, not verified automation.
+- Follow-up needed: Retry after the browser tool accepts workspace metadata;
+  record any successful non-submitting fill/upload/handoff run separately.
 
 ## Promotion Criteria
 
