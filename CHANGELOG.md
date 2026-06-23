@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.2](https://github.com/nextwebb/career-agent/compare/v1.5.1...v1.5.2) (2026-06-23)
+
+
+### Fixes
+
+* **apply:** align CLAUDE.md storage policy and harden server lifecycle ([#127](https://github.com/nextwebb/career-agent/issues/127)) ([13b7625](https://github.com/nextwebb/career-agent/commit/13b7625031f88d0ad27e507c777c13b9e34cafb8))
+* **apply:** harden Greenhouse apply preflight and add dry-run ([#122](https://github.com/nextwebb/career-agent/issues/122)) ([0994779](https://github.com/nextwebb/career-agent/commit/09947792bf6290a6f2372c4c48206bfffacdc9ce))
+
 ## [1.5.1](https://github.com/nextwebb/career-agent/compare/v1.5.0...v1.5.1) (2026-06-22)
 
 
