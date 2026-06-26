@@ -13,6 +13,11 @@
   },
   "location": "Berlin, Germany",
   "relocation": "Open to EU/UK relocation with visa sponsorship",
+  "cv_display": {
+    "_comment": "Optional. Suppress display-only fields from generated PDFs without touching raw profile values used by ATS forms. Each flag must be a JSON boolean (true/false). Flags default to true if omitted.",
+    "show_location": true,
+    "show_phone": true
+  },
   "links": {
     "linkedin": "https://www.linkedin.com/in/janedoe/",
     "github": "https://github.com/janedoe",

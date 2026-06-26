@@ -15,6 +15,8 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer
 
+from cv_builder import resolve_cv_display
+
 DARK = colors.HexColor("#1a1a2e")
 GREY = colors.HexColor("#555566")
 LGREY = colors.HexColor("#888899")
@@ -92,8 +94,11 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
         return Spacer(1, n)
 
     # ── Build contact line ───────────────────────────────────────────────────
+    # Share cv_builder's resolver so any future cv_display flag (e.g. a new
+    # show_email) is honoured automatically — no per-builder bilateral edits.
+    cv_display = resolve_cv_display(profile)
     contact_parts = []
-    if profile.get("location"):
+    if cv_display["show_location"] and profile.get("location"):
         contact_parts.append(profile["location"])
     if profile.get("email"):
         contact_parts.append(

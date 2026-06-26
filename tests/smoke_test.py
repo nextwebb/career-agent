@@ -1410,6 +1410,92 @@ class TestPdfQualityGates:
         )
         assert _contains_placeholder(natural_prose) == []
 
+    @staticmethod
+    def _extract_pdf_text(pdf_path: Path) -> str:
+        pypdf = pytest.importorskip("pypdf")
+        return "\n".join(page.extract_text() or "" for page in pypdf.PdfReader(str(pdf_path)).pages)
+
+    def _render_with_profile_overrides(
+        self, tmp_path: Path, overrides: dict[str, Any]
+    ) -> tuple[dict[str, Any], Path, Path]:
+        pytest.importorskip("reportlab")
+        pytest.importorskip("pypdf")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cl_builder import build_cover_letter
+            from cv_builder import build_cv
+            from generate_application import prepare_generation_config
+
+            profile = self._load_fixture("tests/fixtures/non_pii/profile.synthetic.json")
+            profile.update(overrides)
+            role = self._load_fixture(
+                "tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json"
+            )
+            config = prepare_generation_config(profile, role)
+            cv_path = tmp_path / f"{config['output_prefix']}_CV.pdf"
+            cl_path = tmp_path / f"{config['output_prefix']}_CoverLetter.pdf"
+            build_cv(profile, config, str(cv_path))
+            build_cover_letter(profile, config, str(cl_path))
+            return profile, cv_path, cl_path
+        finally:
+            sys.path.pop(0)
+
+    def test_cv_display_show_location_false_hides_location_in_both_pdfs(self, tmp_path):
+        profile, cv_path, cl_path = self._render_with_profile_overrides(
+            tmp_path,
+            {
+                "cv_display": {
+                    "show_location": False,
+                    "show_phone": False,
+                }
+            },
+        )
+        location = profile["location"]
+        phone = profile["phone"]["formatted"].replace(" ", "")
+
+        cv_text = self._extract_pdf_text(cv_path)
+        cl_text = self._extract_pdf_text(cl_path)
+
+        assert location not in cv_text, "show_location=False should hide location from CV"
+        assert location not in cl_text, "show_location=False should hide location from cover letter"
+        assert phone not in cv_text.replace(" ", ""), "show_phone=False should hide phone from CV"
+
+    def test_cv_display_defaults_preserve_existing_behaviour(self, tmp_path):
+        # No cv_display block at all → location and phone render as before.
+        # Intentionally does not assert on `relocation`, which is the subject
+        # of a separate change (see #130 Gap 3) and would couple this test
+        # to the sibling PR's rebase order.
+        profile, cv_path, cl_path = self._render_with_profile_overrides(tmp_path, {})
+
+        cv_text = self._extract_pdf_text(cv_path)
+        cl_text = self._extract_pdf_text(cl_path)
+
+        assert profile["location"] in cv_text
+        assert profile["location"] in cl_text
+        assert profile["phone"]["formatted"].replace(" ", "") in cv_text.replace(" ", "")
+
+    def test_cv_display_warns_on_non_bool_flag_value(self, tmp_path, capsys):
+        # JSON typo like "show_phone": "false" (quoted string) must surface
+        # a warning so the user sees the field is still being rendered.
+        profile, cv_path, _ = self._render_with_profile_overrides(
+            tmp_path,
+            {"cv_display": {"show_phone": "false"}},
+        )
+        captured = capsys.readouterr()
+        assert "cv_display.show_phone" in captured.err
+        phone = profile["phone"]["formatted"].replace(" ", "")
+        cv_text = self._extract_pdf_text(cv_path)
+        # Treats the bad value as the safe default (True) so the field is rendered.
+        assert phone in cv_text.replace(" ", "")
+
+    def test_cv_display_non_dict_value_does_not_crash(self, tmp_path):
+        # A non-dict cv_display (e.g. accidental list/bool) must not raise.
+        profile, cv_path, _ = self._render_with_profile_overrides(
+            tmp_path,
+            {"cv_display": "yes"},
+        )
+        assert profile["location"] in self._extract_pdf_text(cv_path)
+
 
 class TestGitignore:
     """Validate .gitignore prevents committing PII."""
