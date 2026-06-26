@@ -24,6 +24,12 @@ PLACEHOLDER_PATTERNS = [
         r"overridden bullet",
         r"specific hook",
         r"fit with this specific JD",
+        # Anchored to the literal /new-role template stub
+        # ("Paragraph 2: relevant experience, concrete evidence..."). Catches
+        # the case where a user trims TODO/Paragraph N/ellipsis anchors but
+        # leaves the comma-joined hint phrase intact. Specific enough that it
+        # does not collide with normal CV/CL prose.
+        r"relevant experience,\s*concrete evidence",
         r"\.\.\.",
     ]
 ]

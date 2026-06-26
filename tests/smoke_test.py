@@ -1397,6 +1397,19 @@ class TestPdfQualityGates:
         jd_line = "and how this maps to the fit with this specific JD requirements."
         assert r"fit with this specific JD" in set(_contains_placeholder(jd_line))
 
+        # Partial edit of the /new-role Paragraph 2 stub: user removes TODO,
+        # the "Paragraph 2:" anchor, and the trailing ellipsis but keeps the
+        # comma-joined hint phrase intact. The anchored pattern still catches.
+        partial_edit = "relevant experience, concrete evidence"
+        partial_hits = set(_contains_placeholder(partial_edit))
+        assert r"relevant experience,\s*concrete evidence" in partial_hits
+
+        # And the same anchored pattern must NOT collide with normal CV prose.
+        natural_prose = (
+            "Brought relevant experience from fintech with concrete results in payments."
+        )
+        assert _contains_placeholder(natural_prose) == []
+
 
 class TestGitignore:
     """Validate .gitignore prevents committing PII."""
