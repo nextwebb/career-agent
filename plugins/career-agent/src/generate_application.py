@@ -81,16 +81,23 @@ def load_profile() -> dict[str, Any]:
         print(f"ERROR: {e}")
         sys.exit(1)
 
-    # Non-fatal nudge: relocation is ATS-only metadata, openness is the CV banner.
-    # When both are populated with similar text, the editor is likely confused
-    # about which field owns what — warn so they can deduplicate.
-    relocation = str(profile.get("relocation", "") or "").strip().lower()
-    openness = str(profile.get("openness", "") or "").strip().lower()
-    if relocation and openness and ("relocation" in relocation and "relocation" in openness):
+    # Non-fatal nudge: relocation is ATS-only metadata, openness is the CV
+    # banner. Only warn when the two fields are byte-for-byte identical after
+    # whitespace/case normalisation — substring heuristics fire on the
+    # documented profile.example.json and on every reasonable English
+    # phrasing that happens to mention "relocation", which is the opposite
+    # of helpful.
+    def _normalize(value: Any) -> str:
+        return " ".join(str(value or "").strip().lower().split())
+
+    relocation_norm = _normalize(profile.get("relocation"))
+    openness_norm = _normalize(profile.get("openness"))
+    if relocation_norm and openness_norm and relocation_norm == openness_norm:
         print(
-            "WARNING: profile.relocation and profile.openness both mention relocation. "
+            "WARNING: profile.relocation and profile.openness contain identical text. "
             "openness is the CV banner; relocation is ATS form metadata. "
-            "Consider deduplicating so the two fields have distinct purposes."
+            "Consider deduplicating so the two fields have distinct purposes.",
+            file=sys.stderr,
         )
 
     return profile
@@ -215,7 +222,10 @@ def prepare_generation_config(
     # Fall back to profile defaults if still missing
     prepared.setdefault("headline", profile.get("headline", ""))
     prepared.setdefault("summary", profile.get("summary", ""))
-    prepared.setdefault("openness", profile.get("openness", ""))
+    # openness migration: pre-#130 profiles stored relocation availability in
+    # `relocation`. Fall back to it so existing users do not silently lose
+    # their CV banner the first time they run on this version.
+    prepared.setdefault("openness", profile.get("openness") or profile.get("relocation") or "")
 
     prepared.setdefault("impact_statements", _resolve_impact_statements(profile, variant))
     prepared.setdefault("experience", _resolve_experience(profile, prepared))

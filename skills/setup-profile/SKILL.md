@@ -49,7 +49,8 @@ Extract the following from the CV or LinkedIn export:
 - Email address
 - Phone number (extract country code if present; default to `+1` only if location is clearly US/CA, otherwise leave blank and flag)
 - Location (city, country)
-- Relocation preference (infer from "open to relocation" language; leave blank if not stated)
+- Relocation preference (infer from "open to relocation" language; leave blank if not stated). This is ATS form metadata, not the CV banner — keep it factual ("Yes, willing to relocate" or similar).
+- Openness banner (shown under the headline on the generated CV). If the source mentions remote availability or relocation interest, summarise into a one-sentence banner; otherwise default to `"Open to fully remote roles globally and relocation for the right opportunity."`.
 - LinkedIn URL
 - GitHub URL
 - Personal website / portfolio URL
@@ -151,6 +152,7 @@ Write a complete, valid JSON file to `profile.json` in the project root. The fil
   "phone": { "country_code": "+X", "number": "...", "formatted": "+X..." },
   "location": "City, Country",
   "relocation": "...",
+  "openness": "Open to fully remote roles globally and relocation for the right opportunity.",
   "links": {
     "linkedin": "...",
     "github": "...",

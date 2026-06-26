@@ -73,7 +73,7 @@ Write `roles/<role_id>.json` using this template, filled with what you extracted
   "url": "<direct_application_url>",
   "ats_platform": "<greenhouse|lever|workable|unknown>",
   "variant": "<A|B|C>",
-  "openness": "Open to fully remote roles globally and relocation to <location> for the right opportunity.",
+  "openness": "Open to fully remote roles globally and relocation for the right opportunity.",
   "output_prefix": "<FirstName_LastName_Company_Role_YYYY-MM>",
   "custom_answers": {
     "hear_about_us": "LinkedIn",
@@ -98,7 +98,9 @@ Write `roles/<role_id>.json` using this template, filled with what you extracted
 }
 ```
 
-Use `profile.json` to fill `output_prefix` with the user's actual name. Pre-fill `openness` by substituting the job location for `<location>` so the CV banner is role-specific; leave the field as-is if no location was extractable. Users can edit the line after scaffolding, or omit it entirely to fall back to `profile.openness`.
+Use `profile.json` to fill `output_prefix` with the user's actual name.
+
+The scaffold seeds `openness` with the generic banner. Where the job is in a specific city or region, customise the line by editing the file (e.g. `"Open to fully remote roles in EU and relocation to Dublin for the right opportunity."`). Do not write literal placeholder tokens like `<location>` into the JSON — they will render verbatim on the CV banner with no quality gate to catch them. Removing the key entirely falls back to `profile.openness`.
 
 ### 6. Check for reading check phrases
 

@@ -1543,6 +1543,123 @@ class TestRoleConfigDefaults:
         prepared = self._prepare(profile, role)
         assert prepared["additional_experience"] == ["Earlier role A"]
 
+    def test_openness_falls_back_to_profile_relocation_during_migration(self):
+        # Pre-#130 profiles stored availability in `relocation` and had no
+        # `openness` key. The migration fallback must keep the CV banner
+        # populated so existing users do not silently lose information.
+        profile = self._load_synthetic_profile()
+        profile.pop("openness", None)
+        profile["relocation"] = "Open to UK relocation"
+        prepared = self._prepare(profile, {"variant": "C"})
+        assert prepared["openness"] == "Open to UK relocation"
+
+    def test_openness_empty_when_neither_profile_nor_relocation_set(self):
+        profile = self._load_synthetic_profile()
+        profile.pop("openness", None)
+        profile["relocation"] = ""
+        prepared = self._prepare(profile, {"variant": "C"})
+        assert prepared["openness"] == ""
+
+
+class TestRoleConfigValidation:
+    """Cover validate_role_config type checks for new keys."""
+
+    def _validate(self, data: dict[str, Any]) -> tuple[bool, list[str]]:
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from validation import validate_role_config
+
+            return validate_role_config(data)
+        finally:
+            sys.path.pop(0)
+
+    @staticmethod
+    def _minimal_role(**overrides: Any) -> dict[str, Any]:
+        base: dict[str, Any] = {
+            "role_id": "synth",
+            "company": "Synth Co",
+            "title": "Engineer",
+            "url": "https://example.com/jobs/synth",
+            "ats_platform": "unknown",
+            "variant": "C",
+            "output_prefix": "synth_output",
+        }
+        base.update(overrides)
+        return base
+
+    def test_openness_non_string_rejected(self):
+        is_valid, errors = self._validate(self._minimal_role(openness=42))
+        assert not is_valid
+        assert any("'openness' must be a string" in e for e in errors)
+
+    def test_openness_string_accepted(self):
+        is_valid, errors = self._validate(self._minimal_role(openness="banner"))
+        assert is_valid, errors
+
+    def test_additional_experience_non_list_rejected(self):
+        is_valid, errors = self._validate(self._minimal_role(additional_experience="not a list"))
+        assert not is_valid
+        assert any("'additional_experience' must be a list" in e for e in errors)
+
+    def test_additional_experience_non_string_element_rejected(self):
+        is_valid, errors = self._validate(self._minimal_role(additional_experience=["ok", 5]))
+        assert not is_valid
+        assert any("'additional_experience[1]' must be a string" in e for e in errors)
+
+
+class TestProfileOpennessRelocationWarning:
+    """Cover the load_profile non-fatal warning for duplicate relocation/openness."""
+
+    def _emit(self, profile_overrides: dict[str, Any], tmp_path: Path, capsys) -> str:
+        # Exercise the warning code path without re-running the whole CLI;
+        # we replicate the predicate by importing load_profile's helpers
+        # indirectly: write a minimal profile.json and call load_profile.
+        pytest.importorskip("reportlab")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from generate_application import load_profile
+
+            profile_path = tmp_path / "profile.json"
+            base = json.loads(
+                (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+            )
+            base.update(profile_overrides)
+            profile_path.write_text(json.dumps(base), encoding="utf-8")
+
+            import generate_application as ga
+
+            original_profile_path = ga.PROFILE_PATH
+            ga.PROFILE_PATH = profile_path
+            try:
+                load_profile()
+            finally:
+                ga.PROFILE_PATH = original_profile_path
+        finally:
+            sys.path.pop(0)
+        return capsys.readouterr().err
+
+    def test_warning_silent_for_example_profile_strings(self, tmp_path, capsys):
+        # The documented profile.example.json defaults differ in wording and
+        # must NOT trigger the warning (the prior substring heuristic did).
+        stderr = self._emit(
+            {
+                "relocation": "Open to EU/UK relocation with visa sponsorship",
+                "openness": "Open to fully remote roles globally and relocation for the right opportunity.",
+            },
+            tmp_path,
+            capsys,
+        )
+        assert "WARNING" not in stderr
+
+    def test_warning_fires_only_on_identical_text(self, tmp_path, capsys):
+        same = "Open to relocation for the right team"
+        stderr = self._emit(
+            {"relocation": same, "openness": same.upper() + "  "},
+            tmp_path,
+            capsys,
+        )
+        assert "profile.relocation and profile.openness contain identical text" in stderr
+
 
 class TestGitignore:
     """Validate .gitignore prevents committing PII."""

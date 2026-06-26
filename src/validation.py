@@ -274,6 +274,22 @@ def validate_role_config(data: dict, strict: bool = False) -> tuple[bool, list[s
     if "experience_overrides" in data and not isinstance(data["experience_overrides"], dict):
         errors.append("'experience_overrides' must be a dictionary")
 
+    # Validate openness if present — rendered verbatim into the CV banner,
+    # so a non-string value (or `None`) would crash reportlab Paragraph.
+    if "openness" in data and not isinstance(data["openness"], str):
+        errors.append("'openness' must be a string")
+
+    # Validate additional_experience if present — iterated as bullet lines by
+    # cv_builder; a string would render character-by-character, a None would
+    # raise on iteration if a future refactor drops the truthiness guard.
+    if "additional_experience" in data:
+        if not isinstance(data["additional_experience"], list):
+            errors.append("'additional_experience' must be a list (use [] to suppress)")
+        else:
+            for i, line in enumerate(data["additional_experience"]):
+                if not isinstance(line, str):
+                    errors.append(f"'additional_experience[{i}]' must be a string")
+
     return len(errors) == 0, errors
 
 
