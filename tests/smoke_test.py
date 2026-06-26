@@ -1381,12 +1381,21 @@ class TestPdfQualityGates:
         finally:
             sys.path.pop(0)
 
+        # Pin the specific patterns each line is expected to trip so that a
+        # future drop of one pattern doesn't degrade coverage silently while
+        # this test stays green via incidental matches from broader patterns.
         template_line = "TODO: Paragraph 3: fit with the JD requirements / relevant experience..."
-        hits = _contains_placeholder(template_line)
-        assert hits, "Template boilerplate must still trigger at least one placeholder pattern"
+        template_hits = set(_contains_placeholder(template_line))
+        assert r"\bTODO\b" in template_hits
+        assert r"paragraph\s+\d+" in template_hits
+        assert r"fit with this specific JD" not in template_hits  # sanity: substring only
 
         hook_line = "specific hook to the company and role..."
-        assert _contains_placeholder(hook_line)
+        hook_hits = set(_contains_placeholder(hook_line))
+        assert r"specific hook" in hook_hits
+
+        jd_line = "and how this maps to the fit with this specific JD requirements."
+        assert r"fit with this specific JD" in set(_contains_placeholder(jd_line))
 
 
 class TestGitignore:
