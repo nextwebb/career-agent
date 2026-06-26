@@ -23,7 +23,6 @@ PLACEHOLDER_PATTERNS = [
         r"paragraph\s+\d+",
         r"overridden bullet",
         r"specific hook",
-        r"relevant experience",
         r"fit with this specific JD",
         r"\.\.\.",
     ]

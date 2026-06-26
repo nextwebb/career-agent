@@ -1359,6 +1359,35 @@ class TestPdfQualityGates:
         assert "bullet_repetition" in warnings
         assert "impact_evidence_density" in warnings
 
+    def test_relevant_experience_prose_does_not_trigger_placeholder(self):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from quality_gates import _contains_placeholder
+        finally:
+            sys.path.pop(0)
+
+        natural_prose = (
+            "Brought relevant experience from fintech roles to architect the payment layer."
+        )
+        assert _contains_placeholder(natural_prose) == []
+
+        section_header = "Additional Relevant Experience"
+        assert _contains_placeholder(section_header) == []
+
+    def test_template_boilerplate_still_triggers_placeholder(self):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from quality_gates import _contains_placeholder
+        finally:
+            sys.path.pop(0)
+
+        template_line = "TODO: Paragraph 3: fit with the JD requirements / relevant experience..."
+        hits = _contains_placeholder(template_line)
+        assert hits, "Template boilerplate must still trigger at least one placeholder pattern"
+
+        hook_line = "specific hook to the company and role..."
+        assert _contains_placeholder(hook_line)
+
 
 class TestGitignore:
     """Validate .gitignore prevents committing PII."""
