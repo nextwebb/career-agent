@@ -81,6 +81,18 @@ def load_profile() -> dict[str, Any]:
         print(f"ERROR: {e}")
         sys.exit(1)
 
+    # Non-fatal nudge: relocation is ATS-only metadata, openness is the CV banner.
+    # When both are populated with similar text, the editor is likely confused
+    # about which field owns what — warn so they can deduplicate.
+    relocation = str(profile.get("relocation", "") or "").strip().lower()
+    openness = str(profile.get("openness", "") or "").strip().lower()
+    if relocation and openness and ("relocation" in relocation and "relocation" in openness):
+        print(
+            "WARNING: profile.relocation and profile.openness both mention relocation. "
+            "openness is the CV banner; relocation is ATS form metadata. "
+            "Consider deduplicating so the two fields have distinct purposes."
+        )
+
     return profile
 
 
@@ -203,10 +215,17 @@ def prepare_generation_config(
     # Fall back to profile defaults if still missing
     prepared.setdefault("headline", profile.get("headline", ""))
     prepared.setdefault("summary", profile.get("summary", ""))
+    prepared.setdefault("openness", profile.get("openness", ""))
 
     prepared.setdefault("impact_statements", _resolve_impact_statements(profile, variant))
     prepared.setdefault("experience", _resolve_experience(profile, prepared))
     prepared.setdefault("skills", profile.get("skills", []))
+
+    # Role config may set additional_experience: [] to suppress the
+    # "Additional Relevant Experience" section for a specific submission.
+    # setdefault preserves an explicit empty list, so the per-role suppress
+    # wins over a non-empty profile default.
+    prepared.setdefault("additional_experience", profile.get("additional_experience", []))
 
     return prepared
 

@@ -7,6 +7,10 @@
   "url": "https://stripe.com/jobs/listing/senior-backend-engineer/...",
   "ats_platform": "greenhouse",
   "variant": "C",
+  "openness": "Open to fully remote roles in Europe and relocation to Dublin for the right opportunity.",
+  "_openness_note": "Shown on the CV banner under the headline. Overrides profile.openness. Remove this key to inherit the profile-level default.",
+  "additional_experience": [],
+  "_additional_experience_note": "Set to [] to suppress the 'Additional Relevant Experience' section for this role (e.g. tight one-page submission). Remove the key entirely to inherit profile.additional_experience.",
   "output_prefix": "Jane_Doe_Stripe_Backend_2026-06",
   "custom_answers": {
     "hear_about_us": "LinkedIn",

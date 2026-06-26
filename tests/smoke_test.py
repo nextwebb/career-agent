@@ -1497,6 +1497,53 @@ class TestPdfQualityGates:
         assert profile["location"] in self._extract_pdf_text(cv_path)
 
 
+class TestRoleConfigDefaults:
+    """Cover prepare_generation_config inheritance for openness and additional_experience."""
+
+    @staticmethod
+    def _load_synthetic_profile() -> dict[str, Any]:
+        return json.loads(
+            (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+        )
+
+    def _prepare(self, profile: dict[str, Any], role: dict[str, Any]) -> dict[str, Any]:
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from generate_application import prepare_generation_config
+
+            return prepare_generation_config(profile, role, create_output_dir=False)
+        finally:
+            sys.path.pop(0)
+
+    def test_role_openness_overrides_profile_default(self):
+        profile = self._load_synthetic_profile()
+        profile["openness"] = "PROFILE_BANNER"
+        role = {"variant": "C", "openness": "ROLE_BANNER"}
+        prepared = self._prepare(profile, role)
+        assert prepared["openness"] == "ROLE_BANNER"
+
+    def test_profile_openness_used_when_role_omits_key(self):
+        profile = self._load_synthetic_profile()
+        profile["openness"] = "PROFILE_BANNER"
+        role = {"variant": "C"}
+        prepared = self._prepare(profile, role)
+        assert prepared["openness"] == "PROFILE_BANNER"
+
+    def test_role_additional_experience_empty_list_suppresses_profile_value(self):
+        profile = self._load_synthetic_profile()
+        profile["additional_experience"] = ["Earlier role A", "Earlier role B"]
+        role = {"variant": "C", "additional_experience": []}
+        prepared = self._prepare(profile, role)
+        assert prepared["additional_experience"] == []
+
+    def test_profile_additional_experience_inherited_when_role_omits_key(self):
+        profile = self._load_synthetic_profile()
+        profile["additional_experience"] = ["Earlier role A"]
+        role = {"variant": "C"}
+        prepared = self._prepare(profile, role)
+        assert prepared["additional_experience"] == ["Earlier role A"]
+
+
 class TestGitignore:
     """Validate .gitignore prevents committing PII."""
 
