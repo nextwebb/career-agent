@@ -1359,6 +1359,57 @@ class TestPdfQualityGates:
         assert "bullet_repetition" in warnings
         assert "impact_evidence_density" in warnings
 
+    def test_relevant_experience_prose_does_not_trigger_placeholder(self):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from quality_gates import _contains_placeholder
+        finally:
+            sys.path.pop(0)
+
+        natural_prose = (
+            "Brought relevant experience from fintech roles to architect the payment layer."
+        )
+        assert _contains_placeholder(natural_prose) == []
+
+        section_header = "Additional Relevant Experience"
+        assert _contains_placeholder(section_header) == []
+
+    def test_template_boilerplate_still_triggers_placeholder(self):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from quality_gates import _contains_placeholder
+        finally:
+            sys.path.pop(0)
+
+        # Pin the specific patterns each line is expected to trip so that a
+        # future drop of one pattern doesn't degrade coverage silently while
+        # this test stays green via incidental matches from broader patterns.
+        template_line = "TODO: Paragraph 3: fit with the JD requirements / relevant experience..."
+        template_hits = set(_contains_placeholder(template_line))
+        assert r"\bTODO\b" in template_hits
+        assert r"paragraph\s+\d+" in template_hits
+        assert r"fit with this specific JD" not in template_hits  # sanity: substring only
+
+        hook_line = "specific hook to the company and role..."
+        hook_hits = set(_contains_placeholder(hook_line))
+        assert r"specific hook" in hook_hits
+
+        jd_line = "and how this maps to the fit with this specific JD requirements."
+        assert r"fit with this specific JD" in set(_contains_placeholder(jd_line))
+
+        # Partial edit of the /new-role Paragraph 2 stub: user removes TODO,
+        # the "Paragraph 2:" anchor, and the trailing ellipsis but keeps the
+        # comma-joined hint phrase intact. The anchored pattern still catches.
+        partial_edit = "relevant experience, concrete evidence"
+        partial_hits = set(_contains_placeholder(partial_edit))
+        assert r"relevant experience,\s*concrete evidence" in partial_hits
+
+        # And the same anchored pattern must NOT collide with normal CV prose.
+        natural_prose = (
+            "Brought relevant experience from fintech with concrete results in payments."
+        )
+        assert _contains_placeholder(natural_prose) == []
+
 
 class TestGitignore:
     """Validate .gitignore prevents committing PII."""
