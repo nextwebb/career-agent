@@ -7,6 +7,8 @@ Usage:
     build_cv(profile, config, "/path/to/output.pdf")
 """
 
+import sys
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
@@ -34,6 +36,35 @@ def _get_phone(profile: dict) -> str:
     if isinstance(phone, dict):
         return str(phone.get("formatted") or phone.get("number") or "").strip()
     return str(phone).strip()
+
+
+CV_DISPLAY_FLAGS = ("show_location", "show_phone")
+
+
+def resolve_cv_display(profile: dict) -> dict[str, bool]:
+    """Return strict-boolean cv_display flags shared by both PDF builders.
+
+    Profiles without a cv_display block, with a non-dict value, or with a
+    non-bool flag value render unchanged (all flags True). Non-bool flag
+    values also emit a stderr warning so a JSON typo like
+    ``"show_phone": "false"`` does not silently leak the field.
+    """
+    raw = profile.get("cv_display")
+    if not isinstance(raw, dict):
+        return {flag: True for flag in CV_DISPLAY_FLAGS}
+    resolved: dict[str, bool] = {}
+    for flag in CV_DISPLAY_FLAGS:
+        value = raw.get(flag, True)
+        if isinstance(value, bool):
+            resolved[flag] = value
+        else:
+            print(
+                f"WARNING: profile.cv_display.{flag} must be a JSON boolean "
+                f"(true/false), not {type(value).__name__} {value!r}; treating as true.",
+                file=sys.stderr,
+            )
+            resolved[flag] = True
+    return resolved
 
 
 def _s(name, **kw):
@@ -140,24 +171,20 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         return Spacer(1, n)
 
     # ── Build contact line from profile ──────────────────────────────────────
-    # cv_display lets users suppress display-only fields (location, phone,
-    # relocation) from generated PDFs without touching the raw profile values
-    # used by ATS forms. All flags default to True so existing profiles are
-    # unaffected.
+    # cv_display lets users suppress display-only fields (location, phone)
+    # from generated PDFs without touching the raw profile values used by
+    # ATS forms. See resolve_cv_display for default semantics.
     links = profile.get("links", {})
-    cv_display = profile.get("cv_display", {}) or {}
-    show_location = cv_display.get("show_location", True)
-    show_phone = cv_display.get("show_phone", True)
-    show_relocation = cv_display.get("show_relocation", True)
+    cv_display = resolve_cv_display(profile)
     contact_parts = [
-        profile.get("location", "") if show_location else "",
-        profile.get("relocation", "") if show_relocation else "",
+        profile.get("location", "") if cv_display["show_location"] else "",
+        profile.get("relocation", ""),
     ]
     if profile.get("email"):
         contact_parts.append(
             f'<a href="mailto:{profile["email"]}" color="#2563eb">{profile["email"]}</a>'
         )
-    phone = _get_phone(profile) if show_phone else ""
+    phone = _get_phone(profile) if cv_display["show_phone"] else ""
     if phone:
         contact_parts.append(phone)
     if links.get("linkedin"):

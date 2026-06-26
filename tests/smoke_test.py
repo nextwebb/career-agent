@@ -1447,12 +1447,10 @@ class TestPdfQualityGates:
                 "cv_display": {
                     "show_location": False,
                     "show_phone": False,
-                    "show_relocation": False,
                 }
             },
         )
         location = profile["location"]
-        relocation = profile["relocation"]
         phone = profile["phone"]["formatted"].replace(" ", "")
 
         cv_text = self._extract_pdf_text(cv_path)
@@ -1460,11 +1458,13 @@ class TestPdfQualityGates:
 
         assert location not in cv_text, "show_location=False should hide location from CV"
         assert location not in cl_text, "show_location=False should hide location from cover letter"
-        assert relocation not in cv_text, "show_relocation=False should hide relocation from CV"
         assert phone not in cv_text.replace(" ", ""), "show_phone=False should hide phone from CV"
 
     def test_cv_display_defaults_preserve_existing_behaviour(self, tmp_path):
-        # No cv_display block at all → all fields render as before.
+        # No cv_display block at all → location and phone render as before.
+        # Intentionally does not assert on `relocation`, which is the subject
+        # of a separate change (see #130 Gap 3) and would couple this test
+        # to the sibling PR's rebase order.
         profile, cv_path, cl_path = self._render_with_profile_overrides(tmp_path, {})
 
         cv_text = self._extract_pdf_text(cv_path)
@@ -1472,8 +1472,29 @@ class TestPdfQualityGates:
 
         assert profile["location"] in cv_text
         assert profile["location"] in cl_text
-        assert profile["relocation"] in cv_text
         assert profile["phone"]["formatted"].replace(" ", "") in cv_text.replace(" ", "")
+
+    def test_cv_display_warns_on_non_bool_flag_value(self, tmp_path, capsys):
+        # JSON typo like "show_phone": "false" (quoted string) must surface
+        # a warning so the user sees the field is still being rendered.
+        profile, cv_path, _ = self._render_with_profile_overrides(
+            tmp_path,
+            {"cv_display": {"show_phone": "false"}},
+        )
+        captured = capsys.readouterr()
+        assert "cv_display.show_phone" in captured.err
+        phone = profile["phone"]["formatted"].replace(" ", "")
+        cv_text = self._extract_pdf_text(cv_path)
+        # Treats the bad value as the safe default (True) so the field is rendered.
+        assert phone in cv_text.replace(" ", "")
+
+    def test_cv_display_non_dict_value_does_not_crash(self, tmp_path):
+        # A non-dict cv_display (e.g. accidental list/bool) must not raise.
+        profile, cv_path, _ = self._render_with_profile_overrides(
+            tmp_path,
+            {"cv_display": "yes"},
+        )
+        assert profile["location"] in self._extract_pdf_text(cv_path)
 
 
 class TestGitignore:
