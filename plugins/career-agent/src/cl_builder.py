@@ -92,8 +92,13 @@ def build_cover_letter(profile: dict, config: dict, output_path: str) -> None:
         return Spacer(1, n)
 
     # ── Build contact line ───────────────────────────────────────────────────
+    # Mirror cv_builder.cv_display semantics so display-suppression toggles
+    # apply consistently across CV and cover letter. Defaults to True keeps
+    # behaviour unchanged for profiles without a cv_display block.
+    cv_display = profile.get("cv_display", {}) or {}
+    show_location = cv_display.get("show_location", True)
     contact_parts = []
-    if profile.get("location"):
+    if show_location and profile.get("location"):
         contact_parts.append(profile["location"])
     if profile.get("email"):
         contact_parts.append(

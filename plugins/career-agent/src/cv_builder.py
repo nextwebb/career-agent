@@ -140,16 +140,24 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         return Spacer(1, n)
 
     # ── Build contact line from profile ──────────────────────────────────────
+    # cv_display lets users suppress display-only fields (location, phone,
+    # relocation) from generated PDFs without touching the raw profile values
+    # used by ATS forms. All flags default to True so existing profiles are
+    # unaffected.
     links = profile.get("links", {})
+    cv_display = profile.get("cv_display", {}) or {}
+    show_location = cv_display.get("show_location", True)
+    show_phone = cv_display.get("show_phone", True)
+    show_relocation = cv_display.get("show_relocation", True)
     contact_parts = [
-        profile.get("location", ""),
-        profile.get("relocation", ""),
+        profile.get("location", "") if show_location else "",
+        profile.get("relocation", "") if show_relocation else "",
     ]
     if profile.get("email"):
         contact_parts.append(
             f'<a href="mailto:{profile["email"]}" color="#2563eb">{profile["email"]}</a>'
         )
-    phone = _get_phone(profile)
+    phone = _get_phone(profile) if show_phone else ""
     if phone:
         contact_parts.append(phone)
     if links.get("linkedin"):
