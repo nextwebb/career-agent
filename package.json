@@ -1,6 +1,6 @@
 {
   "name": "@nextwebb/career-agent",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "Agentic job application workflow for Claude Code and Codex — generate tailored CVs and hand off ATS forms safely",
   "private": false,
   "bin": {

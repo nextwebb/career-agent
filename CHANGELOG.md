@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.0](https://github.com/nextwebb/career-agent/compare/v1.5.2...v1.6.0) (2026-06-27)
+
+
+### Features
+
+* **dx:** scaffold openness, document additional_experience, separate display from ATS relocation ([#133](https://github.com/nextwebb/career-agent/issues/133)) ([ed920c1](https://github.com/nextwebb/career-agent/commit/ed920c132cc0dc1a04bf25b1cf3a26a80721b3ec))
+
+
+### Fixes
+
+* **cv-display:** honour show_location/show_phone/show_relocation in CV and cover letter ([#132](https://github.com/nextwebb/career-agent/issues/132)) ([c17c049](https://github.com/nextwebb/career-agent/commit/c17c049231c7d42ed6e996eae8146c98c78da2d5))
+* **quality-gates:** drop 'relevant experience' false-positive pattern ([#131](https://github.com/nextwebb/career-agent/issues/131)) ([4434286](https://github.com/nextwebb/career-agent/commit/44342868c0a6dd93f408d7b525f775379fa201fe))
+
 ## [1.5.2](https://github.com/nextwebb/career-agent/compare/v1.5.1...v1.5.2) (2026-06-23)
 
 
