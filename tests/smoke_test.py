@@ -1560,6 +1560,47 @@ class TestRoleConfigDefaults:
         prepared = self._prepare(profile, {"variant": "C"})
         assert prepared["openness"] == ""
 
+    def test_explicit_empty_profile_openness_suppresses_banner_not_relocation(self):
+        # Profile sets openness="" to suppress the banner. Must NOT fall
+        # through to profile.relocation even though "" is falsy in Python.
+        profile = self._load_synthetic_profile()
+        profile["openness"] = ""
+        profile["relocation"] = "Open to UK relocation"
+        prepared = self._prepare(profile, {"variant": "C"})
+        assert (
+            prepared["openness"] == ""
+        ), "Explicit empty openness should suppress banner; relocation must not be injected"
+
+
+class TestProfileAdditionalExperienceValidation:
+    """Cover validate_profile type checks for additional_experience."""
+
+    def _validate_profile(self, overrides: dict[str, Any]) -> tuple[bool, list[str]]:
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from validation import validate_profile
+
+            base = json.loads(
+                (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+            )
+            base.update(overrides)
+            return validate_profile(base)
+        finally:
+            sys.path.pop(0)
+
+    def test_additional_experience_string_rejected_at_profile_level(self):
+        is_valid, errors = self._validate_profile({"additional_experience": "consulting"})
+        assert not is_valid
+        assert any("'additional_experience' must be a list" in e for e in errors)
+
+    def test_additional_experience_valid_list_accepted(self):
+        is_valid, errors = self._validate_profile({"additional_experience": ["Earlier role"]})
+        assert is_valid, errors
+
+    def test_additional_experience_empty_list_accepted(self):
+        is_valid, errors = self._validate_profile({"additional_experience": []})
+        assert is_valid, errors
+
 
 class TestRoleConfigValidation:
     """Cover validate_role_config type checks for new keys."""

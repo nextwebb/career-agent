@@ -132,6 +132,17 @@ def validate_profile(data: dict, strict: bool = False) -> tuple[bool, list[str]]
             ):
                 errors.append("'yolo_mode.daily_cap' must be a positive integer")
 
+    # Validate additional_experience if present — inherited by role configs via
+    # prepare_generation_config; a string would be iterated character-by-character
+    # by cv_builder, producing a broken PDF section.
+    if "additional_experience" in data:
+        if not isinstance(data["additional_experience"], list):
+            errors.append("'additional_experience' must be a list (use [] to suppress)")
+        else:
+            for i, line in enumerate(data["additional_experience"]):
+                if not isinstance(line, str):
+                    errors.append(f"'additional_experience[{i}]' must be a string")
+
     # Validate impact_statements if present
     if "impact_statements" in data:
         if not isinstance(data["impact_statements"], dict):

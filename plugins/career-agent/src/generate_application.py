@@ -222,10 +222,16 @@ def prepare_generation_config(
     # Fall back to profile defaults if still missing
     prepared.setdefault("headline", profile.get("headline", ""))
     prepared.setdefault("summary", profile.get("summary", ""))
-    # openness migration: pre-#130 profiles stored relocation availability in
-    # `relocation`. Fall back to it so existing users do not silently lose
-    # their CV banner the first time they run on this version.
-    prepared.setdefault("openness", profile.get("openness") or profile.get("relocation") or "")
+    # openness resolution (only when role config omits the key):
+    # - Profile explicitly sets openness (even to "") → honour it, including
+    #   the empty-string case which suppresses the CV banner intentionally.
+    # - Profile has no openness key → fall back to relocation for migration
+    #   compat (pre-#130 profiles stored availability there).
+    if "openness" not in prepared:
+        if "openness" in profile:
+            prepared["openness"] = profile["openness"]
+        else:
+            prepared["openness"] = profile.get("relocation") or ""
 
     prepared.setdefault("impact_statements", _resolve_impact_statements(profile, variant))
     prepared.setdefault("experience", _resolve_experience(profile, prepared))
