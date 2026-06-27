@@ -13,6 +13,9 @@
   },
   "location": "Berlin, Germany",
   "relocation": "Open to EU/UK relocation with visa sponsorship",
+  "_relocation_note": "ATS metadata only. Used to answer 'are you open to relocation?' style form fields. Not shown on the CV; use 'openness' for the CV banner.",
+  "openness": "Open to fully remote roles globally and relocation for the right opportunity.",
+  "_openness_note": "Optional. Shown on the CV banner under the headline. Per-role roles/<id>.json can override. Leave empty to omit the banner entirely.",
   "cv_display": {
     "_comment": "Optional. Suppress display-only fields from generated PDFs without touching raw profile values used by ATS forms. Each flag must be a JSON boolean (true/false). Flags default to true if omitted.",
     "show_location": true,

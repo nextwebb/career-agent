@@ -88,7 +88,8 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         name            str   Full name
         email           str
         location        str   e.g. "Lagos, Nigeria"
-        relocation      str   e.g. "Open to EU / UK / US relocation"
+        openness        str   Banner line shown under headline (per-role override
+                              wins; ATS-only data lives in `relocation`).
         links           dict  {linkedin, github, website, blog}
         education       list[str]   Degree lines
         certifications  list[str]   Certification lines (optional)
@@ -97,7 +98,7 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         company                  str
         title                    str
         headline                 str   Subtitle line under name
-        openness                 str   Availability line (optional)
+        openness                 str   Availability line (optional, overrides profile.openness)
         summary                  str   HTML-safe summary paragraph
         skills                   list[{label, items}]
         experience               list[{title, company_line, client_line?, bullets: list[str]}]
@@ -174,11 +175,12 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     # cv_display lets users suppress display-only fields (location, phone)
     # from generated PDFs without touching the raw profile values used by
     # ATS forms. See resolve_cv_display for default semantics.
+    # profile.relocation is ATS metadata only; the CV banner uses config.openness
+    # (per-role) or profile.openness (default) instead.
     links = profile.get("links", {})
     cv_display = resolve_cv_display(profile)
     contact_parts = [
         profile.get("location", "") if cv_display["show_location"] else "",
-        profile.get("relocation", ""),
     ]
     if profile.get("email"):
         contact_parts.append(
@@ -201,15 +203,16 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     story = []
 
     # ── Header ───────────────────────────────────────────────────────────────
+    # openness defaults to "" — prepare_generation_config fills it from
+    # profile.openness, and a per-role roles/<id>.json can override.
     story += [
         Paragraph(full_name, NAME),
         Paragraph(config["headline"], ROLETITLE),
-        Paragraph(
-            config.get(
-                "openness", "Open to fully remote roles globally and relocation for the right team."
-            ),
-            OPENNESS,
-        ),
+    ]
+    openness_text = config.get("openness", "") or ""
+    if openness_text:
+        story.append(Paragraph(openness_text, OPENNESS))
+    story += [
         Paragraph(contact_line, CONTACT),
         sp(10),
     ]

@@ -21,6 +21,11 @@ In Codex, invoke this skill with `$generate-cv`, the skills/plugin selector, or 
 
 `role_id`: matches a filename under `roles/<role_id>.json`. If not provided, list available role IDs from the `roles/` directory and ask the user to pick one.
 
+## Role config keys (rendering behaviour)
+
+- `openness` *(optional)* — banner line shown under the headline. Overrides `profile.openness`. Omit the key entirely to inherit the profile-level default; set to `""` to suppress the banner for this role.
+- `additional_experience` *(optional)* — list of one-line summaries for older/minor roles. Set to `[]` to suppress the "Additional Relevant Experience" section for this specific role even when `profile.additional_experience` has entries; omit the key entirely to inherit the profile list.
+
 ## Steps
 
 ### 1. Load data
