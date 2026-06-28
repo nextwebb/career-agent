@@ -49,6 +49,10 @@ class UnsupportedPlatformError(PreApplyError):
     """Raised when the ATS platform has no verified confirmation pattern."""
 
 
+class LocationEligibilityError(PreApplyError):
+    """Raised when the role's location/eligibility requirement does not match the profile."""
+
+
 # ---------------------------------------------------------------------------
 # Confirmation pattern registry
 # ---------------------------------------------------------------------------
@@ -158,6 +162,47 @@ def check_platform_supported(
         )
 
 
+def check_location_eligibility(
+    role_config: dict,
+    profile: dict,
+    force_location: bool = False,
+) -> None:
+    """
+    FAIL if the role's location or right-to-work restriction does not match
+    the profile's work-authorization countries.
+
+    Reads role_config fields: "location" and/or "right_to_work".
+    Reads profile fields: profile["work_authorization"]["countries"] (list of country codes/names).
+
+    If force_location is True, logs a warning and returns without raising.
+    """
+    if force_location:
+        return  # explicit override — log warning in caller
+
+    # Read restriction from role config
+    restriction = role_config.get("right_to_work", "") or role_config.get("location", "")
+    if not restriction:
+        return  # no restriction specified — pass
+
+    # Read authorized countries from profile
+    work_auth = profile.get("work_authorization", {})
+    authorized = work_auth.get("countries", [])
+    if not authorized:
+        return  # no work-auth data in profile — skip (don't block on missing data)
+
+    # Check if any authorized country appears in the restriction string
+    restriction_lower = restriction.lower()
+    for country in authorized:
+        if country.lower() in restriction_lower:
+            return  # match found — allowed
+
+    # No match
+    raise LocationEligibilityError(
+        f"Role location restriction '{restriction}' does not match profile "
+        f"work-authorization: {authorized}. Use --force-location to override."
+    )
+
+
 def check_confirmation_pattern(
     ats_platform: str,
     final_url: str,
@@ -216,6 +261,9 @@ def run_pre_apply_checks(
     tracker_path: Path,
     registry_path: Path | None = None,
     autonomous: bool = False,
+    role_config: dict | None = None,
+    profile: dict | None = None,
+    force_location: bool = False,
 ) -> None:
     """
     Run all pre-apply gates in sequence. Raises PreApplyError on first failure.
@@ -223,12 +271,16 @@ def run_pre_apply_checks(
     Gates run in this order (fail-fast):
     1. Duplicate check — catches already-applied roles
     2. Artifacts exist — catches missing or corrupt PDFs
-    3. Platform supported — blocks autonomous mode on unverified ATS (HITL: warning only)
+    3. Location eligibility — blocks roles with mismatched location/right-to-work
+    4. Platform supported — blocks autonomous mode on unverified ATS (HITL: warning only)
 
     All gates must pass before browser automation starts.
     """
     check_duplicate(job_url, tracker_path)
     check_artifacts_exist(output_prefix, generated_dir)
+
+    if role_config is not None and profile is not None:
+        check_location_eligibility(role_config, profile, force_location=force_location)
 
     if autonomous:
         if ats_platform in ("unknown", ""):
