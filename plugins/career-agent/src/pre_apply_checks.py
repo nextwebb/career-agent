@@ -92,6 +92,8 @@ def check_duplicate(job_url: str, tracker_path: Path) -> None:
             continue
         if _normalise_url(entry_url) == normalised:
             status = entry.get("status", "unknown")
+            if status in ("failed", "autonomous_failed"):
+                continue  # known failure — allow retry
             company = entry.get("company", "unknown")
             role_id = entry.get("role_id", "unknown")
             raise DuplicateApplicationError(

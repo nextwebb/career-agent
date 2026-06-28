@@ -97,8 +97,7 @@ def check_duplicate(job_url: str, tracker_path: Path) -> None:
             company = entry.get("company", "unknown")
             role_id = entry.get("role_id", "unknown")
             raise DuplicateApplicationError(
-                f"Already tracked: {company} ({role_id}) with status '{status}'. "
-                f"URL: {job_url}"
+                f"Already tracked: {company} ({role_id}) with status '{status}'. " f"URL: {job_url}"
             )
 
 

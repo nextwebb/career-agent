@@ -35,8 +35,45 @@ STATUSES = [
     "withdrawn",
     "autonomous_submitted",
     "autonomous_ambiguous",
+    "submitted_unconfirmed",
     "autonomous_failed",
 ]
+
+
+def mark_submitted_unconfirmed(
+    role_id: str,
+    job_url: str,
+    company: str = "",
+    title: str = "",
+    tracker_path: Path = TRACKER_PATH,
+) -> None:
+    """Write a provisional tracker entry immediately before Submit.
+
+    Step F updates the status to autonomous_submitted or autonomous_failed.
+    check_duplicate() will block a re-run on this URL until the entry is
+    explicitly failed/autonomous_failed.
+    """
+    if tracker_path.exists():
+        with open(tracker_path, encoding="utf-8") as f:
+            entries: list[dict] = json.load(f)
+    else:
+        entries = []
+
+    entry = {
+        "role_id": role_id,
+        "company": company,
+        "title": title,
+        "url": job_url,
+        "status": "submitted_unconfirmed",
+        "added": str(date.today()),
+        "applied": str(date.today()),
+        "last_update": str(date.today()),
+        "notes": [],
+    }
+    entries.append(entry)
+    tracker_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(tracker_path, "w", encoding="utf-8") as f:
+        json.dump(entries, f, indent=2)
 
 
 def load() -> list[Any]:

@@ -33,17 +33,25 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+import tracker as tracker_module
+
 
 def main() -> int:
-    if len(sys.argv) != 5:
+    if len(sys.argv) not in (5, 6):
         print(
             "Usage: record_submission.py <manifest_or_role_id> "
-            "<ats:job_url> <approval_text> <output_path>",
+            "<ats:job_url> <approval_text> <output_path> [tracker_path]",
             file=sys.stderr,
         )
         return 1
 
-    _, manifest_or_role_id, submission_target, approval_text, output_path_str = sys.argv
+    args = sys.argv[1:]
+    manifest_or_role_id = args[0]
+    submission_target = args[1]
+    approval_text = args[2]
+    output_path_str = args[3]
+    tracker_path_str = args[4] if len(args) == 5 else None
 
     if len(approval_text) < 8:
         print(
@@ -75,6 +83,15 @@ def main() -> int:
     else:
         ats_part = "unknown"
         url_part = submission_target
+
+    # Write provisional tracker entry before Submit so crash-between-submit-and-tracker
+    # is visible to duplicate detection on next run (issue #135).
+    if tracker_path_str is not None:
+        tracker_module.mark_submitted_unconfirmed(
+            role_id=str(manifest_or_role_id),
+            job_url=url_part,
+            tracker_path=Path(tracker_path_str),
+        )
 
     log: dict = {
         "schema_version": "1",

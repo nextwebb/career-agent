@@ -200,16 +200,22 @@ class TestDuplicateDetection:
 
     def test_submitted_unconfirmed_blocks_resubmission(self, tmp_path):
         tracker = tmp_path / "tracker.json"
-        tracker.write_text(json.dumps([{
-            "role_id": "stripe_backend",
-            "company": "Stripe",
-            "url": "https://jobs.lever.co/stripe/abc123/apply",
-            "status": "submitted_unconfirmed",
-            "added": "2026-06-28",
-            "applied": "2026-06-28",
-            "last_update": "2026-06-28",
-            "notes": [],
-        }]))
+        tracker.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "stripe_backend",
+                        "company": "Stripe",
+                        "url": "https://jobs.lever.co/stripe/abc123/apply",
+                        "status": "submitted_unconfirmed",
+                        "added": "2026-06-28",
+                        "applied": "2026-06-28",
+                        "last_update": "2026-06-28",
+                        "notes": [],
+                    }
+                ]
+            )
+        )
         with pytest.raises(DuplicateApplicationError):
             check_duplicate(
                 job_url="https://jobs.lever.co/stripe/abc123/apply",
@@ -218,16 +224,22 @@ class TestDuplicateDetection:
 
     def test_autonomous_failed_allows_retry(self, tmp_path):
         tracker = tmp_path / "tracker.json"
-        tracker.write_text(json.dumps([{
-            "role_id": "stripe_backend",
-            "company": "Stripe",
-            "url": "https://jobs.lever.co/stripe/abc123/apply",
-            "status": "autonomous_failed",
-            "added": "2026-06-28",
-            "applied": None,
-            "last_update": "2026-06-28",
-            "notes": [],
-        }]))
+        tracker.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "stripe_backend",
+                        "company": "Stripe",
+                        "url": "https://jobs.lever.co/stripe/abc123/apply",
+                        "status": "autonomous_failed",
+                        "added": "2026-06-28",
+                        "applied": None,
+                        "last_update": "2026-06-28",
+                        "notes": [],
+                    }
+                ]
+            )
+        )
         # Must NOT raise — autonomous_failed means the submission didn't go through
         check_duplicate(
             job_url="https://jobs.lever.co/stripe/abc123/apply",
@@ -236,16 +248,22 @@ class TestDuplicateDetection:
 
     def test_failed_allows_retry(self, tmp_path):
         tracker = tmp_path / "tracker.json"
-        tracker.write_text(json.dumps([{
-            "role_id": "stripe_backend",
-            "company": "Stripe",
-            "url": "https://jobs.lever.co/stripe/abc123/apply",
-            "status": "failed",
-            "added": "2026-06-28",
-            "applied": None,
-            "last_update": "2026-06-28",
-            "notes": [],
-        }]))
+        tracker.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "stripe_backend",
+                        "company": "Stripe",
+                        "url": "https://jobs.lever.co/stripe/abc123/apply",
+                        "status": "failed",
+                        "added": "2026-06-28",
+                        "applied": None,
+                        "last_update": "2026-06-28",
+                        "notes": [],
+                    }
+                ]
+            )
+        )
         check_duplicate(
             job_url="https://jobs.lever.co/stripe/abc123/apply",
             tracker_path=tracker,
