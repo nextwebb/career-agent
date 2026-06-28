@@ -366,18 +366,44 @@ class TestConfirmationPatternClassification:
 class TestLocationEligibilityGate:
     def test_matching_location_passes(self):
         role_config = {"right_to_work": "Netherlands only"}
-        profile = {"work_authorization": {"countries": ["Netherlands", "Germany"]}}
+        profile = {"eeo": {"current_right_to_work": ["Netherlands", "Germany"]}}
         check_location_eligibility(role_config, profile)  # must not raise
 
     def test_mismatched_location_blocks(self):
         role_config = {"right_to_work": "UK only"}
-        profile = {"work_authorization": {"countries": ["Netherlands"]}}
+        profile = {"eeo": {"current_right_to_work": ["Netherlands"]}}
         with pytest.raises(LocationEligibilityError, match="UK only"):
             check_location_eligibility(role_config, profile)
 
+    def test_reads_eeo_current_right_to_work_and_blocks_mismatch(self):
+        """Gate reads profile.eeo.current_right_to_work (the real schema)."""
+        role_config = {"right_to_work": "UK only"}
+        profile = {"eeo": {"current_right_to_work": ["Nigeria"]}}
+        with pytest.raises(LocationEligibilityError, match="UK only"):
+            check_location_eligibility(role_config, profile)
+
+    def test_reads_jobqa_work_authorization_fallback(self):
+        """Falls back to the jobqa-built work_authorization.current_right_to_work shape."""
+        role_config = {"right_to_work": "Germany only"}
+        profile = {"work_authorization": {"current_right_to_work": ["Germany"]}}
+        check_location_eligibility(role_config, profile)  # must not raise
+
+    def test_token_match_avoids_substring_false_pass(self):
+        """'US' must NOT match 'Australia only' (substring 'us' inside 'australia')."""
+        role_config = {"right_to_work": "Australia only"}
+        profile = {"eeo": {"current_right_to_work": ["US"]}}
+        with pytest.raises(LocationEligibilityError, match="Australia only"):
+            check_location_eligibility(role_config, profile)
+
+    def test_country_alias_matches(self):
+        """'US' (authorized) matches a 'United States' restriction via alias map."""
+        role_config = {"right_to_work": "United States only"}
+        profile = {"eeo": {"current_right_to_work": ["US"]}}
+        check_location_eligibility(role_config, profile)  # must not raise
+
     def test_no_restriction_passes(self):
         role_config = {"title": "Backend Engineer"}
-        profile = {"work_authorization": {"countries": ["Netherlands"]}}
+        profile = {"eeo": {"current_right_to_work": ["Netherlands"]}}
         check_location_eligibility(role_config, profile)  # no restriction — must not raise
 
     def test_no_work_auth_in_profile_passes(self):
@@ -388,7 +414,7 @@ class TestLocationEligibilityGate:
 
     def test_force_location_bypasses_block(self):
         role_config = {"right_to_work": "UK only"}
-        profile = {"work_authorization": {"countries": ["Netherlands"]}}
+        profile = {"eeo": {"current_right_to_work": ["Netherlands"]}}
         check_location_eligibility(role_config, profile, force_location=True)  # must not raise
 
 
@@ -525,6 +551,29 @@ class TestCompositeGate:
             registry_path=confirmation_registry,
             autonomous=True,
         )  # must not raise
+
+    def test_location_gate_invoked_when_role_config_and_profile_passed(
+        self,
+        empty_tracker: Path,
+        generated_dir_with_pdfs: Path,
+        confirmation_registry: Path,
+    ):
+        """
+        run_pre_apply_checks must actually invoke the location gate when both
+        role_config and profile are supplied — a mismatched right-to-work blocks.
+        """
+        with pytest.raises(LocationEligibilityError, match="UK only"):
+            run_pre_apply_checks(
+                role_id="stripe_backend_2026",
+                job_url="https://jobs.lever.co/stripe/abc123/apply",
+                ats_platform="lever",
+                output_prefix="TestCo_SeniorBackend",
+                generated_dir=generated_dir_with_pdfs,
+                tracker_path=empty_tracker,
+                registry_path=confirmation_registry,
+                role_config={"right_to_work": "UK only"},
+                profile={"eeo": {"current_right_to_work": ["Nigeria"]}},
+            )
 
 
 # ---------------------------------------------------------------------------

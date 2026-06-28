@@ -416,11 +416,19 @@ Call `src/yolo.py:is_yolo_enabled(profile)`. If it returns `False` (key mismatch
 
 ### Step B — Pre-apply gates (autonomous mode)
 
-Run gates 1-2 using `run_pre_apply_checks(autonomous=True)`:
+Using the `profile` and `role_config` already loaded in Step 1 (`profile.json` and
+`roles/<role_id>.json`), run the gates via
+`run_pre_apply_checks(autonomous=True, role_config=role_config, profile=profile)`:
 1. `check_duplicate()` -- halt: `DUPLICATE`
 2. `check_artifacts_exist()` + `check_platform_supported()` -- halt: `PLATFORM_CHECK_FAILED`
+3. `check_location_eligibility()` -- halt: `LOCATION_INELIGIBLE`
 
-If either fails, fall to HITL.
+`role_config` and `profile` must be passed in; the location gate is skipped when either is
+omitted, so without them the role's `right_to_work`/`location` restriction is never enforced in
+the autonomous path. To intentionally bypass a known-good location override, pass
+`force_location=True`.
+
+If any fails, fall to HITL.
 
 Then run the yolo gate battery via `src/yolo.py:run_yolo_gates(profile, role_config, workspace_dir, tracker_path)`:
 

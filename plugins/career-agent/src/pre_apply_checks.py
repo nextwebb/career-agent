@@ -25,6 +25,7 @@ Usage (from the apply skill or CLI):
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -162,6 +163,44 @@ def check_platform_supported(
         )
 
 
+# Country alias groups: each entry maps equivalent names/codes to one another so
+# that an authorized "US" matches a restriction that says "United States" (and vice
+# versa). Comparison is case-insensitive against the normalised tokens.
+_COUNTRY_ALIASES: list[set[str]] = [
+    {"us", "usa", "united states", "united states of america", "america"},
+    {"uk", "united kingdom", "great britain", "britain", "gb"},
+    {"uae", "united arab emirates"},
+]
+
+
+def _location_aliases(token: str) -> set[str]:
+    """Return the set of equivalent names/codes for a country token (incl. itself)."""
+    token = token.strip().lower()
+    if not token:
+        return set()
+    for group in _COUNTRY_ALIASES:
+        if token in group:
+            return set(group)
+    return {token}
+
+
+def _restriction_tokens(restriction: str) -> set[str]:
+    """
+    Tokenise a restriction string for whole-token country matching.
+
+    Produces both single-word tokens (split on non-alphanumeric boundaries) and a
+    set of multi-word substrings so multi-word country names like "united states"
+    still match. Everything is lowercased.
+    """
+    words = [w for w in re.split(r"[^a-z0-9]+", restriction.lower()) if w]
+    tokens: set[str] = set(words)
+    # Add adjacent word pairs/triples so multi-word aliases match (e.g. "united states").
+    for n in (2, 3):
+        for i in range(len(words) - n + 1):
+            tokens.add(" ".join(words[i : i + n]))
+    return tokens
+
+
 def check_location_eligibility(
     role_config: dict,
     profile: dict,
@@ -169,10 +208,17 @@ def check_location_eligibility(
 ) -> None:
     """
     FAIL if the role's location or right-to-work restriction does not match
-    the profile's work-authorization countries.
+    the profile's authorized work countries.
 
-    Reads role_config fields: "location" and/or "right_to_work".
-    Reads profile fields: profile["work_authorization"]["countries"] (list of country codes/names).
+    Reads role_config fields: "right_to_work" and/or "location".
+    Reads authorized countries from the profile's EEO work-authorization schema:
+    profile["eeo"]["current_right_to_work"] (a list of country names/codes), with a
+    fallback to profile["work_authorization"]["current_right_to_work"] for the shape
+    built by src/jobqa_workspace.py:_build_candidate.
+
+    Matching is done on whole, case-insensitive tokens (with a small alias map for
+    common code/name pairs like US/USA/"United States"), so a substring like "us"
+    in "Australia only" does NOT count as a match.
 
     If force_location is True, logs a warning and returns without raising.
     """
@@ -184,16 +230,21 @@ def check_location_eligibility(
     if not restriction:
         return  # no restriction specified — pass
 
-    # Read authorized countries from profile
-    work_auth = profile.get("work_authorization", {})
-    authorized = work_auth.get("countries", [])
+    # Read authorized countries from the real profile schema (profile.eeo), falling
+    # back to the jobqa-built work_authorization shape. Both use current_right_to_work.
+    eeo = profile.get("eeo", {})
+    authorized = eeo.get("current_right_to_work")
+    if not authorized:
+        work_auth = profile.get("work_authorization", {})
+        authorized = work_auth.get("current_right_to_work", [])
     if not authorized:
         return  # no work-auth data in profile — skip (don't block on missing data)
 
-    # Check if any authorized country appears in the restriction string
-    restriction_lower = restriction.lower()
+    # Whole-token match: tokenise the restriction and compare against each
+    # authorized country (and its aliases) by exact token equality.
+    restriction_tokens = _restriction_tokens(restriction)
     for country in authorized:
-        if country.lower() in restriction_lower:
+        if _location_aliases(country) & restriction_tokens:
             return  # match found — allowed
 
     # No match
