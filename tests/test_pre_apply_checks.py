@@ -33,11 +33,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from pre_apply_checks import (
     DuplicateApplicationError,
+    LocationEligibilityError,
     MissingArtifactsError,
     UnsupportedPlatformError,
     check_artifacts_exist,
     check_confirmation_pattern,
     check_duplicate,
+    check_location_eligibility,
     check_platform_supported,
     run_pre_apply_checks,
 )
@@ -354,6 +356,40 @@ class TestConfirmationPatternClassification:
             registry_path=confirmation_registry,
         )
         assert result == "ambiguous"
+
+
+# ---------------------------------------------------------------------------
+# Location eligibility gate
+# ---------------------------------------------------------------------------
+
+
+class TestLocationEligibilityGate:
+    def test_matching_location_passes(self):
+        role_config = {"right_to_work": "Netherlands only"}
+        profile = {"work_authorization": {"countries": ["Netherlands", "Germany"]}}
+        check_location_eligibility(role_config, profile)  # must not raise
+
+    def test_mismatched_location_blocks(self):
+        role_config = {"right_to_work": "UK only"}
+        profile = {"work_authorization": {"countries": ["Netherlands"]}}
+        with pytest.raises(LocationEligibilityError, match="UK only"):
+            check_location_eligibility(role_config, profile)
+
+    def test_no_restriction_passes(self):
+        role_config = {"title": "Backend Engineer"}
+        profile = {"work_authorization": {"countries": ["Netherlands"]}}
+        check_location_eligibility(role_config, profile)  # no restriction — must not raise
+
+    def test_no_work_auth_in_profile_passes(self):
+        """Missing work_auth data in profile: gate skips (fail-open on missing data)."""
+        role_config = {"right_to_work": "UK only"}
+        profile = {}
+        check_location_eligibility(role_config, profile)  # must not raise
+
+    def test_force_location_bypasses_block(self):
+        role_config = {"right_to_work": "UK only"}
+        profile = {"work_authorization": {"countries": ["Netherlands"]}}
+        check_location_eligibility(role_config, profile, force_location=True)  # must not raise
 
 
 # ---------------------------------------------------------------------------
