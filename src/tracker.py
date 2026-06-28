@@ -40,6 +40,22 @@ STATUSES = [
 ]
 
 
+def _normalise_url(url: str) -> str:
+    """Normalise a URL for matching, consistent with pre_apply_checks.check_duplicate.
+
+    Strips trailing slashes and lowercases scheme + host; preserves path case.
+    """
+    url = (url or "").strip()
+    if "://" in url:
+        scheme, rest = url.split("://", 1)
+        if "/" in rest:
+            host, path = rest.split("/", 1)
+            url = f"{scheme.lower()}://{host.lower()}/{path}"
+        else:
+            url = f"{scheme.lower()}://{rest.lower()}"
+    return url.rstrip("/")
+
+
 def mark_submitted_unconfirmed(
     role_id: str,
     job_url: str,
@@ -59,15 +75,41 @@ def mark_submitted_unconfirmed(
     else:
         entries = []
 
+    today = str(date.today())
+
+    # Upsert: if a row already exists for this role (or the same URL), update it
+    # in place so update_status() later transitions THE SAME row. Appending a new
+    # row would leave a stale submitted_unconfirmed duplicate that check_duplicate
+    # keeps blocking even after a post-submit autonomous_failed update (issue #135).
+    normalised_url = _normalise_url(job_url)
+    for existing in entries:
+        if existing.get("role_id") == role_id or (
+            job_url and _normalise_url(existing.get("url", "")) == normalised_url
+        ):
+            existing["url"] = job_url
+            existing["status"] = "submitted_unconfirmed"
+            existing["applied"] = today
+            existing["last_update"] = today
+            if company:
+                existing["company"] = company
+            if title:
+                existing["title"] = title
+            existing.setdefault("added", today)
+            existing.setdefault("notes", [])
+            tracker_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(tracker_path, "w", encoding="utf-8") as f:
+                json.dump(entries, f, indent=2)
+            return
+
     entry = {
         "role_id": role_id,
         "company": company,
         "title": title,
         "url": job_url,
         "status": "submitted_unconfirmed",
-        "added": str(date.today()),
-        "applied": str(date.today()),
-        "last_update": str(date.today()),
+        "added": today,
+        "applied": today,
+        "last_update": today,
         "notes": [],
     }
     entries.append(entry)

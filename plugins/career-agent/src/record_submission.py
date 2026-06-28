@@ -37,6 +37,27 @@ sys.path.insert(0, str(Path(__file__).parent))
 import tracker as tracker_module
 
 
+def _extract_role_id(manifest_data: dict) -> str:
+    """Pull the role_id out of a jobqa manifest.
+
+    The manifest may expose role_id at the top level or nested under a
+    "role" / "role_intake" object (the jobqa workspace role.json uses "role_id").
+    Returns "" if no role_id is found.
+    """
+    if not isinstance(manifest_data, dict):
+        return ""
+    role_id = manifest_data.get("role_id")
+    if isinstance(role_id, str) and role_id:
+        return role_id
+    for key in ("role", "role_intake"):
+        nested = manifest_data.get(key)
+        if isinstance(nested, dict):
+            nested_id = nested.get("role_id")
+            if isinstance(nested_id, str) and nested_id:
+                return nested_id
+    return ""
+
+
 def main() -> int:
     if len(sys.argv) not in (5, 6):
         print(
@@ -66,12 +87,24 @@ def main() -> int:
     # Parse manifest if it's a file path; otherwise treat as role_id string
     manifest_data: dict = {}
     manifest_path = Path(manifest_or_role_id)
+    parsed_from_manifest = False
     if manifest_path.exists() and manifest_path.suffix == ".json":
         try:
             with open(manifest_path, encoding="utf-8") as f:
                 manifest_data = json.load(f)
+            parsed_from_manifest = True
         except (json.JSONDecodeError, OSError):
             pass  # non-fatal — log still writes
+
+    # Derive the REAL role_id so post-submit update_status(role_id, ...) can
+    # transition the provisional submitted_unconfirmed row. When the first arg is
+    # a manifest PATH, the role_id lives inside the manifest JSON (the jobqa
+    # workspace stores it as "role_id", possibly nested under "role"/"role_intake");
+    # using the path itself would orphan the provisional row forever (issue #135).
+    if parsed_from_manifest:
+        role_id = _extract_role_id(manifest_data) or str(manifest_or_role_id)
+    else:
+        role_id = str(manifest_or_role_id)
 
     # Parse submission_target "<ats_platform>:<job_url>"
     if ":" in submission_target:
@@ -88,7 +121,7 @@ def main() -> int:
     # is visible to duplicate detection on next run (issue #135).
     if tracker_path_str is not None:
         tracker_module.mark_submitted_unconfirmed(
-            role_id=str(manifest_or_role_id),
+            role_id=role_id,
             job_url=url_part,
             tracker_path=Path(tracker_path_str),
         )

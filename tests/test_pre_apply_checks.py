@@ -31,6 +31,8 @@ import pytest
 # Allow imports from src/ without installation
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+import record_submission
+import tracker as tracker_module
 from pre_apply_checks import (
     DuplicateApplicationError,
     MissingArtifactsError,
@@ -567,6 +569,186 @@ class TestCompositeGate:
 # Issue #107: "Thank you" in Workable text_contains triggers confirmed on
 # form pages, validation errors, and generic copy — before any submission.
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Provisional submitted_unconfirmed row: upsert + real role_id + retryability
+# Issue #135: a crash between Submit and the tracker write must be visible to
+# duplicate detection, and the provisional row must transition cleanly.
+# ---------------------------------------------------------------------------
+
+
+class TestMarkSubmittedUnconfirmed:
+    def test_upserts_existing_draft_row_no_duplicate(self, tmp_path: Path):
+        """
+        A pre-existing draft row for the role must be upgraded in place to
+        submitted_unconfirmed — not duplicated. Exactly ONE row for the role.
+        """
+        tracker = tmp_path / "tracker.json"
+        tracker.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "stripe_backend",
+                        "company": "Stripe",
+                        "title": "Senior Backend",
+                        "url": "https://jobs.lever.co/stripe/abc123/apply",
+                        "status": "draft",
+                        "added": "2026-06-01",
+                        "applied": None,
+                        "last_update": "2026-06-01",
+                        "notes": [],
+                    }
+                ]
+            )
+        )
+
+        tracker_module.mark_submitted_unconfirmed(
+            role_id="stripe_backend",
+            job_url="https://jobs.lever.co/stripe/abc123/apply",
+            tracker_path=tracker,
+        )
+
+        entries = json.loads(tracker.read_text())
+        rows = [e for e in entries if e["role_id"] == "stripe_backend"]
+        assert len(rows) == 1, f"expected exactly one row, got {len(rows)}"
+        assert rows[0]["status"] == "submitted_unconfirmed"
+
+    def test_upserts_by_url_when_role_id_differs(self, tmp_path: Path):
+        """A row with the same URL (different role_id) is updated, not duplicated."""
+        tracker = tmp_path / "tracker.json"
+        tracker.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "old_id",
+                        "company": "Stripe",
+                        "url": "https://jobs.lever.co/stripe/abc123/apply",
+                        "status": "draft",
+                        "added": "2026-06-01",
+                        "applied": None,
+                        "last_update": "2026-06-01",
+                        "notes": [],
+                    }
+                ]
+            )
+        )
+
+        tracker_module.mark_submitted_unconfirmed(
+            role_id="new_id",
+            job_url="https://jobs.lever.co/stripe/abc123/apply/",
+            tracker_path=tracker,
+        )
+
+        entries = json.loads(tracker.read_text())
+        assert len(entries) == 1
+        assert entries[0]["status"] == "submitted_unconfirmed"
+
+    def test_appends_when_no_match(self, tmp_path: Path):
+        """Brand-new role with no matching row appends a single entry."""
+        tracker = tmp_path / "tracker.json"
+        tracker.write_text("[]")
+
+        tracker_module.mark_submitted_unconfirmed(
+            role_id="fresh_role",
+            job_url="https://jobs.lever.co/foo/xyz/apply",
+            tracker_path=tracker,
+        )
+
+        entries = json.loads(tracker.read_text())
+        assert len(entries) == 1
+        assert entries[0]["role_id"] == "fresh_role"
+        assert entries[0]["status"] == "submitted_unconfirmed"
+
+    def test_end_to_end_retryability(self, tmp_path: Path, monkeypatch):
+        """
+        mark_submitted_unconfirmed → check_duplicate blocks → update_status
+        transitions THE SAME row to autonomous_failed → check_duplicate allows retry.
+        """
+        tracker = tmp_path / "tracker.json"
+        tracker.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "stripe_backend",
+                        "company": "Stripe",
+                        "url": "https://jobs.lever.co/stripe/abc123/apply",
+                        "status": "draft",
+                        "added": "2026-06-01",
+                        "applied": None,
+                        "last_update": "2026-06-01",
+                        "notes": [],
+                    }
+                ]
+            )
+        )
+        url = "https://jobs.lever.co/stripe/abc123/apply"
+
+        tracker_module.mark_submitted_unconfirmed(
+            role_id="stripe_backend",
+            job_url=url,
+            tracker_path=tracker,
+        )
+
+        # Provisional row blocks a re-run
+        with pytest.raises(DuplicateApplicationError):
+            check_duplicate(job_url=url, tracker_path=tracker)
+
+        # update_status uses the module-level TRACKER_PATH — point it at our file
+        monkeypatch.setattr(tracker_module, "TRACKER_PATH", tracker)
+        tracker_module.update_status("stripe_backend", "autonomous_failed")
+
+        # Same row transitioned — exactly one row, now failed
+        entries = json.loads(tracker.read_text())
+        rows = [e for e in entries if e["role_id"] == "stripe_backend"]
+        assert len(rows) == 1
+        assert rows[0]["status"] == "autonomous_failed"
+
+        # URL is now retryable
+        check_duplicate(job_url=url, tracker_path=tracker)  # must not raise
+
+
+class TestRecordSubmissionRoleId:
+    def test_extract_role_id_top_level(self):
+        assert record_submission._extract_role_id({"role_id": "abc"}) == "abc"
+
+    def test_extract_role_id_nested(self):
+        assert record_submission._extract_role_id({"role": {"role_id": "nested"}}) == "nested"
+        assert record_submission._extract_role_id({"role_intake": {"role_id": "ri"}}) == "ri"
+
+    def test_extract_role_id_absent(self):
+        assert record_submission._extract_role_id({"summary": {}}) == ""
+
+    def test_real_role_id_stored_from_manifest_path(self, tmp_path: Path, monkeypatch):
+        """
+        Given a manifest PATH as arg 1, the provisional row's role_id is the
+        manifest's role_id — NOT the manifest file path (issue #135 finding 2).
+        """
+        manifest = tmp_path / "manifest.json"
+        manifest.write_text(json.dumps({"role_id": "stripe_backend", "summary": {}}))
+        tracker = tmp_path / "tracker.json"
+        output = tmp_path / "audit.json"
+
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "record_submission.py",
+                str(manifest),
+                "lever:https://jobs.lever.co/stripe/abc123/apply",
+                "yolo-pre-authorized:abcd",
+                str(output),
+                str(tracker),
+            ],
+        )
+        rc = record_submission.main()
+        assert rc == 0
+
+        entries = json.loads(tracker.read_text())
+        assert len(entries) == 1
+        assert entries[0]["role_id"] == "stripe_backend"
+        assert entries[0]["role_id"] != str(manifest)
+        assert entries[0]["status"] == "submitted_unconfirmed"
 
 
 class TestWorkableThankYouFalsePositive:
