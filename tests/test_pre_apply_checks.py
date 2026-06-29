@@ -32,10 +32,12 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from pre_apply_checks import (
+    CompanyRepeatError,
     DuplicateApplicationError,
     MissingArtifactsError,
     UnsupportedPlatformError,
     check_artifacts_exist,
+    check_company_repeat,
     check_confirmation_pattern,
     check_duplicate,
     check_platform_supported,
@@ -523,3 +525,149 @@ class TestWorkableThankYouFalsePositive:
             "Remove 'Thank you' from Workable text_contains in "
             "src/ats_confirmation_patterns.json (issue #107)."
         )
+
+
+# ---------------------------------------------------------------------------
+# Company-repeat gate
+# Issue #138: block after N prior same-company rejections.
+# Distinct from check_duplicate (URL-exact) — operates at company granularity
+# and only counts "rejected" outcomes.
+# ---------------------------------------------------------------------------
+
+
+def _make_tracker(tmp_path: Path, entries: list[dict]) -> Path:
+    tracker = tmp_path / "tracker.json"
+    tracker.write_text(json.dumps(entries))
+    return tracker
+
+
+def _entry(company: str, status: str, url: str = "https://x/y") -> dict:
+    return {
+        "role_id": f"{company.lower()}_role_{status}",
+        "company": company,
+        "title": "Engineer",
+        "url": url,
+        "status": status,
+    }
+
+
+class TestCompanyRepeatGate:
+    def test_zero_rejections_passes(self, tmp_path: Path):
+        """No prior rejected entries for the company — must not raise."""
+        tracker = _make_tracker(tmp_path, [_entry("Acme", "applied")])
+        check_company_repeat({"company": "Acme"}, tracker)  # must not raise
+
+    def test_one_rejection_under_threshold_passes(self, tmp_path: Path):
+        """One rejection with threshold 2 is under the bar — must not raise."""
+        tracker = _make_tracker(tmp_path, [_entry("Acme", "rejected")])
+        check_company_repeat({"company": "Acme"}, tracker, threshold=2)  # must not raise
+
+    def test_two_rejections_blocks_with_company_and_count(self, tmp_path: Path):
+        """Two rejections meets threshold 2 — must raise naming company + count."""
+        tracker = _make_tracker(
+            tmp_path,
+            [_entry("Acme", "rejected"), _entry("Acme", "rejected")],
+        )
+        with pytest.raises(CompanyRepeatError) as exc:
+            check_company_repeat({"company": "Acme"}, tracker, threshold=2)
+        msg = str(exc.value)
+        assert "Acme" in msg
+        assert "2" in msg
+
+    def test_override_allows_repeat_and_warns(self, tmp_path: Path, capsys):
+        """allow_company_repeat=True downgrades the block to a stderr warning."""
+        tracker = _make_tracker(
+            tmp_path,
+            [_entry("Acme", "rejected"), _entry("Acme", "rejected")],
+        )
+        check_company_repeat(
+            {"company": "Acme"}, tracker, threshold=2, allow_company_repeat=True
+        )  # must not raise
+        captured = capsys.readouterr()
+        assert "WARNING" in captured.err
+        assert "company-repeat" in captured.err.lower()
+
+    def test_normalisation_matches_suffix_and_case_variants(self, tmp_path: Path):
+        """'Acme Inc' / 'acme' / 'ACME, LLC' all normalise to the same company."""
+        tracker = _make_tracker(
+            tmp_path,
+            [_entry("Acme Inc", "rejected"), _entry("ACME, LLC", "rejected")],
+        )
+        # role config gives the bare "acme" form; both rejections must be counted
+        with pytest.raises(CompanyRepeatError):
+            check_company_repeat({"company": "acme"}, tracker, threshold=2)
+
+    def test_distinct_companies_do_not_collide(self, tmp_path: Path):
+        """
+        FALSE-BLOCK guard: two genuinely different companies must NOT be merged
+        by normalisation. 'Acme Corp' vs 'Acme Data' share a token but are
+        distinct — applying to 'Acme Data' must not be blocked by 'Acme Corp'
+        rejections.
+        """
+        tracker = _make_tracker(
+            tmp_path,
+            [_entry("Acme Corp", "rejected"), _entry("Acme Corp", "rejected")],
+        )
+        # Different company — must not raise despite shared "Acme" token.
+        check_company_repeat({"company": "Acme Data"}, tracker, threshold=2)
+
+    def test_non_rejected_statuses_are_not_counted(self, tmp_path: Path):
+        """applied/withdrawn/offer at the company must NOT count toward the gate."""
+        tracker = _make_tracker(
+            tmp_path,
+            [
+                _entry("Acme", "applied"),
+                _entry("Acme", "withdrawn"),
+                _entry("Acme", "offer"),
+            ],
+        )
+        check_company_repeat({"company": "Acme"}, tracker, threshold=2)  # must not raise
+
+    def test_missing_tracker_file_passes(self, tmp_path: Path):
+        check_company_repeat({"company": "Acme"}, tmp_path / "nope.json")  # must not raise
+
+    def test_empty_company_in_role_config_passes(self, tmp_path: Path):
+        tracker = _make_tracker(tmp_path, [_entry("Acme", "rejected"), _entry("Acme", "rejected")])
+        check_company_repeat({"company": ""}, tracker, threshold=2)  # must not raise
+
+    def test_run_pre_apply_checks_blocks_on_company_repeat(
+        self, tmp_path: Path, generated_dir_with_pdfs: Path
+    ):
+        """
+        Composite: run_pre_apply_checks raises CompanyRepeatError when role_config
+        is supplied and the company has >= threshold rejections — wired after
+        check_duplicate, before the artifact check.
+        """
+        tracker = _make_tracker(
+            tmp_path,
+            [_entry("Acme", "rejected"), _entry("Acme", "rejected")],
+        )
+        with pytest.raises(CompanyRepeatError):
+            run_pre_apply_checks(
+                role_id="acme_role",
+                job_url="https://jobs.acme.com/new-role",
+                ats_platform="lever",
+                output_prefix="TestCo_SeniorBackend",
+                generated_dir=generated_dir_with_pdfs,
+                tracker_path=tracker,
+                role_config={"company": "Acme"},
+            )
+
+    def test_run_pre_apply_checks_override_passes(
+        self, tmp_path: Path, generated_dir_with_pdfs: Path
+    ):
+        """allow_company_repeat=True threads through run_pre_apply_checks."""
+        tracker = _make_tracker(
+            tmp_path,
+            [_entry("Acme", "rejected"), _entry("Acme", "rejected")],
+        )
+        run_pre_apply_checks(
+            role_id="acme_role",
+            job_url="https://jobs.acme.com/new-role",
+            ats_platform="lever",
+            output_prefix="TestCo_SeniorBackend",
+            generated_dir=generated_dir_with_pdfs,
+            tracker_path=tracker,
+            role_config={"company": "Acme"},
+            allow_company_repeat=True,
+        )  # must not raise

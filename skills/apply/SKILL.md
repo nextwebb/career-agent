@@ -416,11 +416,30 @@ Call `src/yolo.py:is_yolo_enabled(profile)`. If it returns `False` (key mismatch
 
 ### Step B — Pre-apply gates (autonomous mode)
 
-Run gates 1-2 using `run_pre_apply_checks(autonomous=True)`:
-1. `check_duplicate()` -- halt: `DUPLICATE`
-2. `check_artifacts_exist()` + `check_platform_supported()` -- halt: `PLATFORM_CHECK_FAILED`
+Run gates 1-3 using `run_pre_apply_checks(autonomous=True, role_config=<role_config>)`:
+1. `check_duplicate()` -- halt: `DUPLICATE` (exact role URL already in tracker)
+2. `check_company_repeat()` -- halt: `COMPANY_REPEAT` (>= threshold prior same-company rejections)
+3. `check_artifacts_exist()` + `check_platform_supported()` -- halt: `PLATFORM_CHECK_FAILED`
 
-If either fails, fall to HITL.
+If any fails, fall to HITL.
+
+**Company-repeat gate (`check_company_repeat`, issue #138).** `check_duplicate()`
+matches an exact role URL, so a *different* role at the same company passes it even
+after prior rejections. This gate operates at company granularity: it normalises the
+role's `company` (lowercase, strip a trailing legal suffix like Ltd/Inc/LLC/GmbH/Corp/
+Co./PLC/AG/S.A./B.V., case-insensitive) and counts tracker entries with the same
+normalised company whose `status` is exactly `"rejected"`. When that count meets or
+exceeds the threshold (`COMPANY_REPEAT_THRESHOLD`, default `2` — a labelled policy
+assumption in `src/pre_apply_checks.py`, not a platform-confirmed rule), it raises
+`CompanyRepeatError` naming the company and the count. The `"rejected"` count is
+factual; only the threshold is the assumption. Normalisation is deliberately
+conservative to avoid false-blocking two genuinely different companies.
+
+**Override mechanism (real parameter, not a CLI flag).** To re-apply intentionally,
+the apply skill re-invokes the checks with `allow_company_repeat=True` — but only after
+explicit user approval. With the override set, the gate logs a `WARNING` to stderr and
+passes instead of raising. There is no `--allow-company-repeat` command-line flag;
+`run_pre_apply_checks` is called by this skill, not argparse.
 
 Then run the yolo gate battery via `src/yolo.py:run_yolo_gates(profile, role_config, workspace_dir, tracker_path)`:
 
@@ -497,6 +516,7 @@ Autonomous submission completed: <title> @ <company>
 |---|---|---|
 | `YOLO_AUTH_FAILED` | Key mismatch or yolo disabled | Fall to HITL |
 | `DUPLICATE` | URL already in tracker | Halt |
+| `COMPANY_REPEAT` | >= threshold prior same-company rejections | Halt (override: re-run with `allow_company_repeat=True` on user approval) |
 | `PLATFORM_CHECK_FAILED` | Artifacts missing or platform unverified | Fall to HITL |
 | `TIER_NOT_PERMITTED` | Role tier not in permitted_tiers | Fall to HITL |
 | `COMPANY_EXCLUDED` | Company in excluded_companies | Fall to HITL |

@@ -25,8 +25,20 @@ Usage (from the apply skill or CLI):
 from __future__ import annotations
 
 import json
+import re
+import sys
 from pathlib import Path
 from typing import Any
+
+# ASSUMPTION (policy choice, not platform-confirmed): block after this many prior
+# same-company rejections. Default 2 per issue #138; not derived from any observed
+# ATS rule. Configurable — change here or via the threshold parameter.
+COMPANY_REPEAT_THRESHOLD = 2
+
+# The exact tracker status that counts as a rejection. Mirrors the "rejected"
+# constant in src/tracker.py STATUSES — kept as a named constant so the gate
+# never silently drifts if the tracker vocabulary changes.
+REJECTED_STATUS = "rejected"
 
 # ---------------------------------------------------------------------------
 # Errors
@@ -47,6 +59,16 @@ class MissingArtifactsError(PreApplyError):
 
 class UnsupportedPlatformError(PreApplyError):
     """Raised when the ATS platform has no verified confirmation pattern."""
+
+
+class CompanyRepeatError(PreApplyError):
+    """Raised when prior same-company rejections meet or exceed the threshold.
+
+    Distinct from DuplicateApplicationError: that gate matches an exact role URL
+    already in the tracker. This gate matches at the *company* level and only
+    counts entries whose status is "rejected" — it targets the ATS pattern where
+    per-email candidate history is retained across all roles at a company.
+    """
 
 
 # ---------------------------------------------------------------------------
@@ -97,6 +119,65 @@ def check_duplicate(job_url: str, tracker_path: Path) -> None:
             raise DuplicateApplicationError(
                 f"Already tracked: {company} ({role_id}) with status '{status}'. " f"URL: {job_url}"
             )
+
+
+def check_company_repeat(
+    role_config: dict[str, Any],
+    tracker_path: Path,
+    threshold: int = COMPANY_REPEAT_THRESHOLD,
+    allow_company_repeat: bool = False,
+) -> None:
+    """
+    FAIL if the tracker holds >= `threshold` prior "rejected" entries for the
+    same (normalised) company as this role.
+
+    Why this exists: check_duplicate() matches on exact role URL. A different role
+    at the same company has a different URL and passes that gate cleanly even when
+    prior applications to the company were rejected. Lever and Greenhouse retain
+    per-email candidate history at the company level, so re-applying after multiple
+    rejections degrades the candidate record (and Lever can hard-block submission).
+
+    Comparison is case-insensitive and uses conservative company normalisation
+    (see _normalise_company). The dangerous direction here is a FALSE BLOCK from
+    over-normalising two distinct companies into one name, so normalisation is
+    deliberately minimal.
+
+    Override: pass allow_company_repeat=True to downgrade the block to a logged
+    stderr warning and proceed. This is a real function parameter — the apply skill
+    re-invokes the checks with allow_company_repeat=True only on explicit user
+    approval. It is NOT a CLI flag.
+    """
+    company_raw = (role_config or {}).get("company", "")
+    company = _normalise_company(company_raw)
+    if not company:
+        return  # no company to compare against; nothing to gate
+
+    if not tracker_path.exists():
+        return  # no history, safe to proceed
+
+    with open(tracker_path, encoding="utf-8") as f:
+        entries: list[dict[str, Any]] = json.load(f)
+
+    rejection_count = sum(
+        1
+        for entry in entries
+        if entry.get("status") == REJECTED_STATUS
+        and _normalise_company(entry.get("company", "")) == company
+    )
+
+    if rejection_count >= threshold:
+        message = (
+            f"Company-repeat gate: '{company_raw}' has {rejection_count} prior "
+            f"rejected application(s) in the tracker (threshold {threshold}). "
+            f"Re-applying after repeated rejections degrades your candidate record "
+            f"and some ATS platforms (e.g. Lever) block it. To proceed intentionally, "
+            f"the apply skill must re-run the pre-apply checks with "
+            f"allow_company_repeat=True after explicit user approval."
+        )
+        if allow_company_repeat:
+            print(f"WARNING (company-repeat override): {message}", file=sys.stderr)
+            return
+        raise CompanyRepeatError(message)
 
 
 def check_artifacts_exist(output_prefix: str, generated_dir: Path) -> None:
@@ -216,18 +297,31 @@ def run_pre_apply_checks(
     tracker_path: Path,
     registry_path: Path | None = None,
     autonomous: bool = False,
+    role_config: dict[str, Any] | None = None,
+    allow_company_repeat: bool = False,
 ) -> None:
     """
     Run all pre-apply gates in sequence. Raises PreApplyError on first failure.
 
     Gates run in this order (fail-fast):
-    1. Duplicate check — catches already-applied roles
-    2. Artifacts exist — catches missing or corrupt PDFs
-    3. Platform supported — blocks autonomous mode on unverified ATS (HITL: warning only)
+    1. Duplicate check — catches already-applied roles (exact URL)
+    2. Company-repeat check — blocks after N prior same-company rejections
+    3. Artifacts exist — catches missing or corrupt PDFs
+    4. Platform supported — blocks autonomous mode on unverified ATS (HITL: warning only)
+
+    The company-repeat gate only runs when `role_config` is supplied (it needs the
+    company name). Pass `allow_company_repeat=True` to downgrade that gate's block
+    to a logged warning — the apply skill does this only on explicit user approval.
 
     All gates must pass before browser automation starts.
     """
     check_duplicate(job_url, tracker_path)
+    if role_config is not None:
+        check_company_repeat(
+            role_config,
+            tracker_path,
+            allow_company_repeat=allow_company_repeat,
+        )
     check_artifacts_exist(output_prefix, generated_dir)
 
     if autonomous:
@@ -243,6 +337,62 @@ def run_pre_apply_checks(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+# Common legal/entity suffixes stripped during company normalisation. Kept
+# deliberately SHORT and unambiguous: each token here is a recognised corporate
+# suffix, never a substantive part of a real company name. (Notably we do NOT
+# strip bare "Co" — e.g. "BIT Capital" is fine, but stripping "Co" would maul
+# names like "Tinkoff Co" vs "Tinkoff" inconsistently, and "Co" is too easily a
+# real word fragment. Only the punctuated "Co." form is removed.)
+_LEGAL_SUFFIXES = [
+    "ltd.",
+    "ltd",
+    "inc.",
+    "inc",
+    "llc",
+    "l.l.c.",
+    "gmbh",
+    "corp.",
+    "corp",
+    "co.",
+    "plc",
+    "ag",
+    "s.a.",
+    "b.v.",
+]
+
+
+def _normalise_company(name: str) -> str:
+    """
+    Normalise a company name for case-insensitive company-level comparison.
+
+    Steps (intentionally conservative to avoid FALSE BLOCKS):
+      1. lowercase + strip surrounding whitespace
+      2. strip a single trailing legal suffix (Ltd, Inc, LLC, GmbH, Corp, Co.,
+         PLC, AG, S.A., B.V. and punctuated variants), comma-separated or not
+      3. strip trailing commas/periods/whitespace left behind
+
+    We strip at most ONE trailing suffix and never touch interior words, so two
+    genuinely different companies do not collapse onto the same normalised form.
+    """
+    s = name.strip().lower()
+    if not s:
+        return ""
+
+    # Drop a trailing legal suffix that is separated by a comma and/or space,
+    # e.g. "acme, llc" / "acme inc." / "acme ltd". Only one pass — conservative.
+    for suffix in _LEGAL_SUFFIXES:
+        # match: <name><optional comma><whitespace><suffix><optional trailing punct> at end
+        pattern = r"[,\s]+" + re.escape(suffix) + r"\.?$"
+        new = re.sub(pattern, "", s)
+        if new != s:
+            s = new
+            break
+
+    # Strip any trailing punctuation/whitespace left over.
+    s = s.rstrip(" ,.")
+    return s
 
 
 def _normalise_url(url: str) -> str:
