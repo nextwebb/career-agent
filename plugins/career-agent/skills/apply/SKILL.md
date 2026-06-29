@@ -419,17 +419,55 @@ Call `src/yolo.py:is_yolo_enabled(profile)`. If it returns `False` (key mismatch
 Using the `profile` and `role_config` already loaded in Step 1 (`profile.json` and
 `roles/<role_id>.json`), run the gates via
 `run_pre_apply_checks(autonomous=True, role_config=role_config, profile=profile)`:
-1. `check_duplicate()` -- halt: `DUPLICATE`
-2. `check_artifacts_exist()` + `check_platform_supported()` -- halt: `PLATFORM_CHECK_FAILED`
-3. `check_lever_cooldown()` -- halt: `LEVER_COOLDOWN`
-4. `check_location_eligibility()` -- halt: `LOCATION_INELIGIBLE`
+1. `check_duplicate()` -- **policy halt**: `DUPLICATE` (exact role URL already in tracker)
+2. `check_company_repeat()` -- **policy halt**: `COMPANY_REPEAT` (>= threshold prior same-company rejections)
+3. `check_lever_cooldown()` -- **policy halt**: `LEVER_COOLDOWN` (same-company Lever resubmit within cooldown)
+4. `check_location_eligibility()` -- **policy halt**: `LOCATION_INELIGIBLE` (right-to-work / location-marker mismatch)
+5. `check_artifacts_exist()` + `check_platform_supported()` -- HITL fallback: `PLATFORM_CHECK_FAILED`
 
-`role_config` and `profile` must be passed in; the location gate is skipped when either is
+`role_config` and `profile` must both be passed in; the location gate is skipped when either is
 omitted, so without them the role's `right_to_work`/`location` restriction is never enforced in
 the autonomous path. To intentionally bypass a known-good location override, pass
 `force_location=True`.
 
-If any fails, fall to HITL.
+**Route gate failures by kind — do NOT blanket-fall-through to HITL.**
+
+- **Policy blocks (`DUPLICATE`, `COMPANY_REPEAT`, `LEVER_COOLDOWN`, `LOCATION_INELIGIBLE`) — explicit halt, ask for override.**
+  These are deliberate policy decisions, not recoverable input problems. Do **not**
+  drop into the standard HITL form-fill: that path would let the role be filled anyway
+  unless the user happened to notice the history, silently bypassing the gate. Instead
+  **STOP**, surface the specific block to the user (for `COMPANY_REPEAT`: the normalised
+  company name and the prior-rejection count; for `DUPLICATE`: the matching tracked
+  application; for `LEVER_COOLDOWN`: the company slug and the most-recent submission date;
+  for `LOCATION_INELIGIBLE`: the role's right-to-work/location restriction and the profile's
+  authorized countries), and proceed **only** if the user explicitly approves. The approval is
+  exercised by re-running `run_pre_apply_checks()` with the matching real parameter —
+  `allow_company_repeat=True` for `COMPANY_REPEAT`, `override_ats_policy=True` for
+  `LEVER_COOLDOWN`, `force_location=True` for `LOCATION_INELIGIBLE` (there is no CLI flag for
+  any of these). Without explicit approval, the run ends here.
+- **Recoverable failures (`PLATFORM_CHECK_FAILED` — missing/corrupt PDF or unverified
+  ATS) — fall to the standard HITL flow.** These can be fixed or completed manually by
+  the user, so the normal human-in-the-loop path is appropriate.
+
+**Company-repeat gate (`check_company_repeat`, issue #138).** `check_duplicate()`
+matches an exact role URL, so a *different* role at the same company passes it even
+after prior rejections. This gate operates at company granularity: it normalises the
+role's `company` (lowercase, strip a trailing legal suffix like Ltd/Inc/LLC/GmbH/Corp/
+Co./PLC/AG/S.A./B.V., case-insensitive) and counts tracker entries with the same
+normalised company whose `status` is exactly `"rejected"`. When that count meets or
+exceeds the threshold (`COMPANY_REPEAT_THRESHOLD`, default `2` — a labelled policy
+assumption in `src/pre_apply_checks.py`, not a platform-confirmed rule), it raises
+`CompanyRepeatError` naming the company and the count. The `"rejected"` count is
+factual; only the threshold is the assumption. Normalisation is deliberately
+conservative to avoid false-blocking two genuinely different companies.
+
+**Override mechanism (real parameter, not a CLI flag).** A `COMPANY_REPEAT` block is a
+hard stop, including in autonomous mode — it must not silently fall through to the
+standard HITL form-fill. To re-apply intentionally, the apply skill re-invokes the checks
+with `allow_company_repeat=True` — but **only after explicit user approval** of that
+specific company + rejection count. With the override set, the gate logs a `WARNING` to
+stderr and passes instead of raising. There is no `--allow-company-repeat` command-line
+flag; `run_pre_apply_checks` is called by this skill, not argparse.
 
 **Lever cooldown gate (`check_lever_cooldown`).** Lever-only and URL-driven: it
 extracts the company slug from the inbound submission URL
@@ -447,6 +485,11 @@ gate blocks and **the user explicitly approves proceeding**, re-run
 would-be block is downgraded to a logged stderr WARNING and the gate passes. Use
 it only with explicit user approval — e.g. when the slug match is a false positive
 (the prior submission was actually never sent) or when re-applying is intentional.
+
+> Note for rebase: the same policy-halt-then-explicit-override routing should be applied
+> consistently to the location-eligibility gate owned by #149 so it does not silently fall
+> through to HITL. This PR folds the company-repeat and Lever cooldown gates into the shared
+> "route by kind" wording; #149 should join the same family on rebase.
 
 Then run the yolo gate battery via `src/yolo.py:run_yolo_gates(profile, role_config, workspace_dir, tracker_path)`:
 
@@ -531,8 +574,10 @@ Autonomous submission completed: <title> @ <company>
 | Code | Meaning | Action |
 |---|---|---|
 | `YOLO_AUTH_FAILED` | Key mismatch or yolo disabled | Fall to HITL |
-| `DUPLICATE` | URL already in tracker | Halt |
-| `PLATFORM_CHECK_FAILED` | Artifacts missing or platform unverified | Fall to HITL |
+| `DUPLICATE` | URL already in tracker | Policy halt — surface block; do not auto-HITL |
+| `COMPANY_REPEAT` | >= threshold prior same-company rejections | Policy halt — surface company + count; proceed only on explicit user approval via `allow_company_repeat=True` (not auto-HITL) |
+| `LEVER_COOLDOWN` | Same-company Lever resubmit within inferred cooldown window | Policy halt — surface slug + last submission date; proceed only on explicit user approval via `override_ats_policy=True` (not auto-HITL) |
+| `PLATFORM_CHECK_FAILED` | Artifacts missing or platform unverified | Fall to HITL (recoverable) |
 | `TIER_NOT_PERMITTED` | Role tier not in permitted_tiers | Fall to HITL |
 | `COMPANY_EXCLUDED` | Company in excluded_companies | Fall to HITL |
 | `DAILY_CAP_REACHED` | Autonomous cap met today | Halt |
