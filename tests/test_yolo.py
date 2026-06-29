@@ -231,6 +231,43 @@ class TestDailyCap:
         )
         check_daily_cap(t, daily_cap=1)  # must not raise — "applied" is not autonomous
 
+    def test_submitted_unconfirmed_today_counts_toward_cap(self, tmp_path: Path):
+        """
+        A submitted_unconfirmed row dated today is a likely-real submission
+        (Submit clicked, crashed before Step F). It must consume the daily cap
+        so daily_cap=1 cannot be bypassed by a second job the same day (issue #135).
+        """
+        t = tmp_path / "tracker.json"
+        t.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "x",
+                        "status": "submitted_unconfirmed",
+                        "last_update": str(date.today()),
+                    }
+                ]
+            )
+        )
+        with pytest.raises(YoloGateError) as exc:
+            check_daily_cap(t, daily_cap=1)
+        assert exc.value.code == "DAILY_CAP_REACHED"
+
+    def test_submitted_unconfirmed_from_earlier_day_does_not_count(self, tmp_path: Path):
+        t = tmp_path / "tracker.json"
+        t.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "x",
+                        "status": "submitted_unconfirmed",
+                        "last_update": "2020-01-01",
+                    }
+                ]
+            )
+        )
+        check_daily_cap(t, daily_cap=1)  # must not raise — not today
+
 
 # ---------------------------------------------------------------------------
 # Cover letter gates

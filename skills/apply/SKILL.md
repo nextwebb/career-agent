@@ -421,7 +421,8 @@ Using the `profile` and `role_config` already loaded in Step 1 (`profile.json` a
 `run_pre_apply_checks(autonomous=True, role_config=role_config, profile=profile)`:
 1. `check_duplicate()` -- halt: `DUPLICATE`
 2. `check_artifacts_exist()` + `check_platform_supported()` -- halt: `PLATFORM_CHECK_FAILED`
-3. `check_location_eligibility()` -- halt: `LOCATION_INELIGIBLE`
+3. `check_lever_cooldown()` -- halt: `LEVER_COOLDOWN`
+4. `check_location_eligibility()` -- halt: `LOCATION_INELIGIBLE`
 
 `role_config` and `profile` must be passed in; the location gate is skipped when either is
 omitted, so without them the role's `right_to_work`/`location` restriction is never enforced in
@@ -429,6 +430,23 @@ the autonomous path. To intentionally bypass a known-good location override, pas
 `force_location=True`.
 
 If any fails, fall to HITL.
+
+**Lever cooldown gate (`check_lever_cooldown`).** Lever-only and URL-driven: it
+extracts the company slug from the inbound submission URL
+(`jobs.lever.co/<slug>/...`, also `jobs.eu.lever.co`) and scans the tracker for a
+prior submitted application to the same slug. If the most recent such submission
+is within the inferred cooldown window, it raises `LeverCooldownError`. Non-Lever
+URLs are a no-op. The window is `LEVER_COOLDOWN_DAYS` (default 30) in
+`src/pre_apply_checks.py` — this number is an **inferred assumption, not confirmed
+Lever policy**; it is documented as such at the constant and in the error message.
+
+**ATS policy override (the override step).** There is no CLI flag for this — the
+gate is invoked via `run_pre_apply_checks()`, not argparse. If the Lever cooldown
+gate blocks and **the user explicitly approves proceeding**, re-run
+`run_pre_apply_checks(..., override_ats_policy=True)`. With that parameter set, a
+would-be block is downgraded to a logged stderr WARNING and the gate passes. Use
+it only with explicit user approval — e.g. when the slug match is a false positive
+(the prior submission was actually never sent) or when re-applying is intentional.
 
 Then run the yolo gate battery via `src/yolo.py:run_yolo_gates(profile, role_config, workspace_dir, tracker_path)`:
 
@@ -467,11 +485,20 @@ python <career_agent_root>/src/record_submission.py \
   <workspace_dir>/output/manifest.json \
   <ats_platform>:<job_url> \
   "yolo-pre-authorized:<authorization_key_prefix>" \
-  audits/<role_id>_<timestamp>_submission.json
+  audits/<role_id>_<timestamp>_submission.json \
+  <tracker_path>
 ```
 
+The 5th argument (`<tracker_path>` -- the workspace `tracker.json`, same path passed to
+`run_yolo_gates` in Step B) is **required in yolo mode**. It makes `record_submission.py`
+write a provisional `submitted_unconfirmed` tracker row *before* Submit, so a crash between
+Submit and the post-submit tracker update (Step E/F) is visible to `check_duplicate` on the
+next run (issue #135). Omit it only outside yolo mode, where no provisional row is needed.
+
 If `jobqa` was not run (workspace has no `output/manifest.json`), pass the `role_id` string
-as the first argument instead -- the script accepts either.
+as the first argument instead -- the script accepts either, and still needs `<tracker_path>`
+as the 5th argument. When given a manifest path, `record_submission.py` reads the real
+`role_id` out of the manifest so the post-submit `update_status` transitions the same row.
 
 If `record_submission.py` exits non-zero: **abort with `SUBMISSION_LOG_FAILED`, do NOT click Submit.**
 The `authorization_key_prefix` is the first 4 characters of `profile.yolo_mode.authorization_key`.

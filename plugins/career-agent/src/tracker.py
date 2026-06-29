@@ -35,8 +35,92 @@ STATUSES = [
     "withdrawn",
     "autonomous_submitted",
     "autonomous_ambiguous",
+    "submitted_unconfirmed",
     "autonomous_failed",
 ]
+
+
+def _normalise_url(url: str) -> str:
+    """Normalise a URL for matching, consistent with pre_apply_checks.check_duplicate.
+
+    Strips trailing slashes and lowercases scheme + host; preserves path case.
+    """
+    url = (url or "").strip()
+    if "://" in url:
+        scheme, rest = url.split("://", 1)
+        if "/" in rest:
+            host, path = rest.split("/", 1)
+            url = f"{scheme.lower()}://{host.lower()}/{path}"
+        else:
+            url = f"{scheme.lower()}://{rest.lower()}"
+    return url.rstrip("/")
+
+
+def mark_submitted_unconfirmed(
+    role_id: str,
+    job_url: str,
+    company: str = "",
+    title: str = "",
+    tracker_path: Path = TRACKER_PATH,
+) -> None:
+    """Write a provisional tracker entry immediately before Submit.
+
+    Step F updates the status to autonomous_submitted or autonomous_failed.
+    check_duplicate() will block a re-run on this URL until the entry is
+    explicitly failed/autonomous_failed.
+    """
+    if tracker_path.exists():
+        with open(tracker_path, encoding="utf-8") as f:
+            entries: list[dict] = json.load(f)
+    else:
+        entries = []
+
+    today = str(date.today())
+
+    # Upsert: if a row already exists for this role (or the same URL), update it
+    # in place so update_status() later transitions THE SAME row. Appending a new
+    # row would leave a stale submitted_unconfirmed duplicate that check_duplicate
+    # keeps blocking even after a post-submit autonomous_failed update (issue #135).
+    normalised_url = _normalise_url(job_url)
+    for existing in entries:
+        if existing.get("role_id") == role_id or (
+            job_url and _normalise_url(existing.get("url", "")) == normalised_url
+        ):
+            # Claim the row for the incoming role_id. On a URL-only match where the
+            # stored role_id differs, the later update_status() keys on role_id, so
+            # without this reassignment it could never find and transition this row —
+            # the URL would stay duplicate-blocked forever (issue #135).
+            existing["role_id"] = role_id
+            existing["url"] = job_url
+            existing["status"] = "submitted_unconfirmed"
+            existing["applied"] = today
+            existing["last_update"] = today
+            if company:
+                existing["company"] = company
+            if title:
+                existing["title"] = title
+            existing.setdefault("added", today)
+            existing.setdefault("notes", [])
+            tracker_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(tracker_path, "w", encoding="utf-8") as f:
+                json.dump(entries, f, indent=2)
+            return
+
+    entry = {
+        "role_id": role_id,
+        "company": company,
+        "title": title,
+        "url": job_url,
+        "status": "submitted_unconfirmed",
+        "added": today,
+        "applied": today,
+        "last_update": today,
+        "notes": [],
+    }
+    entries.append(entry)
+    tracker_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(tracker_path, "w", encoding="utf-8") as f:
+        json.dump(entries, f, indent=2)
 
 
 def load() -> list[Any]:
@@ -61,6 +145,11 @@ def load_role_meta(role_id: str) -> dict:
         "company": cfg.get("company", ""),
         "title": cfg.get("title", ""),
         "url": cfg.get("url", ""),
+        # Propagated from role config for retrospective outcome analysis
+        # (issue #139). Use None (JSON null) when absent so the field is
+        # always present and queryable, never silently missing.
+        "ats_platform": cfg.get("ats_platform"),
+        "variant": cfg.get("variant"),
     }
 
 
@@ -75,6 +164,10 @@ def add(role_id: str) -> None:
         "company": meta.get("company", ""),
         "title": meta.get("title", ""),
         "url": meta.get("url", ""),
+        # ats_platform / variant read from the role config (issue #139).
+        # Written unconditionally; None (JSON null) when absent from config.
+        "ats_platform": meta.get("ats_platform"),
+        "variant": meta.get("variant"),
         "status": "draft",
         "added": str(date.today()),
         "applied": None,
@@ -84,6 +177,39 @@ def add(role_id: str) -> None:
     entries.append(entry)
     save(entries)
     print(f"  ✓ Added: {role_id} ({entry['company']} — {entry['title']}) [draft]")
+
+
+# Statuses that represent a submission event. On transitioning a row into one
+# of these, ats_platform/variant are refreshed from the CURRENT role config so
+# the entry reflects the metadata actually used for the application (issue #139):
+# the role JSON may be edited (ATS re-detection, CV variant change) between the
+# draft `--add` and submission, and legacy drafts predating #139 carry no fields.
+SUBMISSION_STATUSES = frozenset(
+    {
+        "applied",
+        "autonomous_submitted",
+        "submitted_unconfirmed",
+        "autonomous_ambiguous",
+        "autonomous_failed",
+    }
+)
+
+
+def _refresh_submission_metadata(entry: dict, role_id: str) -> None:
+    """Refresh ats_platform/variant on `entry` from the current role config.
+
+    Defensive: never raises (a missing/unreadable role file or a non-role entry
+    just leaves the entry untouched), and never clobbers an existing value with
+    null — only a non-null role-config value overwrites the tracker field.
+    """
+    try:
+        meta = load_role_meta(role_id)
+    except Exception:
+        return
+    for key in ("ats_platform", "variant"):
+        value = meta.get(key)
+        if value is not None:
+            entry[key] = value
 
 
 def update_status(role_id: str, status: str) -> None:
@@ -98,6 +224,8 @@ def update_status(role_id: str, status: str) -> None:
             e["last_update"] = str(date.today())
             if status == "applied" and not e["applied"]:
                 e["applied"] = str(date.today())
+            if status in SUBMISSION_STATUSES:
+                _refresh_submission_metadata(e, role_id)
             save(entries)
             print(f"  ✓ {role_id}: {old} → {status}")
             return
