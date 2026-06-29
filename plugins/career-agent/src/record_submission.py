@@ -58,6 +58,35 @@ def _extract_role_id(manifest_data: dict) -> str:
     return ""
 
 
+def _load_role_config(manifest_or_role_id: str, manifest_data: dict) -> dict:
+    """
+    Best-effort resolution of the role config for audit-log enrichment.
+
+    The first CLI arg may be a manifest path or a bare role_id. We derive a
+    role_id (from the manifest, or by treating the arg as the id) and look for
+    roles/<role_id>.json under the current workspace. Never raises — a missing
+    or unreadable config just yields {} so the audit log still writes.
+    """
+    role_id = manifest_data.get("role_id") or ""
+    if not role_id:
+        candidate = Path(manifest_or_role_id)
+        # A bare role_id arg has no .json suffix and is not an existing path.
+        if candidate.suffix != ".json" and not candidate.exists():
+            role_id = manifest_or_role_id
+    if not role_id:
+        return {}
+
+    role_path = Path.cwd() / "roles" / f"{role_id}.json"
+    if not role_path.exists():
+        return {}
+    try:
+        with open(role_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return cfg if isinstance(cfg, dict) else {}
+
+
 def main() -> int:
     if len(sys.argv) not in (5, 6):
         print(
@@ -106,6 +135,12 @@ def main() -> int:
     else:
         role_id = str(manifest_or_role_id)
 
+    # Resolve the role config so the audit log carries the same
+    # ats_platform / variant fields the tracker entry gets (issue #139).
+    # The first CLI arg is either a manifest path or a bare role_id; in both
+    # cases we try to locate roles/<role_id>.json relative to the workspace.
+    role_config = _load_role_config(manifest_or_role_id, manifest_data)
+
     # Parse submission_target "<ats_platform>:<job_url>"
     if ":" in submission_target:
         ats_part, _, url_part = submission_target.partition(":")
@@ -117,11 +152,19 @@ def main() -> int:
         ats_part = "unknown"
         url_part = submission_target
 
+    # Prefer the role config's ats_platform for the analysis field; fall back
+    # to the value parsed from the submission target. variant is role-config
+    # only. Both are written unconditionally (None/JSON null when absent) so
+    # the audit log stays queryable for outcome analysis (issue #139).
+    ats_platform = role_config.get("ats_platform") if role_config.get("ats_platform") else ats_part
+    variant = role_config.get("variant")
+
     log: dict = {
         "schema_version": "1",
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "manifest_source": str(manifest_or_role_id),
-        "ats_platform": ats_part,
+        "ats_platform": ats_platform,
+        "variant": variant,
         "job_url": url_part,
         "approval_text_length": len(approval_text),
         "approval_text_prefix": approval_text[:12],
