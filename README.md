@@ -54,7 +54,7 @@ The agent never submits on your behalf. That boundary is intentional.
 | Profile bootstrap from CV/LinkedIn | ✅ `/setup-profile` | ❌ manual markdown file |
 | CV variant system (A/B/C by audience) | ✅ per-role | ❌ single template |
 | Per-role cover letter PDF | ✅ | ✅ `/cover` |
-| Browser form filling | ✅ guarded handoff with Greenhouse, Lever, Workable notes | ✅ `/apply` |
+| Browser form filling | ✅ guarded handoff with Greenhouse, Greenhouse EU, Lever, Workable, Ashby, Teamtailor | ✅ `/apply` |
 | ATS-aware single-column PDF | ✅ reportlab | ✅ HTML→PDF |
 | Human-in-loop handoff | ✅ sensitive fields + Submit | ✅ |
 | Profile data local + gitignored | ✅ | ✅ |
@@ -238,9 +238,11 @@ Codex Chrome `/apply` is not stable by assumption. Use the [Codex Chrome verific
 |---|---|---|
 | Greenhouse (direct) | Fill safe fields, upload resume, answer safe custom questions | Experimental until a non-submitted evidence record exists |
 | Greenhouse (iframe embed) | Use the embed URL as a top-level page, not a company iframe | Experimental until a non-submitted evidence record exists |
-| Greenhouse (EU domain) | Keep `ats_platform` normalized to `greenhouse` unless a separate supported value is intentionally added and tested | Experimental until EU URL/domain handling is verified |
+| Greenhouse EU (`greenhouse_eu`) | Use `job-boards.eu.greenhouse.io` URLs; identical field-filling strategy to Greenhouse (verified: JetBrains, Kayzen 2026-06-22) | Experimental until a non-submitted evidence record exists |
 | Lever | Upload resume, paste cover-letter text when a field exists, answer safe custom questions | Experimental until a non-submitted evidence record exists |
 | Workable | Use `/apply/` URL, upload resume, handle dropdowns and multi-step forms carefully | Experimental until a non-submitted evidence record exists |
+| Ashby | Standard fields; resume upload, optional cover letter, custom questions (verified: Poolside, Kraken 2026-06-22) | Experimental until a non-submitted evidence record exists |
+| Teamtailor | Standard fields; resume upload, optional cover letter (verified: BUX 2026-06-22) | Experimental until a non-submitted evidence record exists |
 | Unknown/unsupported ATS | Stop and provide manual guidance | Unsupported for automation |
 | More | PRs welcome | Experimental until verified |
 
@@ -338,7 +340,7 @@ The `generated/` output directory is created automatically on first run.
 
 ## Contributing
 
-ATS platforms to add: Ashby, SmartRecruiters, Taleo, iCIMS, BambooHR.
+ATS platforms to add: SmartRecruiters, Taleo, iCIMS, BambooHR.
 
 Each platform needs:
 - A `src/ats/<platform>.py` helper (optional: for complex flows)
