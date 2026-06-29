@@ -56,12 +56,12 @@ For a live fill, preflight the selected browser surface, open a fresh tab/page (
 Read `profile.json` and `roles/<role_id>.json`. Extract:
 
 - `role.url`: the direct application URL (not job listing)
-- `role.ats_platform`: `greenhouse`, `lever`, or `workable`
+- `role.ats_platform`: `greenhouse`, `greenhouse_eu`, `lever`, `workable`, `ashby`, or `teamtailor`
 - `role.output_prefix`: used to locate the generated PDFs
 - All `role.custom_answers` fields
 - All `profile` personal data needed for the form
 
-If `role.ats_platform` is missing, `unknown`, or not one of `greenhouse`, `lever`, or `workable`, stop and hand off manually. Do not attempt unsupported ATS automation.
+If `role.ats_platform` is missing, `unknown`, or not one of the six supported values above, stop and hand off manually. Do not attempt unsupported ATS automation.
 
 ### 2. Navigate to the application URL
 
@@ -71,9 +71,11 @@ Open `role.url` in the available browser surface.
 
 - **Greenhouse embed** (when `role.url` contains `boards.greenhouse.io/embed`):
   Navigate directly to the embed URL as a top-level page: do NOT try to interact with it inside an iframe on a company careers page. Cross-origin iframes block all DOM tools.
-- **Greenhouse EU domain**: treat a confirmed Greenhouse EU application URL as `ats_platform: "greenhouse"` unless the repo intentionally adds and tests a separate supported value. In Codex Chrome, keep EU-domain automation experimental until the verification matrix records a non-submitted pass for that URL/domain pattern.
+- **Greenhouse EU domain** (`greenhouse_eu`): first-class supported platform (verified: JetBrains, Kayzen submissions 2026-06-22). URL pattern: `https://job-boards.eu.greenhouse.io/<company>/jobs/<id>` (e.g. `job-boards.eu.greenhouse.io/nice/jobs/4838610101`). Apply the same field-filling strategy as `greenhouse`; the EU domain variant uses identical form structure.
 - **Workable**: URL must end in `/apply/`: e.g. `https://apply.workable.com/<company>/j/<id>/apply/`
-- **Lever**: URL is typically `https://jobs.lever.co/<company>/<uuid>/apply`
+- **Lever**: URL is typically `https://jobs.lever.co/<company>/<uuid>/apply` (EU variant: `jobs.eu.lever.co`)
+- **Ashby**: URL is typically `https://jobs.ashbyhq.com/<company>/<uuid>/application` (verified: Poolside, Kraken submissions 2026-06-22)
+- **Teamtailor**: URL pattern varies by company — `https://career.teamtailor.com/jobs/<id>/applications/new` or `https://<company>.teamtailor.com/jobs/<id>/applications/new` (verified: BUX submission 2026-06-22)
 
 Take a screenshot to verify the page loaded and the form is visible before proceeding.
 
@@ -265,8 +267,9 @@ If both CV and cover-letter slots exist, invoke this separately per label-scoped
 
 **Observed behaviour by platform (do not overclaim):**
 - **Lever:** previous non-submitting runs observed visible filename success after upload.
-- **Greenhouse:** label-scope the input; unhide before inject when needed; use a remount guard. Resume upload has been observed succeed in a prior run; the separate cover-letter upload slot has not been re-proven end-to-end on this skill version and remains a known gap.
+- **Greenhouse / Greenhouse EU:** label-scope the input; unhide before inject when needed; use a remount guard. Resume upload has been observed succeed in a prior run; the separate cover-letter upload slot has not been re-proven end-to-end on this skill version and remains a known gap.
 - **Workable:** `react-dropzone` does not re-render from DataTransfer injection — UI shows "Choose file" despite `input.files` being set. Manual upload required until a Workable-compatible injection is confirmed.
+- **Ashby / Teamtailor:** no upload quirks documented yet. Treat as standard file input; record observed behaviour on first live run before assuming compatibility.
 
 After injection, re-query the file input after every upload by re-reading the container. Verify the filename appears on screen after upload. Record upload method, payload size, field label, remount/reacquire count, distinct filenames per slot, visible filename result, and elapsed ms.
 
@@ -377,9 +380,11 @@ Wait for user confirmation before any further action on this form.
 |---|---|---|---|---|
 | Greenhouse (direct) | Label-scoped; unhide before inject; MutationObserver remount guard | Native setter + `input`/`change` events; verify after blur | Label-scoped only; never bare `Toggle flyout`; phone field scoped to phone container | File upload field |
 | Greenhouse (embed) | Same; open embed URL as top-level page | Same | Same | Same |
-| Greenhouse (EU domain) | Treat as Greenhouse after URL verification | Same | Same | Same |
+| Greenhouse EU (`greenhouse_eu`) | Same as Greenhouse (direct); EU domain verified: JetBrains, Kayzen 2026-06-22 | Same | Same | Same |
 | Lever | Label-scoped visible upload; DataTransfer confirmed working | Verify after blur | N/A | Text paste only — no file upload field |
 | Workable | `inputs[1]` is CV (index 0 is photo); `react-dropzone` ignores DataTransfer injection — manual upload required | Verify after blur/step change | Scoped click+type fallback | File upload or text |
+| Ashby | No quirks documented yet — standard file input assumed; record on first run (verified submissions: Poolside, Kraken 2026-06-22) | Standard assumed | Standard assumed | Optional file upload or text; confirm field presence before filling |
+| Teamtailor | No quirks documented yet — standard file input assumed; record on first run (verified submission: BUX 2026-06-22) | Standard assumed | Standard assumed | Optional file upload or text; confirm field presence before filling |
 
 ## Error handling
 
