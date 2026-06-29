@@ -158,12 +158,23 @@ def check_company_repeat(
     with open(tracker_path, encoding="utf-8") as f:
         entries: list[dict[str, Any]] = json.load(f)
 
-    rejection_count = sum(
-        1
-        for entry in entries
-        if entry.get("status") == REJECTED_STATUS
-        and _normalise_company(entry.get("company", "")) == company
-    )
+    # Count distinct rejected APPLICATIONS, not rows. A corrupt/hand-edited tracker
+    # can carry duplicate rows for the same application; counting rows would inflate
+    # the total past the threshold and FALSE-BLOCK. Dedupe by a stable per-application
+    # key — role_id if present, else url. Two genuinely different roles at the same
+    # company have distinct keys and still count as 2 (the intended cross-role signal);
+    # only literal duplicate rows collapse to 1. Rows with no usable key fall back to
+    # their identity so they are not silently merged together.
+    rejected_keys: set[Any] = set()
+    for entry in entries:
+        if entry.get("status") != REJECTED_STATUS:
+            continue
+        if _normalise_company(entry.get("company", "")) != company:
+            continue
+        key = entry.get("role_id") or entry.get("url") or id(entry)
+        rejected_keys.add(key)
+
+    rejection_count = len(rejected_keys)
 
     if rejection_count >= threshold:
         message = (
@@ -363,20 +374,23 @@ _LEGAL_SUFFIXES = [
 ]
 
 
-def _normalise_company(name: str) -> str:
+def _normalise_company(name: str | None) -> str:
     """
     Normalise a company name for case-insensitive company-level comparison.
 
     Steps (intentionally conservative to avoid FALSE BLOCKS):
-      1. lowercase + strip surrounding whitespace
-      2. strip a single trailing legal suffix (Ltd, Inc, LLC, GmbH, Corp, Co.,
+      1. coerce None/missing to "" (an explicit "company": null in a role JSON or
+         a tracker row would otherwise crash .strip() and abort the whole
+         pre-apply run — a false block on a legitimate application)
+      2. lowercase + strip surrounding whitespace
+      3. strip a single trailing legal suffix (Ltd, Inc, LLC, GmbH, Corp, Co.,
          PLC, AG, S.A., B.V. and punctuated variants), comma-separated or not
-      3. strip trailing commas/periods/whitespace left behind
+      4. strip trailing commas/periods/whitespace left behind
 
     We strip at most ONE trailing suffix and never touch interior words, so two
     genuinely different companies do not collapse onto the same normalised form.
     """
-    s = name.strip().lower()
+    s = (name or "").strip().lower()
     if not s:
         return ""
 

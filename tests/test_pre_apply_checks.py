@@ -541,12 +541,24 @@ def _make_tracker(tmp_path: Path, entries: list[dict]) -> Path:
     return tracker
 
 
-def _entry(company: str, status: str, url: str = "https://x/y") -> dict:
+_entry_counter = [0]
+
+
+def _entry(
+    company: str,
+    status: str,
+    url: str | None = None,
+    role_id: str | None = None,
+) -> dict:
+    # Default role_id/url are unique per call so distinct entries represent
+    # distinct applications (the gate dedupes rejected rows by role_id/url).
+    _entry_counter[0] += 1
+    n = _entry_counter[0]
     return {
-        "role_id": f"{company.lower()}_role_{status}",
+        "role_id": role_id if role_id is not None else f"{company.lower()}_role_{n}",
         "company": company,
         "title": "Engineer",
-        "url": url,
+        "url": url if url is not None else f"https://x/{n}",
         "status": status,
     }
 
@@ -671,3 +683,68 @@ class TestCompanyRepeatGate:
             role_config={"company": "Acme"},
             allow_company_repeat=True,
         )  # must not raise
+
+    # -- F1: null/None company must not crash (false-block via AttributeError) --
+
+    def test_null_company_in_role_config_does_not_crash(self, tmp_path: Path):
+        """
+        Regression (F1): role JSON with explicit "company": null returns None
+        (load_role_meta's "" default only applies to a MISSING key). The gate must
+        normalise None to "" and no-op/pass — never crash and abort the whole run.
+        """
+        tracker = _make_tracker(
+            tmp_path,
+            [_entry("Acme", "rejected"), _entry("Acme", "rejected")],
+        )
+        check_company_repeat({"company": None}, tracker, threshold=2)  # must not raise
+
+    def test_null_company_in_tracker_row_does_not_crash_and_counts_correctly(self, tmp_path: Path):
+        """
+        Regression (F1): a tracker entry with "company": null must not crash the
+        counting loop, and the genuine same-company rejections must still be counted.
+        Two real "Acme" rejections + one null-company row -> still blocks at threshold 2.
+        """
+        null_row = _entry("Acme", "rejected")
+        null_row["company"] = None
+        tracker = _make_tracker(
+            tmp_path,
+            [
+                _entry("Acme", "rejected"),
+                _entry("Acme", "rejected"),
+                null_row,
+            ],
+        )
+        with pytest.raises(CompanyRepeatError) as exc:
+            check_company_repeat({"company": "Acme"}, tracker, threshold=2)
+        assert "2" in str(exc.value)  # null row not counted; 2 real rejections
+
+    # -- F2: dedupe rejected rows by application key (false-block via dup rows) --
+
+    def test_duplicate_rejected_rows_same_role_id_count_as_one(self, tmp_path: Path):
+        """
+        Regression (F2): two rejected rows with the SAME role_id (corrupt/hand-edited
+        tracker) are one application, not two. At threshold 2 this must PASS.
+        """
+        tracker = _make_tracker(
+            tmp_path,
+            [
+                _entry("Acme", "rejected", role_id="acme_dup", url="https://x/dup"),
+                _entry("Acme", "rejected", role_id="acme_dup", url="https://x/dup"),
+            ],
+        )
+        check_company_repeat({"company": "Acme"}, tracker, threshold=2)  # must not raise
+
+    def test_distinct_rejected_role_ids_same_company_count_separately(self, tmp_path: Path):
+        """
+        Regression (F2): two rejected rows with DIFFERENT role_ids at the same company
+        are two distinct applications and must BLOCK at threshold 2 (cross-role signal).
+        """
+        tracker = _make_tracker(
+            tmp_path,
+            [
+                _entry("Acme", "rejected", role_id="acme_role_a", url="https://x/a"),
+                _entry("Acme", "rejected", role_id="acme_role_b", url="https://x/b"),
+            ],
+        )
+        with pytest.raises(CompanyRepeatError):
+            check_company_repeat({"company": "Acme"}, tracker, threshold=2)
