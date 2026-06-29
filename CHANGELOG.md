@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.7.0](https://github.com/nextwebb/career-agent/compare/v1.6.0...v1.7.0) (2026-06-29)
+
+
+### Features
+
+* **pre-apply:** add location-eligibility gate to run_pre_apply_checks ([#149](https://github.com/nextwebb/career-agent/issues/149)) ([0ee3cb0](https://github.com/nextwebb/career-agent/commit/0ee3cb04b1a32b2957bf20b1ccb6b24f0a916fd6))
+* **pre-apply:** company-repeat gate — block after N same-company rejections — [#138](https://github.com/nextwebb/career-agent/issues/138) ([#153](https://github.com/nextwebb/career-agent/issues/153)) ([6cf9392](https://github.com/nextwebb/career-agent/commit/6cf9392604189a70ea061f94cf82d0939916d4b1))
+* **pre-apply:** Lever per-company cooldown gate (URL-slug) — [#147](https://github.com/nextwebb/career-agent/issues/147) / [#140](https://github.com/nextwebb/career-agent/issues/140) Part A ([#150](https://github.com/nextwebb/career-agent/issues/150)) ([7e58e62](https://github.com/nextwebb/career-agent/commit/7e58e6250be27254ea6f78cb5c6c70e8f6d35ccf))
+* **tracker:** propagate ats_platform and variant fields to tracker entries — [#139](https://github.com/nextwebb/career-agent/issues/139) ([#152](https://github.com/nextwebb/career-agent/issues/152)) ([f162716](https://github.com/nextwebb/career-agent/commit/f1627163ebaef32f5ecacc476cbe211d944f08a3))
+
+
+### Fixes
+
+* **confirmation:** drop over-broad Ashby 'error' failure token — [#140](https://github.com/nextwebb/career-agent/issues/140) D1 ([#151](https://github.com/nextwebb/career-agent/issues/151)) ([dd3f3b2](https://github.com/nextwebb/career-agent/commit/dd3f3b2bf4fec8481d192163e43e3c182ac047c3))
+* **pre-apply:** write submitted_unconfirmed before Submit; allow retry on failed entries ([#148](https://github.com/nextwebb/career-agent/issues/148)) ([3958e8e](https://github.com/nextwebb/career-agent/commit/3958e8e167839c7fb09faf043f049f4080df45c9))
+
 ## [1.6.0](https://github.com/nextwebb/career-agent/compare/v1.5.2...v1.6.0) (2026-06-27)
 
 
