@@ -2,8 +2,9 @@
 pre_apply_checks.py — Blocking gates that run before any apply attempt.
 
 These gates catch failure modes that are invisible to artifact quality checks:
-duplicate applications, missing PDFs, unsupported ATS platforms, and unknown
-confirmation patterns. All gates must pass before browser automation starts.
+duplicate applications, missing PDFs, unsupported ATS platforms, Lever
+per-company cooldown violations, and unknown confirmation patterns. All gates
+must pass before browser automation starts.
 
 Usage (from the apply skill or CLI):
     from pre_apply_checks import run_pre_apply_checks, PreApplyError
@@ -279,7 +280,7 @@ def check_lever_cooldown(
             continue  # url-empty entries are invisible to the slug match (accepted trade-off)
         if _lever_slug(entry_url) != slug:
             continue
-        status = entry.get("status", "")
+        status = str(entry.get("status", "")).strip().lower()
         if status in _NOT_SUBMITTED_STATUSES:
             continue  # never submitted — do not block on a draft
         role_id = entry.get("role_id", "unknown")
@@ -391,15 +392,18 @@ def _lever_slug(url: str) -> str | None:
     Extract the Lever company slug from a submission URL, or None if not Lever.
 
     The slug is the first path segment after a Lever host
-    (jobs.lever.co or jobs.eu.lever.co), e.g.:
+    (jobs.lever.co or jobs.eu.lever.co, plus any subdomain prefix such as
+    www.), e.g.:
         https://jobs.lever.co/acme/<uuid>            -> "acme"
         https://jobs.lever.co/acme/<uuid>/apply      -> "acme"
         https://jobs.lever.co/acme/<uuid>/?utm=x#frag -> "acme"
         https://jobs.eu.lever.co/acme/<uuid>         -> "acme"
+        https://www.jobs.lever.co/Acme/<uuid>        -> "acme"
 
     Query strings, fragments, trailing slashes, and a trailing "/apply"
-    segment are all ignored. Returns None for any non-Lever host or a Lever
-    URL with no slug segment.
+    segment are all ignored. Host and slug are lowercased so casing never
+    defeats a match. Returns None for any non-Lever host or a Lever URL with
+    no slug segment.
     """
     if not url:
         return None
@@ -410,12 +414,17 @@ def _lever_slug(url: str) -> str | None:
         host = host.rsplit("@", 1)[1]
     if ":" in host:
         host = host.split(":", 1)[0]
-    if host not in _LEVER_HOSTS:
+    # Accept the Lever host exactly, or any subdomain prefix of it (e.g. a
+    # leading "www."), so www.jobs.lever.co normalises to the same company.
+    if not any(host == h or host.endswith("." + h) for h in _LEVER_HOSTS):
         return None
     segments = [seg for seg in parsed.path.split("/") if seg]
     if not segments:
         return None
-    return segments[0]
+    # Lowercase the slug: Lever slugs are case-insensitive company identifiers,
+    # and historic tracker URLs preserve the original casing (e.g. "Fliff").
+    # Both sides go through this function, so lowercasing here matches them.
+    return segments[0].lower()
 
 
 def _submission_date_str(entry: dict[str, Any]) -> str:
@@ -423,13 +432,16 @@ def _submission_date_str(entry: dict[str, Any]) -> str:
     Return the best-available submission date string for a tracker entry.
 
     Prefers `applied` (the true submission date), then falls back to
-    `last_update`, then `added`. ASSUMPTION: when `applied` is null but the
-    entry has a submitted status (e.g. a withdrawn entry with applied=null),
-    `last_update`/`added` is a usable proxy for "when this was acted on" —
-    good enough to place it inside or outside the cooldown window. Returns ""
-    when no date field is usable (caller treats that as a conservative block).
+    `last_update`. Both are >= the true submission date, so using them to
+    decide whether the cooldown has elapsed biases toward blocking (safe).
+
+    `added` is deliberately NOT in this chain: a draft can be added weeks
+    before it is submitted, so `added` can be far older than the real
+    submission and would wrongly CLEAR the cooldown (a false-allow →
+    double-submit). When a submitted entry has neither `applied` nor
+    `last_update`, this returns "" and the caller blocks it as undated.
     """
-    for field in ("applied", "last_update", "added"):
+    for field in ("applied", "last_update"):
         value = entry.get(field)
         if value:
             return str(value)

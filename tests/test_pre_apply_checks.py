@@ -573,6 +573,12 @@ class TestLeverSlugExtraction:
             ("https://jobs.lever.co/acme/", "acme"),
             ("https://jobs.lever.co/acme", "acme"),
             ("HTTPS://JOBS.LEVER.CO/acme/abcd-1234", "acme"),
+            # FIX 1: mixed-case slug normalises to lowercase
+            ("https://jobs.lever.co/Fliff/abcd-1234/apply", "fliff"),
+            ("https://jobs.lever.co/ACME/abcd-1234", "acme"),
+            # FIX 3: www. (and any subdomain prefix) normalises to the same host
+            ("https://www.jobs.lever.co/acme/abcd-1234/apply", "acme"),
+            ("https://www.jobs.eu.lever.co/acme/abcd-1234", "acme"),
             # Non-Lever hosts -> None
             ("https://job-boards.greenhouse.io/acme/jobs/123", None),
             ("https://jobs.ashbyhq.com/acme/uuid/application", None),
@@ -685,6 +691,105 @@ class TestLeverCooldownGate:
         check_lever_cooldown(
             job_url="https://jobs.lever.co/acme/uuid/apply",
             tracker_path=tmp_path / "nope.json",
+        )  # must not raise
+
+    # --- Regression: FIX 1 — case-insensitive slug (false-allow) ---
+    def test_fix1_mixedcase_historic_blocks_lowercase_incoming(self, tmp_path: Path):
+        """
+        Real repro: tracker stores 'Fliff' (capital F); incoming is lowercase
+        'fliff'. Both go through _lever_slug, so the resubmit must block.
+        """
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(4))
+        entries = json.loads(tracker.read_text())
+        entries[0]["url"] = "https://jobs.lever.co/Fliff/8d2c958f-uuid/apply"
+        tracker.write_text(json.dumps(entries))
+        with pytest.raises(LeverCooldownError, match="fliff"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/fliff/other-uuid/apply",
+                tracker_path=tracker,
+            )
+
+    def test_fix1_lowercase_historic_blocks_mixedcase_incoming(self, tmp_path: Path):
+        """Inverse direction: lowercase historic, mixed-case incoming, same company."""
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(4))
+        with pytest.raises(LeverCooldownError, match="acme"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/ACME/other-uuid/apply",
+                tracker_path=tracker,
+            )
+
+    # --- Regression: FIX 2 — untrusted `added` must not clear the window ---
+    def test_fix2_applied_null_old_added_still_blocks_undated(self, tmp_path: Path):
+        """
+        Real repro: a submitted entry with applied=null, last_update=null, but an
+        `added` from 40 days ago (draft created weeks before submit). `added`
+        must NOT clear the cooldown — the entry is treated as undated and blocked.
+        """
+        tracker = tmp_path / "tracker.json"
+        tracker.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "acme_role",
+                        "company": "Acme",
+                        "title": "Engineer",
+                        "url": "https://jobs.lever.co/acme/uuid/apply",
+                        "status": "applied",
+                        "added": _days_ago(40),
+                        "applied": None,
+                        "last_update": None,
+                        "notes": [],
+                    }
+                ]
+            )
+        )
+        with pytest.raises(LeverCooldownError, match="unknown"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/acme/other-uuid/apply",
+                tracker_path=tracker,
+            )
+
+    # --- Regression: FIX 3 — www. host normalization (false-allow) ---
+    def test_fix3_www_incoming_blocks_against_bare_historic(self, tmp_path: Path):
+        """Incoming www.jobs.lever.co must match a bare jobs.lever.co historic entry."""
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(3))
+        with pytest.raises(LeverCooldownError, match="acme"):
+            check_lever_cooldown(
+                job_url="https://www.jobs.lever.co/acme/other-uuid/apply",
+                tracker_path=tracker,
+            )
+
+    def test_fix3_www_historic_blocks_against_bare_incoming(self, tmp_path: Path):
+        """Historic stored as www.jobs.lever.co must match a bare incoming URL."""
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(3))
+        entries = json.loads(tracker.read_text())
+        entries[0]["url"] = "https://www.jobs.lever.co/acme/uuid-1/apply"
+        tracker.write_text(json.dumps(entries))
+        with pytest.raises(LeverCooldownError, match="acme"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/acme/uuid-2/apply",
+                tracker_path=tracker,
+            )
+
+    # --- Regression: FIX 4 — case-insensitive status (false-block) ---
+    def test_fix4_capitalized_draft_status_passes(self, tmp_path: Path):
+        """
+        A same-slug entry with status 'Draft'/'DRAFT' (non-lowercase) is still a
+        never-submitted draft and must NOT block a brand-new application.
+        """
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(2), status="Draft")
+        check_lever_cooldown(
+            job_url="https://jobs.lever.co/acme/other-uuid/apply",
+            tracker_path=tracker,
+        )  # must not raise
+
+        # And the uppercase variant
+        entries = json.loads(tracker.read_text())
+        entries[0]["status"] = "DRAFT"
+        tracker.write_text(json.dumps(entries))
+        check_lever_cooldown(
+            job_url="https://jobs.lever.co/acme/other-uuid/apply",
+            tracker_path=tracker,
         )  # must not raise
 
 
