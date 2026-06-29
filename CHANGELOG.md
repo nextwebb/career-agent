@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.1](https://github.com/nextwebb/career-agent/compare/v1.7.0...v1.7.1) (2026-06-29)
+
+
+### Documentation
+
+* **apply:** update SKILL.md platform list to reflect v1.7 support ([#157](https://github.com/nextwebb/career-agent/issues/157)) ([7753b09](https://github.com/nextwebb/career-agent/commit/7753b09f79f86aecdccbdd2e8f683eb5154eafb2))
+* sync README and GH Pages to v1.7 platform support ([#158](https://github.com/nextwebb/career-agent/issues/158)) ([5fc05ef](https://github.com/nextwebb/career-agent/commit/5fc05ef5674a804f951ed554457b3711a701948b))
+
 ## [1.7.0](https://github.com/nextwebb/career-agent/compare/v1.6.0...v1.7.0) (2026-06-29)
 
 
