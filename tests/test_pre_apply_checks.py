@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -34,12 +35,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from pre_apply_checks import (
     CompanyRepeatError,
     DuplicateApplicationError,
+    LeverCooldownError,
     MissingArtifactsError,
     UnsupportedPlatformError,
+    _lever_slug,
     check_artifacts_exist,
     check_company_repeat,
     check_confirmation_pattern,
     check_duplicate,
+    check_lever_cooldown,
     check_platform_supported,
     run_pre_apply_checks,
 )
@@ -748,3 +752,304 @@ class TestCompanyRepeatGate:
         )
         with pytest.raises(CompanyRepeatError):
             check_company_repeat({"company": "Acme"}, tracker, threshold=2)
+
+
+# ---------------------------------------------------------------------------
+# Lever per-company cooldown gate (issue #147 / #140 Part A)
+# ---------------------------------------------------------------------------
+
+
+def _lever_tracker(tmp_path: Path, *, slug: str, applied: str, status: str = "applied") -> Path:
+    """Build a tracker with one Lever entry for `slug`, applied on `applied`."""
+    tracker = tmp_path / "tracker.json"
+    tracker.write_text(
+        json.dumps(
+            [
+                {
+                    "role_id": f"{slug}_role_2026",
+                    "company": slug.capitalize(),
+                    "title": "Senior Backend Engineer",
+                    "url": f"https://jobs.lever.co/{slug}/00000000-1111-2222-3333-444444444444/apply",
+                    "status": status,
+                    "added": applied,
+                    "applied": applied,
+                    "last_update": applied,
+                    "notes": [],
+                }
+            ]
+        )
+    )
+    return tracker
+
+
+def _days_ago(n: int) -> str:
+    return str(date.today() - timedelta(days=n))
+
+
+class TestLeverSlugExtraction:
+    @pytest.mark.parametrize(
+        "url, expected",
+        [
+            ("https://jobs.lever.co/acme/abcd-1234", "acme"),
+            ("https://jobs.lever.co/acme/abcd-1234/apply", "acme"),
+            ("https://jobs.lever.co/acme/abcd-1234/apply?utm=x&lever-source=y", "acme"),
+            ("https://jobs.lever.co/acme/abcd-1234#section", "acme"),
+            ("https://jobs.eu.lever.co/acme/abcd-1234", "acme"),
+            ("https://jobs.lever.co/acme/", "acme"),
+            ("https://jobs.lever.co/acme", "acme"),
+            ("HTTPS://JOBS.LEVER.CO/acme/abcd-1234", "acme"),
+            # FIX 1: mixed-case slug normalises to lowercase
+            ("https://jobs.lever.co/Fliff/abcd-1234/apply", "fliff"),
+            ("https://jobs.lever.co/ACME/abcd-1234", "acme"),
+            # FIX 3: www. (and any subdomain prefix) normalises to the same host
+            ("https://www.jobs.lever.co/acme/abcd-1234/apply", "acme"),
+            ("https://www.jobs.eu.lever.co/acme/abcd-1234", "acme"),
+            # Non-Lever hosts -> None
+            ("https://job-boards.greenhouse.io/acme/jobs/123", None),
+            ("https://jobs.ashbyhq.com/acme/uuid/application", None),
+            ("https://apply.workable.com/j/ABC123/apply/", None),
+            ("https://jobs.lever.co/", None),
+            ("", None),
+        ],
+    )
+    def test_slug_extraction(self, url, expected):
+        assert _lever_slug(url) == expected
+
+
+class TestLeverCooldownGate:
+    def test_blocks_same_slug_within_window(self, tmp_path: Path):
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(5))
+        with pytest.raises(LeverCooldownError, match="acme"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/acme/99999999-0000/apply",
+                tracker_path=tracker,
+            )
+
+    def test_passes_same_slug_outside_window(self, tmp_path: Path):
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(45))
+        check_lever_cooldown(
+            job_url="https://jobs.lever.co/acme/99999999-0000/apply",
+            tracker_path=tracker,
+        )  # must not raise
+
+    def test_passes_when_prior_is_draft(self, tmp_path: Path):
+        """A never-submitted draft must never block, even within the window."""
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(2), status="draft")
+        check_lever_cooldown(
+            job_url="https://jobs.lever.co/acme/99999999-0000/apply",
+            tracker_path=tracker,
+        )  # must not raise
+
+    def test_passes_when_no_prior_same_slug(self, tmp_path: Path):
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(2))
+        check_lever_cooldown(
+            job_url="https://jobs.lever.co/othercorp/uuid/apply",
+            tracker_path=tracker,
+        )  # must not raise
+
+    def test_passes_for_different_slug(self, tmp_path: Path):
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(2))
+        check_lever_cooldown(
+            job_url="https://jobs.lever.co/beta/uuid/apply",
+            tracker_path=tracker,
+        )  # must not raise
+
+    def test_noop_for_non_lever_url(self, tmp_path: Path):
+        """Non-Lever inbound URL must pass unconditionally, even if slug collides."""
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(1))
+        check_lever_cooldown(
+            job_url="https://job-boards.greenhouse.io/acme/jobs/123",
+            tracker_path=tracker,
+        )  # must not raise
+
+    def test_eu_host_matches_same_slug(self, tmp_path: Path):
+        """An eu.lever.co prior submission blocks a jobs.lever.co resubmit (same slug)."""
+        tracker = _lever_tracker(tmp_path, slug="wypoon", applied=_days_ago(3))
+        # rewrite the entry to the EU host
+        entries = json.loads(tracker.read_text())
+        entries[0]["url"] = "https://jobs.eu.lever.co/wypoon/uuid-1"
+        tracker.write_text(json.dumps(entries))
+        with pytest.raises(LeverCooldownError, match="wypoon"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/wypoon/uuid-2/apply",
+                tracker_path=tracker,
+            )
+
+    def test_blocks_when_matching_entry_has_no_usable_date(self, tmp_path: Path):
+        """A submitted same-slug entry with no parseable date is conservatively blocked."""
+        tracker = tmp_path / "tracker.json"
+        tracker.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "acme_role",
+                        "company": "Acme",
+                        "title": "Engineer",
+                        "url": "https://jobs.lever.co/acme/uuid/apply",
+                        "status": "applied",
+                        "added": None,
+                        "applied": None,
+                        "last_update": None,
+                        "notes": [],
+                    }
+                ]
+            )
+        )
+        with pytest.raises(LeverCooldownError, match="unknown"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/acme/other-uuid/apply",
+                tracker_path=tracker,
+            )
+
+    def test_override_bypasses_block_with_warning(self, tmp_path: Path, capsys):
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(5))
+        check_lever_cooldown(
+            job_url="https://jobs.lever.co/acme/99999999-0000/apply",
+            tracker_path=tracker,
+            override_ats_policy=True,
+        )  # must not raise
+        captured = capsys.readouterr()
+        assert "WARNING" in captured.err
+        # Warning must describe the real mechanism (a parameter), not a CLI flag.
+        assert "override_ats_policy=True" in captured.err
+        assert "--override-ats-policy" not in captured.err
+
+    def test_no_tracker_file_passes(self, tmp_path: Path):
+        check_lever_cooldown(
+            job_url="https://jobs.lever.co/acme/uuid/apply",
+            tracker_path=tmp_path / "nope.json",
+        )  # must not raise
+
+    # --- Regression: FIX 1 — case-insensitive slug (false-allow) ---
+    def test_fix1_mixedcase_historic_blocks_lowercase_incoming(self, tmp_path: Path):
+        """
+        Real repro: tracker stores 'Fliff' (capital F); incoming is lowercase
+        'fliff'. Both go through _lever_slug, so the resubmit must block.
+        """
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(4))
+        entries = json.loads(tracker.read_text())
+        entries[0]["url"] = "https://jobs.lever.co/Fliff/8d2c958f-uuid/apply"
+        tracker.write_text(json.dumps(entries))
+        with pytest.raises(LeverCooldownError, match="fliff"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/fliff/other-uuid/apply",
+                tracker_path=tracker,
+            )
+
+    def test_fix1_lowercase_historic_blocks_mixedcase_incoming(self, tmp_path: Path):
+        """Inverse direction: lowercase historic, mixed-case incoming, same company."""
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(4))
+        with pytest.raises(LeverCooldownError, match="acme"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/ACME/other-uuid/apply",
+                tracker_path=tracker,
+            )
+
+    # --- Regression: FIX 2 — untrusted `added` must not clear the window ---
+    def test_fix2_applied_null_old_added_still_blocks_undated(self, tmp_path: Path):
+        """
+        Real repro: a submitted entry with applied=null, last_update=null, but an
+        `added` from 40 days ago (draft created weeks before submit). `added`
+        must NOT clear the cooldown — the entry is treated as undated and blocked.
+        """
+        tracker = tmp_path / "tracker.json"
+        tracker.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "acme_role",
+                        "company": "Acme",
+                        "title": "Engineer",
+                        "url": "https://jobs.lever.co/acme/uuid/apply",
+                        "status": "applied",
+                        "added": _days_ago(40),
+                        "applied": None,
+                        "last_update": None,
+                        "notes": [],
+                    }
+                ]
+            )
+        )
+        with pytest.raises(LeverCooldownError, match="unknown"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/acme/other-uuid/apply",
+                tracker_path=tracker,
+            )
+
+    # --- Regression: FIX 3 — www. host normalization (false-allow) ---
+    def test_fix3_www_incoming_blocks_against_bare_historic(self, tmp_path: Path):
+        """Incoming www.jobs.lever.co must match a bare jobs.lever.co historic entry."""
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(3))
+        with pytest.raises(LeverCooldownError, match="acme"):
+            check_lever_cooldown(
+                job_url="https://www.jobs.lever.co/acme/other-uuid/apply",
+                tracker_path=tracker,
+            )
+
+    def test_fix3_www_historic_blocks_against_bare_incoming(self, tmp_path: Path):
+        """Historic stored as www.jobs.lever.co must match a bare incoming URL."""
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(3))
+        entries = json.loads(tracker.read_text())
+        entries[0]["url"] = "https://www.jobs.lever.co/acme/uuid-1/apply"
+        tracker.write_text(json.dumps(entries))
+        with pytest.raises(LeverCooldownError, match="acme"):
+            check_lever_cooldown(
+                job_url="https://jobs.lever.co/acme/uuid-2/apply",
+                tracker_path=tracker,
+            )
+
+    # --- Regression: FIX 4 — case-insensitive status (false-block) ---
+    def test_fix4_capitalized_draft_status_passes(self, tmp_path: Path):
+        """
+        A same-slug entry with status 'Draft'/'DRAFT' (non-lowercase) is still a
+        never-submitted draft and must NOT block a brand-new application.
+        """
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(2), status="Draft")
+        check_lever_cooldown(
+            job_url="https://jobs.lever.co/acme/other-uuid/apply",
+            tracker_path=tracker,
+        )  # must not raise
+
+        # And the uppercase variant
+        entries = json.loads(tracker.read_text())
+        entries[0]["status"] = "DRAFT"
+        tracker.write_text(json.dumps(entries))
+        check_lever_cooldown(
+            job_url="https://jobs.lever.co/acme/other-uuid/apply",
+            tracker_path=tracker,
+        )  # must not raise
+
+
+class TestCompositeGateLeverCooldown:
+    def test_composite_blocks_on_lever_cooldown(
+        self, tmp_path: Path, generated_dir_with_pdfs: Path
+    ):
+        """
+        End-to-end: a same-slug Lever resubmit within the window is blocked by
+        run_pre_apply_checks after duplicate + artifact checks pass.
+        """
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(5))
+        with pytest.raises(LeverCooldownError):
+            run_pre_apply_checks(
+                role_id="acme_other_role",
+                job_url="https://jobs.lever.co/acme/different-uuid/apply",
+                ats_platform="lever",
+                output_prefix="TestCo_SeniorBackend",
+                generated_dir=generated_dir_with_pdfs,
+                tracker_path=tracker,
+            )
+
+    def test_composite_override_allows_lever_cooldown(
+        self, tmp_path: Path, generated_dir_with_pdfs: Path
+    ):
+        """override_ats_policy=True threads through run_pre_apply_checks and bypasses."""
+        tracker = _lever_tracker(tmp_path, slug="acme", applied=_days_ago(5))
+        run_pre_apply_checks(
+            role_id="acme_other_role",
+            job_url="https://jobs.lever.co/acme/different-uuid/apply",
+            ats_platform="lever",
+            output_prefix="TestCo_SeniorBackend",
+            generated_dir=generated_dir_with_pdfs,
+            tracker_path=tracker,
+            override_ats_policy=True,
+        )  # must not raise
