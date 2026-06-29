@@ -36,10 +36,13 @@ Examine the URL and page content:
 
 | Signals | Platform | Application URL pattern |
 |---|---|---|
-| `greenhouse.io` in URL or page links | Greenhouse | `https://job-boards.greenhouse.io/<company>/jobs/<id>` |
-| `boards.greenhouse.io/embed` | Greenhouse embed | Navigate to embed URL as top-level |
-| `jobs.lever.co` | Lever | `https://jobs.lever.co/<company>/<uuid>/apply` |
-| `apply.workable.com` | Workable | `https://apply.workable.com/<company>/j/<id>/apply/` |
+| `greenhouse.io` in URL (not EU subdomain) | `greenhouse` | `https://job-boards.greenhouse.io/<company>/jobs/<id>` |
+| `boards.greenhouse.io/embed` | `greenhouse` (embed) | Navigate to embed URL as top-level |
+| `job-boards.eu.greenhouse.io` in URL | `greenhouse_eu` | `https://job-boards.eu.greenhouse.io/<company>/jobs/<id>` |
+| `jobs.lever.co` or `jobs.eu.lever.co` | `lever` | `https://jobs.lever.co/<company>/<uuid>/apply` |
+| `apply.workable.com` | `workable` | `https://apply.workable.com/<company>/j/<id>/apply/` |
+| `jobs.ashbyhq.com` | `ashby` | `https://jobs.ashbyhq.com/<company>/<uuid>/application` |
+| `teamtailor.com` in URL | `teamtailor` | `https://<company>.teamtailor.com/jobs/<id>/applications/new` |
 
 Set `ats_platform` accordingly. If undetectable, set `"ats_platform": "unknown"` and note it.
 
@@ -71,7 +74,7 @@ Write `roles/<role_id>.json` using this template, filled with what you extracted
   "title": "<title>",
   "location": "<location>",
   "url": "<direct_application_url>",
-  "ats_platform": "<greenhouse|lever|workable|unknown>",
+  "ats_platform": "<greenhouse|greenhouse_eu|lever|workable|ashby|teamtailor|unknown>",
   "variant": "<A|B|C>",
   "openness": "Open to fully remote roles globally and relocation for the right opportunity.",
   "output_prefix": "<FirstName_LastName_Company_Role_YYYY-MM>",

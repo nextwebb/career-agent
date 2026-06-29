@@ -71,7 +71,7 @@ Open `role.url` in the available browser surface.
 
 - **Greenhouse embed** (when `role.url` contains `boards.greenhouse.io/embed`):
   Navigate directly to the embed URL as a top-level page: do NOT try to interact with it inside an iframe on a company careers page. Cross-origin iframes block all DOM tools.
-- **Greenhouse EU domain** (`greenhouse_eu`): first-class supported platform (verified: JetBrains, Kayzen submissions 2026-06-22). URL pattern: `boards.eu.greenhouse.io/<company>/jobs/<id>`. Apply the same field-filling strategy as `greenhouse`; the EU domain variant uses identical form structure.
+- **Greenhouse EU domain** (`greenhouse_eu`): first-class supported platform (verified: JetBrains, Kayzen submissions 2026-06-22). URL pattern: `https://job-boards.eu.greenhouse.io/<company>/jobs/<id>` (e.g. `job-boards.eu.greenhouse.io/nice/jobs/4838610101`). Apply the same field-filling strategy as `greenhouse`; the EU domain variant uses identical form structure.
 - **Workable**: URL must end in `/apply/`: e.g. `https://apply.workable.com/<company>/j/<id>/apply/`
 - **Lever**: URL is typically `https://jobs.lever.co/<company>/<uuid>/apply` (EU variant: `jobs.eu.lever.co`)
 - **Ashby**: URL is typically `https://jobs.ashbyhq.com/<company>/<uuid>/application` (verified: Poolside, Kraken submissions 2026-06-22)
