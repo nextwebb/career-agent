@@ -416,11 +416,27 @@ Call `src/yolo.py:is_yolo_enabled(profile)`. If it returns `False` (key mismatch
 
 ### Step B — Pre-apply gates (autonomous mode)
 
-Run gates 1-2 using `run_pre_apply_checks(autonomous=True)`:
+Run gates 1-3 using `run_pre_apply_checks(autonomous=True)`:
 1. `check_duplicate()` -- halt: `DUPLICATE`
 2. `check_artifacts_exist()` + `check_platform_supported()` -- halt: `PLATFORM_CHECK_FAILED`
+3. `check_lever_cooldown()` -- halt: `LEVER_COOLDOWN`
 
-If either fails, fall to HITL.
+If any fails, fall to HITL.
+
+**Lever cooldown gate (`check_lever_cooldown`).** Lever-only and URL-driven: it
+extracts the company slug from the inbound submission URL
+(`jobs.lever.co/<slug>/...`, also `jobs.eu.lever.co`) and scans the tracker for a
+prior submitted application to the same slug. If the most recent such submission
+is within the inferred cooldown window, it raises `LeverCooldownError`. Non-Lever
+URLs are a no-op. The window is `LEVER_COOLDOWN_DAYS` (default 30) in
+`src/pre_apply_checks.py` — this number is an **inferred assumption, not confirmed
+Lever policy**; it is documented as such at the constant and in the error message.
+
+**Override escape hatch:** pass `override_ats_policy=True` to
+`run_pre_apply_checks()` (surfaced as the `--override-ats-policy` flag) to bypass
+the cooldown gate. When set, a would-be block is downgraded to a stderr WARNING
+and the gate passes — use it when a slug match is a false positive (e.g. the prior
+submission was actually never sent) or when re-applying is intentional.
 
 Then run the yolo gate battery via `src/yolo.py:run_yolo_gates(profile, role_config, workspace_dir, tracker_path)`:
 
