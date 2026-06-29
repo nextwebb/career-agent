@@ -61,6 +61,11 @@ def load_role_meta(role_id: str) -> dict:
         "company": cfg.get("company", ""),
         "title": cfg.get("title", ""),
         "url": cfg.get("url", ""),
+        # Propagated from role config for retrospective outcome analysis
+        # (issue #139). Use None (JSON null) when absent so the field is
+        # always present and queryable, never silently missing.
+        "ats_platform": cfg.get("ats_platform"),
+        "variant": cfg.get("variant"),
     }
 
 
@@ -75,6 +80,10 @@ def add(role_id: str) -> None:
         "company": meta.get("company", ""),
         "title": meta.get("title", ""),
         "url": meta.get("url", ""),
+        # ats_platform / variant read from the role config (issue #139).
+        # Written unconditionally; None (JSON null) when absent from config.
+        "ats_platform": meta.get("ats_platform"),
+        "variant": meta.get("variant"),
         "status": "draft",
         "added": str(date.today()),
         "applied": None,
@@ -84,6 +93,39 @@ def add(role_id: str) -> None:
     entries.append(entry)
     save(entries)
     print(f"  ✓ Added: {role_id} ({entry['company']} — {entry['title']}) [draft]")
+
+
+# Statuses that represent a submission event. On transitioning a row into one
+# of these, ats_platform/variant are refreshed from the CURRENT role config so
+# the entry reflects the metadata actually used for the application (issue #139):
+# the role JSON may be edited (ATS re-detection, CV variant change) between the
+# draft `--add` and submission, and legacy drafts predating #139 carry no fields.
+SUBMISSION_STATUSES = frozenset(
+    {
+        "applied",
+        "autonomous_submitted",
+        "submitted_unconfirmed",
+        "autonomous_ambiguous",
+        "autonomous_failed",
+    }
+)
+
+
+def _refresh_submission_metadata(entry: dict, role_id: str) -> None:
+    """Refresh ats_platform/variant on `entry` from the current role config.
+
+    Defensive: never raises (a missing/unreadable role file or a non-role entry
+    just leaves the entry untouched), and never clobbers an existing value with
+    null — only a non-null role-config value overwrites the tracker field.
+    """
+    try:
+        meta = load_role_meta(role_id)
+    except Exception:
+        return
+    for key in ("ats_platform", "variant"):
+        value = meta.get(key)
+        if value is not None:
+            entry[key] = value
 
 
 def update_status(role_id: str, status: str) -> None:
@@ -98,6 +140,8 @@ def update_status(role_id: str, status: str) -> None:
             e["last_update"] = str(date.today())
             if status == "applied" and not e["applied"]:
                 e["applied"] = str(date.today())
+            if status in SUBMISSION_STATUSES:
+                _refresh_submission_metadata(e, role_id)
             save(entries)
             print(f"  ✓ {role_id}: {old} → {status}")
             return
