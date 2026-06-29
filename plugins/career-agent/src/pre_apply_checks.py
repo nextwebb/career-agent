@@ -2,8 +2,9 @@
 pre_apply_checks.py — Blocking gates that run before any apply attempt.
 
 These gates catch failure modes that are invisible to artifact quality checks:
-duplicate applications, missing PDFs, unsupported ATS platforms, and unknown
-confirmation patterns. All gates must pass before browser automation starts.
+duplicate applications, missing PDFs, unsupported ATS platforms, Lever
+per-company cooldown violations, and unknown confirmation patterns. All gates
+must pass before browser automation starts.
 
 Usage (from the apply skill or CLI):
     from pre_apply_checks import run_pre_apply_checks, PreApplyError
@@ -25,8 +26,11 @@ Usage (from the apply skill or CLI):
 from __future__ import annotations
 
 import json
+import sys
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 # ---------------------------------------------------------------------------
 # Errors
@@ -47,6 +51,40 @@ class MissingArtifactsError(PreApplyError):
 
 class UnsupportedPlatformError(PreApplyError):
     """Raised when the ATS platform has no verified confirmation pattern."""
+
+
+class LeverCooldownError(PreApplyError):
+    """Raised when a Lever submission would violate the per-company cooldown."""
+
+
+# ---------------------------------------------------------------------------
+# Lever per-company cooldown policy
+# ---------------------------------------------------------------------------
+
+# ASSUMPTION (NOT confirmed Lever policy): Lever's per-company cooldown is ~30 days.
+# Inferred purely from observed date arithmetic on one block event
+# (applied 2026-06-18, resubmit blocked 2026-06-26, human-noted retry window 2026-07-18).
+# No verbatim Lever error text or policy doc confirms this number. Change in one place if real policy is observed.
+LEVER_COOLDOWN_DAYS = 30
+
+# Lever hosts that carry the company slug as the first path segment.
+_LEVER_HOSTS = ("jobs.lever.co", "jobs.eu.lever.co")
+
+# Tracker statuses that mean an application was NEVER actually submitted.
+# Lever retains any sent application, so we bias toward blocking: everything
+# past "draft" is treated as a real submission. A false block is recoverable
+# via the override_ats_policy=True parameter; a false ALLOW causes a
+# double-submit Lever penalty.
+_NOT_SUBMITTED_STATUSES = frozenset({"draft"})
+
+# How to bypass the gate. NOTE: this is NOT a CLI flag — run_pre_apply_checks is
+# invoked by the apply skill agent, not via argparse. The override is the
+# override_ats_policy=True parameter, which the apply skill passes only with
+# explicit user approval (see the apply skill's ATS-policy override step).
+_OVERRIDE_HINT = (
+    "To bypass (only with explicit user approval), re-run the pre-apply checks "
+    "with override_ats_policy=True (see the apply skill's ATS-policy override step)."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -202,6 +240,97 @@ def check_confirmation_pattern(
     return "ambiguous"
 
 
+def check_lever_cooldown(
+    job_url: str,
+    tracker_path: Path,
+    cooldown_days: int = LEVER_COOLDOWN_DAYS,
+    override_ats_policy: bool = False,
+) -> None:
+    """
+    FAIL if a prior application to the same Lever company was submitted within
+    the inferred per-company cooldown window.
+
+    Lever-only and URL-driven. The company is identified by the slug in the
+    submission URL (jobs.lever.co/<slug>/...), NOT by any `ats` field in the
+    tracker (that field is not yet populated — see #139). If job_url is not a
+    Lever URL, this gate is a no-op.
+
+    Scans the tracker for prior entries whose `url` is a Lever URL with the SAME
+    slug and whose status indicates the application was actually submitted at
+    least once (anything past "draft"). If the most recent such submission is
+    within `cooldown_days` of today, raise LeverCooldownError.
+
+    Bias toward blocking: Lever retains any sent application, so a false block
+    (recoverable via override_ats_policy=True) is preferred over a false allow
+    (which causes a double-submit penalty). A matching entry with no usable
+    submission date is therefore blocked, citing the unknown date — but a
+    never-submitted draft never blocks.
+
+    When override_ats_policy is True, a would-be block is downgraded to a
+    stderr WARNING and the gate passes.
+    """
+    slug = _lever_slug(job_url)
+    if slug is None:
+        return  # not a Lever URL — gate does not apply
+
+    if not tracker_path.exists():
+        return  # no history, safe to proceed
+
+    with open(tracker_path, encoding="utf-8") as f:
+        entries: list[dict[str, Any]] = json.load(f)
+
+    today = date.today()
+
+    # Collect matching prior submissions: same slug + a status past "draft".
+    # Each candidate is (parsed_date_or_None, role_id, raw_date_str).
+    candidates: list[tuple[date | None, str, str]] = []
+    for entry in entries:
+        entry_url = entry.get("url", "")
+        if not entry_url:
+            continue  # url-empty entries are invisible to the slug match (accepted trade-off)
+        if _lever_slug(entry_url) != slug:
+            continue
+        status = str(entry.get("status", "")).strip().lower()
+        if status in _NOT_SUBMITTED_STATUSES:
+            continue  # never submitted — do not block on a draft
+        role_id = entry.get("role_id", "unknown")
+        raw_date = _submission_date_str(entry)
+        candidates.append((_parse_date(raw_date), role_id, raw_date))
+
+    if not candidates:
+        return  # no prior same-slug submission
+
+    # If any matching entry has an unusable date, be conservative and block on it.
+    undated = [c for c in candidates if c[0] is None]
+    if undated:
+        _, role_id, raw_date = undated[0]
+        msg = (
+            f"Lever enforces one application per company. A prior application to "
+            f"'{slug}' ({role_id}) was submitted on an unknown/unparseable date "
+            f"('{raw_date}'), so it cannot be cleared of the inferred {cooldown_days}-day "
+            f"cooldown (ASSUMPTION — not confirmed Lever policy). "
+            f"{_OVERRIDE_HINT}"
+        )
+        _raise_or_warn(msg, override_ats_policy)
+        return
+
+    # Block on the most recent prior submission if it is within the window.
+    most_recent_date, role_id, raw_date = max(candidates, key=lambda c: c[0])  # type: ignore[arg-type,return-value]
+    days_elapsed = (today - most_recent_date).days  # type: ignore[operator]
+    if days_elapsed < cooldown_days:
+        msg = (
+            f"Lever enforces one application per company. A prior application to "
+            f"'{slug}' ({role_id}) was submitted on {raw_date} ({days_elapsed} day(s) "
+            f"ago), within the inferred {cooldown_days}-day cooldown "
+            f"(ASSUMPTION — not confirmed Lever policy). "
+            f"{_OVERRIDE_HINT}"
+        )
+        _raise_or_warn(msg, override_ats_policy)
+        return
+
+    # Most recent prior submission is older than the window — the inferred reopen.
+
+
 # ---------------------------------------------------------------------------
 # Composite gate runner
 # ---------------------------------------------------------------------------
@@ -216,6 +345,7 @@ def run_pre_apply_checks(
     tracker_path: Path,
     registry_path: Path | None = None,
     autonomous: bool = False,
+    override_ats_policy: bool = False,
 ) -> None:
     """
     Run all pre-apply gates in sequence. Raises PreApplyError on first failure.
@@ -223,12 +353,16 @@ def run_pre_apply_checks(
     Gates run in this order (fail-fast):
     1. Duplicate check — catches already-applied roles
     2. Artifacts exist — catches missing or corrupt PDFs
-    3. Platform supported — blocks autonomous mode on unverified ATS (HITL: warning only)
+    3. Lever cooldown — blocks same-company Lever resubmit within the inferred
+       30-day cooldown window (no-op for non-Lever URLs; pass
+       override_ats_policy=True to downgrade a block to a logged warning)
+    4. Platform supported — blocks autonomous mode on unverified ATS (HITL: warning only)
 
     All gates must pass before browser automation starts.
     """
     check_duplicate(job_url, tracker_path)
     check_artifacts_exist(output_prefix, generated_dir)
+    check_lever_cooldown(job_url, tracker_path, override_ats_policy=override_ats_policy)
 
     if autonomous:
         if ats_platform in ("unknown", ""):
@@ -262,3 +396,86 @@ def _normalise_url(url: str) -> str:
         else:
             url = f"{scheme.lower()}://{rest.lower()}"
     return url.rstrip("/")
+
+
+def _lever_slug(url: str) -> str | None:
+    """
+    Extract the Lever company slug from a submission URL, or None if not Lever.
+
+    The slug is the first path segment after a Lever host
+    (jobs.lever.co or jobs.eu.lever.co, plus any subdomain prefix such as
+    www.), e.g.:
+        https://jobs.lever.co/acme/<uuid>            -> "acme"
+        https://jobs.lever.co/acme/<uuid>/apply      -> "acme"
+        https://jobs.lever.co/acme/<uuid>/?utm=x#frag -> "acme"
+        https://jobs.eu.lever.co/acme/<uuid>         -> "acme"
+        https://www.jobs.lever.co/Acme/<uuid>        -> "acme"
+
+    Query strings, fragments, trailing slashes, and a trailing "/apply"
+    segment are all ignored. Host and slug are lowercased so casing never
+    defeats a match. Returns None for any non-Lever host or a Lever URL with
+    no slug segment.
+    """
+    if not url:
+        return None
+    parsed = urlparse(url.strip())
+    host = parsed.netloc.lower()
+    # Drop any userinfo/port that may be present.
+    if "@" in host:
+        host = host.rsplit("@", 1)[1]
+    if ":" in host:
+        host = host.split(":", 1)[0]
+    # Accept the Lever host exactly, or any subdomain prefix of it (e.g. a
+    # leading "www."), so www.jobs.lever.co normalises to the same company.
+    if not any(host == h or host.endswith("." + h) for h in _LEVER_HOSTS):
+        return None
+    segments = [seg for seg in parsed.path.split("/") if seg]
+    if not segments:
+        return None
+    # Lowercase the slug: Lever slugs are case-insensitive company identifiers,
+    # and historic tracker URLs preserve the original casing (e.g. "Fliff").
+    # Both sides go through this function, so lowercasing here matches them.
+    return segments[0].lower()
+
+
+def _submission_date_str(entry: dict[str, Any]) -> str:
+    """
+    Return the best-available submission date string for a tracker entry.
+
+    Prefers `applied` (the true submission date), then falls back to
+    `last_update`. Both are >= the true submission date, so using them to
+    decide whether the cooldown has elapsed biases toward blocking (safe).
+
+    `added` is deliberately NOT in this chain: a draft can be added weeks
+    before it is submitted, so `added` can be far older than the real
+    submission and would wrongly CLEAR the cooldown (a false-allow →
+    double-submit). When a submitted entry has neither `applied` nor
+    `last_update`, this returns "" and the caller blocks it as undated.
+    """
+    for field in ("applied", "last_update"):
+        value = entry.get(field)
+        if value:
+            return str(value)
+    return ""
+
+
+def _parse_date(raw: str) -> date | None:
+    """Parse an ISO date (YYYY-MM-DD) string; return None if missing/malformed."""
+    if not raw:
+        return None
+    try:
+        return datetime.strptime(raw.strip(), "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+
+
+def _raise_or_warn(message: str, override_ats_policy: bool) -> None:
+    """Raise LeverCooldownError, or downgrade to a stderr WARNING when overridden."""
+    if override_ats_policy:
+        print(
+            f"WARNING: ATS-policy gate bypassed via override_ats_policy=True "
+            f"(explicit user approval required). {message}",
+            file=sys.stderr,
+        )
+        return
+    raise LeverCooldownError(message)
