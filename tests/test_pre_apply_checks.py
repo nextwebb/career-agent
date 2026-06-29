@@ -870,6 +870,124 @@ class TestWorkableThankYouFalsePositive:
 
 
 # ---------------------------------------------------------------------------
+# Canary: Ashby over-broad generic tokens — both sides removed
+# Issue #140 (Part D1): the bare "error" token in Ashby failure_text_contains
+# matches any page that merely contains the word "error" anywhere (a CSS class,
+# a footer, "0 errors", an analytics blob) — misclassifying a SUCCESSFUL
+# submission as 'failed', which can drive a retry → double-submit.
+#
+# Issue #136: the bare "Thank you" token in Ashby text_contains matches any
+# page with generic courtesy copy — including error/info pages — false-
+# CONFIRMING a non-submission page. These two are coupled: with "error" gone
+# from the failure side, an Ashby error page carrying generic "Thank you"
+# boilerplate would fall through to the success token and classify 'confirmed'
+# (a silent false-success, strictly worse than the false-fail). Both over-broad
+# generic tokens are removed; only specific observed signals remain on each side.
+# ---------------------------------------------------------------------------
+
+
+class TestAshbyErrorTokenFalseFail:
+    def test_ashby_error_page_with_generic_thank_you_is_ambiguous(self):
+        """
+        Regression for issue #136 / the #140 D1 coupling: an Ashby error or
+        ambiguous page that carries only generic "Thank you" courtesy copy —
+        and NOT a specific success signal ("Application submitted",
+        "We'll be in touch") nor a known failure signal ("already applied") —
+        must classify as 'ambiguous', NOT 'confirmed' and NOT 'failed'.
+
+        With the failure-side "error" token removed (#140 D1), the bare success-
+        side "Thank you" token would otherwise turn such a page into a silent
+        false-success. 'ambiguous' halts the apply flow for human review instead
+        of auto-recording a wrong outcome.
+
+        Uses the production registry so this test is red while "Thank you"
+        remains in Ashby text_contains and green after its removal.
+
+        Issues #136, #140 (Part D1).
+        """
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text=(
+                "Something went wrong submitting your application. "
+                "Thank you for your interest — please try again later."
+            ),
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "ambiguous", (
+            "Expected 'ambiguous' but got 'confirmed'/'failed'. The bare "
+            "'Thank you' token matches generic courtesy copy on an Ashby error "
+            "page. Remove 'Thank you' from Ashby text_contains in "
+            "src/ats_confirmation_patterns.json (issues #136, #140 D1)."
+        )
+
+    def test_ashby_confirmed_via_application_submitted(self):
+        """Specific observed signal 'Application submitted' → 'confirmed'."""
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text="Application submitted.",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "confirmed"
+
+    def test_ashby_confirmed_via_well_be_in_touch(self):
+        """Specific observed signal 'We'll be in touch' → 'confirmed'."""
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text="Thanks — we'll be in touch.",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "confirmed"
+
+    def test_ashby_success_with_incidental_error_substring_is_confirmed(self):
+        """
+        Regression: an Ashby success page whose markup incidentally contains
+        the word 'error' (e.g. a CSS class or "0 errors") must NOT classify as
+        'failed'. With a real Ashby success signal present, the outcome is
+        'confirmed'.
+
+        Uses the production registry (src/ats_confirmation_patterns.json) so
+        this test is red while the bare 'error' token is present and green
+        after its removal.
+
+        Issue #140 (Part D1).
+        """
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text=(
+                '<div class="error-boundary"></div>'
+                "Application submitted. We'll be in touch. 0 errors."
+            ),
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "confirmed", (
+            "Expected 'confirmed' but got 'failed'. The bare 'error' token "
+            "matches incidental markup on a successful Ashby page. Remove "
+            "'error' from Ashby failure_text_contains in "
+            "src/ats_confirmation_patterns.json (issue #140 D1)."
+        )
+
+    def test_ashby_already_applied_is_still_failed(self):
+        """
+        Removing the bare 'error' token must not weaken genuine failure
+        detection: an Ashby page reporting 'already applied' must still
+        classify as 'failed' so the pipeline does not retry.
+
+        Issue #140 (Part D1).
+        """
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text="You have already applied to this role.",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "failed"
+
+
+# ---------------------------------------------------------------------------
 # Lever per-company cooldown gate (issue #147 / #140 Part A)
 # ---------------------------------------------------------------------------
 
