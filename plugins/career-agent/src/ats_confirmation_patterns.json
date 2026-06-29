@@ -72,8 +72,7 @@
       "We'll be in touch"
     ],
     "failure_text_contains": [
-      "already applied",
-      "error"
+      "already applied"
     ]
   },
   "teamtailor": {

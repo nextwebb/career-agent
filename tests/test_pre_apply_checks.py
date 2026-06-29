@@ -523,3 +523,59 @@ class TestWorkableThankYouFalsePositive:
             "Remove 'Thank you' from Workable text_contains in "
             "src/ats_confirmation_patterns.json (issue #107)."
         )
+
+
+# ---------------------------------------------------------------------------
+# Canary: Ashby bare "error" token false-fail regression
+# Issue #140 (Part D1): the bare "error" token in Ashby failure_text_contains
+# matches any page that merely contains the word "error" anywhere (a CSS class,
+# a footer, "0 errors", an analytics blob) — misclassifying a SUCCESSFUL
+# submission as 'failed', which can drive a retry → double-submit.
+# ---------------------------------------------------------------------------
+
+
+class TestAshbyErrorTokenFalseFail:
+    def test_ashby_success_with_incidental_error_substring_is_confirmed(self):
+        """
+        Regression: an Ashby success page whose markup incidentally contains
+        the word 'error' (e.g. a CSS class or "0 errors") must NOT classify as
+        'failed'. With a real Ashby success signal present, the outcome is
+        'confirmed'.
+
+        Uses the production registry (src/ats_confirmation_patterns.json) so
+        this test is red while the bare 'error' token is present and green
+        after its removal.
+
+        Issue #140 (Part D1).
+        """
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text=(
+                '<div class="error-boundary"></div>'
+                "Application submitted. We'll be in touch. 0 errors."
+            ),
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "confirmed", (
+            "Expected 'confirmed' but got 'failed'. The bare 'error' token "
+            "matches incidental markup on a successful Ashby page. Remove "
+            "'error' from Ashby failure_text_contains in "
+            "src/ats_confirmation_patterns.json (issue #140 D1)."
+        )
+
+    def test_ashby_already_applied_is_still_failed(self):
+        """
+        Removing the bare 'error' token must not weaken genuine failure
+        detection: an Ashby page reporting 'already applied' must still
+        classify as 'failed' so the pipeline does not retry.
+
+        Issue #140 (Part D1).
+        """
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text="You have already applied to this role.",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "failed"
