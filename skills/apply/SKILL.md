@@ -417,11 +417,24 @@ Call `src/yolo.py:is_yolo_enabled(profile)`. If it returns `False` (key mismatch
 ### Step B — Pre-apply gates (autonomous mode)
 
 Run gates 1-3 using `run_pre_apply_checks(autonomous=True, role_config=<role_config>)`:
-1. `check_duplicate()` -- halt: `DUPLICATE` (exact role URL already in tracker)
-2. `check_company_repeat()` -- halt: `COMPANY_REPEAT` (>= threshold prior same-company rejections)
-3. `check_artifacts_exist()` + `check_platform_supported()` -- halt: `PLATFORM_CHECK_FAILED`
+1. `check_duplicate()` -- **policy halt**: `DUPLICATE` (exact role URL already in tracker)
+2. `check_company_repeat()` -- **policy halt**: `COMPANY_REPEAT` (>= threshold prior same-company rejections)
+3. `check_artifacts_exist()` + `check_platform_supported()` -- HITL fallback: `PLATFORM_CHECK_FAILED`
 
-If any fails, fall to HITL.
+**Route gate failures by kind — do NOT blanket-fall-through to HITL.**
+
+- **Policy blocks (`DUPLICATE`, `COMPANY_REPEAT`) — explicit halt, ask for override.**
+  These are deliberate policy decisions, not recoverable input problems. Do **not**
+  drop into the standard HITL form-fill: that path would let the role be filled anyway
+  unless the user happened to notice the history, silently bypassing the gate. Instead
+  **STOP**, surface the specific block to the user (for `COMPANY_REPEAT`: the normalised
+  company name and the prior-rejection count; for `DUPLICATE`: the matching tracked
+  application), and proceed **only** if the user explicitly approves re-applying. The
+  approval is exercised by re-running `run_pre_apply_checks(..., allow_company_repeat=True)`
+  (the real parameter — there is no CLI flag). Without explicit approval, the run ends here.
+- **Recoverable failures (`PLATFORM_CHECK_FAILED` — missing/corrupt PDF or unverified
+  ATS) — fall to the standard HITL flow.** These can be fixed or completed manually by
+  the user, so the normal human-in-the-loop path is appropriate.
 
 **Company-repeat gate (`check_company_repeat`, issue #138).** `check_duplicate()`
 matches an exact role URL, so a *different* role at the same company passes it even
@@ -435,11 +448,19 @@ assumption in `src/pre_apply_checks.py`, not a platform-confirmed rule), it rais
 factual; only the threshold is the assumption. Normalisation is deliberately
 conservative to avoid false-blocking two genuinely different companies.
 
-**Override mechanism (real parameter, not a CLI flag).** To re-apply intentionally,
-the apply skill re-invokes the checks with `allow_company_repeat=True` — but only after
-explicit user approval. With the override set, the gate logs a `WARNING` to stderr and
-passes instead of raising. There is no `--allow-company-repeat` command-line flag;
-`run_pre_apply_checks` is called by this skill, not argparse.
+**Override mechanism (real parameter, not a CLI flag).** A `COMPANY_REPEAT` block is a
+hard stop, including in autonomous mode — it must not silently fall through to the
+standard HITL form-fill. To re-apply intentionally, the apply skill re-invokes the checks
+with `allow_company_repeat=True` — but **only after explicit user approval** of that
+specific company + rejection count. With the override set, the gate logs a `WARNING` to
+stderr and passes instead of raising. There is no `--allow-company-repeat` command-line
+flag; `run_pre_apply_checks` is called by this skill, not argparse.
+
+> Note for rebase: the same policy-halt-then-explicit-override routing should be applied
+> consistently to the other policy gates (the URL `DUPLICATE` gate here, and the Lever
+> cooldown / location-eligibility gates owned by #150/#149) so none of them silently fall
+> through to HITL. This PR only adjusts the company-repeat (and the shared "route by kind"
+> wording) to avoid stepping on those PRs' own SKILL.md edits.
 
 Then run the yolo gate battery via `src/yolo.py:run_yolo_gates(profile, role_config, workspace_dir, tracker_path)`:
 
@@ -515,9 +536,9 @@ Autonomous submission completed: <title> @ <company>
 | Code | Meaning | Action |
 |---|---|---|
 | `YOLO_AUTH_FAILED` | Key mismatch or yolo disabled | Fall to HITL |
-| `DUPLICATE` | URL already in tracker | Halt |
-| `COMPANY_REPEAT` | >= threshold prior same-company rejections | Halt (override: re-run with `allow_company_repeat=True` on user approval) |
-| `PLATFORM_CHECK_FAILED` | Artifacts missing or platform unverified | Fall to HITL |
+| `DUPLICATE` | URL already in tracker | Policy halt — surface block; do not auto-HITL |
+| `COMPANY_REPEAT` | >= threshold prior same-company rejections | Policy halt — surface company + count; proceed only on explicit user approval via `allow_company_repeat=True` (not auto-HITL) |
+| `PLATFORM_CHECK_FAILED` | Artifacts missing or platform unverified | Fall to HITL (recoverable) |
 | `TIER_NOT_PERMITTED` | Role tier not in permitted_tiers | Fall to HITL |
 | `COMPANY_EXCLUDED` | Company in excluded_companies | Fall to HITL |
 | `DAILY_CAP_REACHED` | Autonomous cap met today | Halt |
