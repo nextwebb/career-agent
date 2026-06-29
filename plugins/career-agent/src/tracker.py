@@ -61,6 +61,11 @@ def load_role_meta(role_id: str) -> dict:
         "company": cfg.get("company", ""),
         "title": cfg.get("title", ""),
         "url": cfg.get("url", ""),
+        # Propagated from role config for retrospective outcome analysis
+        # (issue #139). Use None (JSON null) when absent so the field is
+        # always present and queryable, never silently missing.
+        "ats_platform": cfg.get("ats_platform"),
+        "variant": cfg.get("variant"),
     }
 
 
@@ -75,6 +80,10 @@ def add(role_id: str) -> None:
         "company": meta.get("company", ""),
         "title": meta.get("title", ""),
         "url": meta.get("url", ""),
+        # ats_platform / variant read from the role config (issue #139).
+        # Written unconditionally; None (JSON null) when absent from config.
+        "ats_platform": meta.get("ats_platform"),
+        "variant": meta.get("variant"),
         "status": "draft",
         "added": str(date.today()),
         "applied": None,
