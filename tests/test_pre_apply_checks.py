@@ -425,6 +425,37 @@ class TestLocationEligibilityGate:
         with pytest.raises(LocationEligibilityError, match="UK only"):
             check_location_eligibility(role_config, profile)
 
+    def test_location_with_only_marker_is_enforced(self):
+        """A location carrying the 'only' marker IS treated as a restriction and blocks."""
+        role_config = {"location": "United States only"}
+        profile = {"eeo": {"current_right_to_work": ["Netherlands"]}}
+        with pytest.raises(LocationEligibilityError, match="United States only"):
+            check_location_eligibility(role_config, profile)
+
+    def test_plain_display_location_does_not_gate(self):
+        """A bare display location with no marker must not gate."""
+        role_config = {"location": "Berlin"}
+        profile = {"eeo": {"current_right_to_work": ["Netherlands"]}}
+        check_location_eligibility(role_config, profile)  # must not raise
+
+    def test_location_with_marker_matches_authorized(self):
+        """'United States only' passes for a US-authorized profile (marker + match)."""
+        role_config = {"location": "United States only"}
+        profile = {"eeo": {"current_right_to_work": ["US"]}}
+        check_location_eligibility(role_config, profile)  # must not raise
+
+    def test_eu_alias_european_union_passes(self):
+        """EU-authorized profile must not be false-blocked by 'European Union only'."""
+        role_config = {"right_to_work": "European Union only"}
+        profile = {"eeo": {"current_right_to_work": ["EU"]}}
+        check_location_eligibility(role_config, profile)  # must not raise
+
+    def test_eu_alias_eu_only_passes(self):
+        """'EU only' matches an European-Union-authorized profile (reverse direction)."""
+        role_config = {"right_to_work": "EU only"}
+        profile = {"eeo": {"current_right_to_work": ["European Union"]}}
+        check_location_eligibility(role_config, profile)  # must not raise
+
     def test_no_work_auth_in_profile_passes(self):
         """Missing work_auth data in profile: gate skips (fail-open on missing data)."""
         role_config = {"right_to_work": "UK only"}
@@ -617,6 +648,29 @@ class TestCompositeGate:
             role_config={"location": "Remote - United States"},
             profile={"eeo": {"current_right_to_work": ["Netherlands"]}},
         )  # must not raise
+
+    def test_location_with_marker_blocks_through_composite(
+        self,
+        empty_tracker: Path,
+        generated_dir_with_pdfs: Path,
+        confirmation_registry: Path,
+    ):
+        """
+        A role whose `location` carries a restriction marker ("X only") IS enforced
+        by run_pre_apply_checks when it mismatches the authorized country.
+        """
+        with pytest.raises(LocationEligibilityError, match="United States only"):
+            run_pre_apply_checks(
+                role_id="stripe_backend_2026",
+                job_url="https://jobs.lever.co/stripe/abc123/apply",
+                ats_platform="lever",
+                output_prefix="TestCo_SeniorBackend",
+                generated_dir=generated_dir_with_pdfs,
+                tracker_path=empty_tracker,
+                registry_path=confirmation_registry,
+                role_config={"location": "United States only"},
+                profile={"eeo": {"current_right_to_work": ["Netherlands"]}},
+            )
 
 
 # ---------------------------------------------------------------------------

@@ -170,6 +170,7 @@ _COUNTRY_ALIASES: list[set[str]] = [
     {"us", "usa", "united states", "united states of america", "america"},
     {"uk", "united kingdom", "great britain", "britain", "gb"},
     {"uae", "united arab emirates"},
+    {"eu", "european union", "eea", "european economic area"},
 ]
 
 
@@ -182,6 +183,25 @@ def _location_aliases(token: str) -> set[str]:
         if token in group:
             return set(group)
     return {token}
+
+
+# A role's `location` is a DISPLAY string by default. We only treat it as an
+# eligibility restriction when it carries an explicit restriction marker — a clear,
+# conservative signal that the location is gating eligibility rather than describing
+# where the role sits. Bare locations ("Berlin", "Remote - United States") never gate.
+_RESTRICTION_MARKER_PATTERNS = [
+    r"\bonly\b",  # "United States only", "EU only"
+    r"\bno sponsorship\b",
+    r"\bmust be authori[sz]ed\b",
+    r"\bmust have (?:the )?right to work\b",
+    r"\bauthori[sz]ation required\b",
+]
+_RESTRICTION_MARKER_RE = re.compile("|".join(_RESTRICTION_MARKER_PATTERNS), re.IGNORECASE)
+
+
+def _has_restriction_marker(text: str) -> bool:
+    """True if a location string carries an explicit eligibility-restriction marker."""
+    return bool(text and _RESTRICTION_MARKER_RE.search(text))
 
 
 def _restriction_tokens(restriction: str) -> set[str]:
@@ -207,17 +227,23 @@ def check_location_eligibility(
     force_location: bool = False,
 ) -> None:
     """
-    FAIL if the role's explicit right-to-work restriction does not match the
-    profile's authorized work countries.
+    FAIL if the role's eligibility restriction does not match the profile's
+    authorized work countries.
 
-    Reads ONLY the role_config "right_to_work" field. The "location" field is a
-    DISPLAY value ("Remote - United States", "Paris", "Amsterdam, Netherlands",
-    "Berlin HQ", ...) and is intentionally NOT treated as an eligibility
-    restriction: doing so would false-block sponsorship-requiring profiles on the
-    common case where a role's display location differs from the candidate's
-    authorized country. Today no role config carries right_to_work, so this gate is
-    a deliberate no-op until roles gain explicit eligibility data — an honest no-op
-    beats guessing eligibility from display strings.
+    A restriction is selected from role_config when EITHER holds:
+      (a) "right_to_work" is non-empty → it is always an eligibility restriction; OR
+      (b) "location" carries an explicit RESTRICTION MARKER (e.g. the word "only" at
+          a word boundary as in "United States only" / "EU only", or phrases like
+          "no sponsorship", "must be authorized", "must have the right to work",
+          "authorization required") → the location is treated as the restriction.
+
+    A PLAIN display "location" with no marker ("Berlin", "Remote - United States",
+    "Amsterdam, Netherlands", "Berlin HQ", ...) is NOT an eligibility restriction and
+    does NOT gate — treating bare display locations as restrictions would false-block
+    sponsorship-requiring profiles, since many such roles sponsor. We only enforce
+    explicit restriction signals. (None of the current 30 role configs contain a
+    marker, so this gate stays a safe no-op for them today, but it correctly fires on
+    a future "X only" role and never false-blocks a plain display location.)
 
     Reads authorized countries from the profile's EEO work-authorization schema:
     profile["eeo"]["current_right_to_work"] (a list of country names/codes), with a
@@ -233,11 +259,15 @@ def check_location_eligibility(
     if force_location:
         return  # explicit override — log warning in caller
 
-    # Read restriction from role config. Only the explicit right_to_work field is an
-    # eligibility restriction; "location" is display-only and is intentionally ignored.
+    # Select the restriction. right_to_work is always an eligibility restriction;
+    # "location" is display-only UNLESS it carries an explicit restriction marker.
     restriction = role_config.get("right_to_work", "")
     if not restriction:
-        return  # no explicit right-to-work restriction specified — pass
+        location = role_config.get("location", "")
+        if _has_restriction_marker(location):
+            restriction = location
+    if not restriction:
+        return  # no explicit restriction (no right_to_work, no location marker) — pass
 
     # Read authorized countries from the real profile schema (profile.eeo), falling
     # back to the jobqa-built work_authorization shape. Both use current_right_to_work.
