@@ -87,16 +87,24 @@ def check_company_not_excluded(role_config: dict[str, Any], excluded_companies: 
 
 
 def check_daily_cap(tracker_path: Path, daily_cap: int) -> None:
-    """Block if the number of autonomous submissions today already meets the cap."""
+    """Block if the number of autonomous submissions today already meets the cap.
+
+    Counts both autonomous_submitted and submitted_unconfirmed rows dated today.
+    A submitted_unconfirmed row means Submit was clicked but the run crashed before
+    the post-submit tracker update (Step F) — it is a likely-real submission and must
+    consume the daily cap until it is resolved, otherwise daily_cap=1 could be bypassed
+    by a second job the same day (issue #135).
+    """
     if not tracker_path.exists():
         return
     with open(tracker_path, encoding="utf-8") as f:
         entries: list[dict[str, Any]] = json.load(f)
     today = str(date.today())
+    counted_statuses = ("autonomous_submitted", "submitted_unconfirmed")
     autonomous_today = sum(
         1
         for e in entries
-        if e.get("status") == "autonomous_submitted" and e.get("last_update", "") == today
+        if e.get("status") in counted_statuses and e.get("last_update", "") == today
     )
     if autonomous_today >= daily_cap:
         raise YoloGateError(

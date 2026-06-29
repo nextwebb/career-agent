@@ -33,6 +33,30 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+import tracker as tracker_module
+
+
+def _extract_role_id(manifest_data: dict) -> str:
+    """Pull the role_id out of a jobqa manifest.
+
+    The manifest may expose role_id at the top level or nested under a
+    "role" / "role_intake" object (the jobqa workspace role.json uses "role_id").
+    Returns "" if no role_id is found.
+    """
+    if not isinstance(manifest_data, dict):
+        return ""
+    role_id = manifest_data.get("role_id")
+    if isinstance(role_id, str) and role_id:
+        return role_id
+    for key in ("role", "role_intake"):
+        nested = manifest_data.get(key)
+        if isinstance(nested, dict):
+            nested_id = nested.get("role_id")
+            if isinstance(nested_id, str) and nested_id:
+                return nested_id
+    return ""
+
 
 def _load_role_config(manifest_or_role_id: str, manifest_data: dict) -> dict:
     """
@@ -64,15 +88,20 @@ def _load_role_config(manifest_or_role_id: str, manifest_data: dict) -> dict:
 
 
 def main() -> int:
-    if len(sys.argv) != 5:
+    if len(sys.argv) not in (5, 6):
         print(
             "Usage: record_submission.py <manifest_or_role_id> "
-            "<ats:job_url> <approval_text> <output_path>",
+            "<ats:job_url> <approval_text> <output_path> [tracker_path]",
             file=sys.stderr,
         )
         return 1
 
-    _, manifest_or_role_id, submission_target, approval_text, output_path_str = sys.argv
+    args = sys.argv[1:]
+    manifest_or_role_id = args[0]
+    submission_target = args[1]
+    approval_text = args[2]
+    output_path_str = args[3]
+    tracker_path_str = args[4] if len(args) == 5 else None
 
     if len(approval_text) < 8:
         print(
@@ -87,12 +116,24 @@ def main() -> int:
     # Parse manifest if it's a file path; otherwise treat as role_id string
     manifest_data: dict = {}
     manifest_path = Path(manifest_or_role_id)
+    parsed_from_manifest = False
     if manifest_path.exists() and manifest_path.suffix == ".json":
         try:
             with open(manifest_path, encoding="utf-8") as f:
                 manifest_data = json.load(f)
+            parsed_from_manifest = True
         except (json.JSONDecodeError, OSError):
             pass  # non-fatal — log still writes
+
+    # Derive the REAL role_id so post-submit update_status(role_id, ...) can
+    # transition the provisional submitted_unconfirmed row. When the first arg is
+    # a manifest PATH, the role_id lives inside the manifest JSON (the jobqa
+    # workspace stores it as "role_id", possibly nested under "role"/"role_intake");
+    # using the path itself would orphan the provisional row forever (issue #135).
+    if parsed_from_manifest:
+        role_id = _extract_role_id(manifest_data) or str(manifest_or_role_id)
+    else:
+        role_id = str(manifest_or_role_id)
 
     # Resolve the role config so the audit log carries the same
     # ats_platform / variant fields the tracker entry gets (issue #139).
@@ -130,11 +171,27 @@ def main() -> int:
         "manifest_summary": manifest_data.get("summary", {}),
     }
 
+    # Write the fallible audit log FIRST. If this fails the apply flow aborts
+    # before Submit, so we must NOT have written the provisional tracker row yet —
+    # otherwise a never-submitted application would leave a submitted_unconfirmed
+    # row that check_duplicate blocks on the next legitimate retry (false block).
     try:
         output_path.write_text(json.dumps(log, indent=2, ensure_ascii=False))
     except OSError as exc:
         print(f"Error: could not write submission log to {output_path}: {exc}", file=sys.stderr)
         return 1
+
+    # Audit log is safely on disk. Now write the provisional tracker entry as the
+    # LAST thing before returning success. record_submission.py runs before the
+    # skill clicks Submit, so this still lands inside the crash window #135 guards:
+    # a crash between Submit and the post-submit tracker update stays visible to
+    # duplicate detection on the next run.
+    if tracker_path_str is not None:
+        tracker_module.mark_submitted_unconfirmed(
+            role_id=role_id,
+            job_url=url_part,
+            tracker_path=Path(tracker_path_str),
+        )
 
     print(f"Submission log written: {output_path}")
     return 0
