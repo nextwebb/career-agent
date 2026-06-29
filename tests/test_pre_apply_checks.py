@@ -644,6 +644,54 @@ class TestMarkSubmittedUnconfirmed:
         assert len(entries) == 1
         assert entries[0]["status"] == "submitted_unconfirmed"
 
+    def test_url_match_reassigns_role_id_and_transitions(self, tmp_path: Path, monkeypatch):
+        """
+        URL-matched upsert with a differing role_id must CLAIM the row for the
+        incoming role_id, so the later update_status(new_id, ...) — which keys on
+        role_id — finds and transitions the same row. Otherwise the row stays
+        stuck as submitted_unconfirmed and the URL is blocked forever (issue #135).
+        """
+        tracker = tmp_path / "tracker.json"
+        url = "https://jobs.lever.co/stripe/abc123/apply"
+        tracker.write_text(
+            json.dumps(
+                [
+                    {
+                        "role_id": "old",
+                        "company": "Stripe",
+                        "url": url,
+                        "status": "draft",
+                        "added": "2026-06-01",
+                        "applied": None,
+                        "last_update": "2026-06-01",
+                        "notes": [],
+                    }
+                ]
+            )
+        )
+
+        tracker_module.mark_submitted_unconfirmed(
+            role_id="new",
+            job_url=url + "/",  # trailing slash → normalised URL match, role_id differs
+            tracker_path=tracker,
+        )
+
+        norm = tracker_module._normalise_url
+        entries = json.loads(tracker.read_text())
+        rows = [e for e in entries if norm(e["url"]) == norm(url)]
+        assert len(rows) == 1, "must remain exactly one row for the URL"
+        assert rows[0]["role_id"] == "new", "row must be claimed by the incoming role_id"
+        assert rows[0]["status"] == "submitted_unconfirmed"
+        assert not any(e["role_id"] == "old" for e in entries)
+
+        # update_status keys on role_id — must find and transition THIS row
+        monkeypatch.setattr(tracker_module, "TRACKER_PATH", tracker)
+        tracker_module.update_status("new", "autonomous_submitted")
+        entries = json.loads(tracker.read_text())
+        rows = [e for e in entries if e["role_id"] == "new"]
+        assert len(rows) == 1
+        assert rows[0]["status"] == "autonomous_submitted"
+
     def test_appends_when_no_match(self, tmp_path: Path):
         """Brand-new role with no matching row appends a single entry."""
         tracker = tmp_path / "tracker.json"

@@ -86,6 +86,11 @@ def mark_submitted_unconfirmed(
         if existing.get("role_id") == role_id or (
             job_url and _normalise_url(existing.get("url", "")) == normalised_url
         ):
+            # Claim the row for the incoming role_id. On a URL-only match where the
+            # stored role_id differs, the later update_status() keys on role_id, so
+            # without this reassignment it could never find and transition this row —
+            # the URL would stay duplicate-blocked forever (issue #135).
+            existing["role_id"] = role_id
             existing["url"] = job_url
             existing["status"] = "submitted_unconfirmed"
             existing["applied"] = today
