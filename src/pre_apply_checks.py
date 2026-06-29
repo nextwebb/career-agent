@@ -207,10 +207,18 @@ def check_location_eligibility(
     force_location: bool = False,
 ) -> None:
     """
-    FAIL if the role's location or right-to-work restriction does not match
-    the profile's authorized work countries.
+    FAIL if the role's explicit right-to-work restriction does not match the
+    profile's authorized work countries.
 
-    Reads role_config fields: "right_to_work" and/or "location".
+    Reads ONLY the role_config "right_to_work" field. The "location" field is a
+    DISPLAY value ("Remote - United States", "Paris", "Amsterdam, Netherlands",
+    "Berlin HQ", ...) and is intentionally NOT treated as an eligibility
+    restriction: doing so would false-block sponsorship-requiring profiles on the
+    common case where a role's display location differs from the candidate's
+    authorized country. Today no role config carries right_to_work, so this gate is
+    a deliberate no-op until roles gain explicit eligibility data — an honest no-op
+    beats guessing eligibility from display strings.
+
     Reads authorized countries from the profile's EEO work-authorization schema:
     profile["eeo"]["current_right_to_work"] (a list of country names/codes), with a
     fallback to profile["work_authorization"]["current_right_to_work"] for the shape
@@ -225,10 +233,11 @@ def check_location_eligibility(
     if force_location:
         return  # explicit override — log warning in caller
 
-    # Read restriction from role config
-    restriction = role_config.get("right_to_work", "") or role_config.get("location", "")
+    # Read restriction from role config. Only the explicit right_to_work field is an
+    # eligibility restriction; "location" is display-only and is intentionally ignored.
+    restriction = role_config.get("right_to_work", "")
     if not restriction:
-        return  # no restriction specified — pass
+        return  # no explicit right-to-work restriction specified — pass
 
     # Read authorized countries from the real profile schema (profile.eeo), falling
     # back to the jobqa-built work_authorization shape. Both use current_right_to_work.

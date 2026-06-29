@@ -406,6 +406,25 @@ class TestLocationEligibilityGate:
         profile = {"eeo": {"current_right_to_work": ["Netherlands"]}}
         check_location_eligibility(role_config, profile)  # no restriction — must not raise
 
+    def test_display_location_is_not_a_restriction(self):
+        """
+        role_config.location is a DISPLAY field, not an eligibility restriction.
+        Without an explicit right_to_work, the gate must pass even when the display
+        location differs from the authorized country — otherwise sponsorship-requiring
+        profiles get false-blocked on common remote roles (0/30 role configs carry
+        right_to_work; all use location for display).
+        """
+        role_config = {"location": "Remote - United States"}
+        profile = {"eeo": {"current_right_to_work": ["Netherlands"]}}
+        check_location_eligibility(role_config, profile)  # must not raise
+
+    def test_explicit_right_to_work_still_blocks(self):
+        """An explicit right_to_work mismatch must still raise (gate not disabled)."""
+        role_config = {"right_to_work": "UK only"}
+        profile = {"eeo": {"current_right_to_work": ["Netherlands"]}}
+        with pytest.raises(LocationEligibilityError, match="UK only"):
+            check_location_eligibility(role_config, profile)
+
     def test_no_work_auth_in_profile_passes(self):
         """Missing work_auth data in profile: gate skips (fail-open on missing data)."""
         role_config = {"right_to_work": "UK only"}
@@ -574,6 +593,30 @@ class TestCompositeGate:
                 role_config={"right_to_work": "UK only"},
                 profile={"eeo": {"current_right_to_work": ["Nigeria"]}},
             )
+
+    def test_display_location_only_role_passes_through_composite(
+        self,
+        empty_tracker: Path,
+        generated_dir_with_pdfs: Path,
+        confirmation_registry: Path,
+    ):
+        """
+        A role with only a display `location` (no explicit right_to_work) must NOT
+        be blocked by run_pre_apply_checks, even when the authorized country differs.
+        Mirrors real role configs (display location like "Remote - United States")
+        against a sponsorship-requiring profile.
+        """
+        run_pre_apply_checks(
+            role_id="stripe_backend_2026",
+            job_url="https://jobs.lever.co/stripe/abc123/apply",
+            ats_platform="lever",
+            output_prefix="TestCo_SeniorBackend",
+            generated_dir=generated_dir_with_pdfs,
+            tracker_path=empty_tracker,
+            registry_path=confirmation_registry,
+            role_config={"location": "Remote - United States"},
+            profile={"eeo": {"current_right_to_work": ["Netherlands"]}},
+        )  # must not raise
 
 
 # ---------------------------------------------------------------------------
