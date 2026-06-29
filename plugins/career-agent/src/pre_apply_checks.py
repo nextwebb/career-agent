@@ -64,6 +64,10 @@ class UnsupportedPlatformError(PreApplyError):
     """Raised when the ATS platform has no verified confirmation pattern."""
 
 
+class LocationEligibilityError(PreApplyError):
+    """Raised when the role's location/eligibility requirement does not match the profile."""
+
+
 class CompanyRepeatError(PreApplyError):
     """Raised when prior same-company rejections meet or exceed the threshold.
 
@@ -289,6 +293,136 @@ def check_platform_supported(
         )
 
 
+# Country alias groups: each entry maps equivalent names/codes to one another so
+# that an authorized "US" matches a restriction that says "United States" (and vice
+# versa). Comparison is case-insensitive against the normalised tokens.
+_COUNTRY_ALIASES: list[set[str]] = [
+    {"us", "usa", "united states", "united states of america", "america"},
+    {"uk", "united kingdom", "great britain", "britain", "gb"},
+    {"uae", "united arab emirates"},
+    {"eu", "european union", "eea", "european economic area"},
+]
+
+
+def _location_aliases(token: str) -> set[str]:
+    """Return the set of equivalent names/codes for a country token (incl. itself)."""
+    token = token.strip().lower()
+    if not token:
+        return set()
+    for group in _COUNTRY_ALIASES:
+        if token in group:
+            return set(group)
+    return {token}
+
+
+# A role's `location` is a DISPLAY string by default. We only treat it as an
+# eligibility restriction when it carries an explicit restriction marker — a clear,
+# conservative signal that the location is gating eligibility rather than describing
+# where the role sits. Bare locations ("Berlin", "Remote - United States") never gate.
+_RESTRICTION_MARKER_PATTERNS = [
+    r"\bonly\b",  # "United States only", "EU only"
+    r"\bno sponsorship\b",
+    r"\bmust be authori[sz]ed\b",
+    r"\bmust have (?:the )?right to work\b",
+    r"\bauthori[sz]ation required\b",
+]
+_RESTRICTION_MARKER_RE = re.compile("|".join(_RESTRICTION_MARKER_PATTERNS), re.IGNORECASE)
+
+
+def _has_restriction_marker(text: str) -> bool:
+    """True if a location string carries an explicit eligibility-restriction marker."""
+    return bool(text and _RESTRICTION_MARKER_RE.search(text))
+
+
+def _restriction_tokens(restriction: str) -> set[str]:
+    """
+    Tokenise a restriction string for whole-token country matching.
+
+    Produces both single-word tokens (split on non-alphanumeric boundaries) and a
+    set of multi-word substrings so multi-word country names like "united states"
+    still match. Everything is lowercased.
+    """
+    words = [w for w in re.split(r"[^a-z0-9]+", restriction.lower()) if w]
+    tokens: set[str] = set(words)
+    # Add adjacent word pairs/triples so multi-word aliases match (e.g. "united states").
+    for n in (2, 3):
+        for i in range(len(words) - n + 1):
+            tokens.add(" ".join(words[i : i + n]))
+    return tokens
+
+
+def check_location_eligibility(
+    role_config: dict,
+    profile: dict,
+    force_location: bool = False,
+) -> None:
+    """
+    FAIL if the role's eligibility restriction does not match the profile's
+    authorized work countries.
+
+    A restriction is selected from role_config when EITHER holds:
+      (a) "right_to_work" is non-empty → it is always an eligibility restriction; OR
+      (b) "location" carries an explicit RESTRICTION MARKER (e.g. the word "only" at
+          a word boundary as in "United States only" / "EU only", or phrases like
+          "no sponsorship", "must be authorized", "must have the right to work",
+          "authorization required") → the location is treated as the restriction.
+
+    A PLAIN display "location" with no marker ("Berlin", "Remote - United States",
+    "Amsterdam, Netherlands", "Berlin HQ", ...) is NOT an eligibility restriction and
+    does NOT gate — treating bare display locations as restrictions would false-block
+    sponsorship-requiring profiles, since many such roles sponsor. We only enforce
+    explicit restriction signals. (None of the current 30 role configs contain a
+    marker, so this gate stays a safe no-op for them today, but it correctly fires on
+    a future "X only" role and never false-blocks a plain display location.)
+
+    Reads authorized countries from the profile's EEO work-authorization schema:
+    profile["eeo"]["current_right_to_work"] (a list of country names/codes), with a
+    fallback to profile["work_authorization"]["current_right_to_work"] for the shape
+    built by src/jobqa_workspace.py:_build_candidate.
+
+    Matching is done on whole, case-insensitive tokens (with a small alias map for
+    common code/name pairs like US/USA/"United States"), so a substring like "us"
+    in "Australia only" does NOT count as a match.
+
+    If force_location is True, logs a warning and returns without raising.
+    """
+    if force_location:
+        return  # explicit override — log warning in caller
+
+    # Select the restriction. right_to_work is always an eligibility restriction;
+    # "location" is display-only UNLESS it carries an explicit restriction marker.
+    restriction = role_config.get("right_to_work", "")
+    if not restriction:
+        location = role_config.get("location", "")
+        if _has_restriction_marker(location):
+            restriction = location
+    if not restriction:
+        return  # no explicit restriction (no right_to_work, no location marker) — pass
+
+    # Read authorized countries from the real profile schema (profile.eeo), falling
+    # back to the jobqa-built work_authorization shape. Both use current_right_to_work.
+    eeo = profile.get("eeo", {})
+    authorized = eeo.get("current_right_to_work")
+    if not authorized:
+        work_auth = profile.get("work_authorization", {})
+        authorized = work_auth.get("current_right_to_work", [])
+    if not authorized:
+        return  # no work-auth data in profile — skip (don't block on missing data)
+
+    # Whole-token match: tokenise the restriction and compare against each
+    # authorized country (and its aliases) by exact token equality.
+    restriction_tokens = _restriction_tokens(restriction)
+    for country in authorized:
+        if _location_aliases(country) & restriction_tokens:
+            return  # match found — allowed
+
+    # No match
+    raise LocationEligibilityError(
+        f"Role location restriction '{restriction}' does not match profile "
+        f"work-authorization: {authorized}. Use --force-location to override."
+    )
+
+
 def check_confirmation_pattern(
     ats_platform: str,
     final_url: str,
@@ -439,8 +573,10 @@ def run_pre_apply_checks(
     registry_path: Path | None = None,
     autonomous: bool = False,
     override_ats_policy: bool = False,
-    role_config: dict[str, Any] | None = None,
+    role_config: dict | None = None,
     allow_company_repeat: bool = False,
+    profile: dict | None = None,
+    force_location: bool = False,
 ) -> None:
     """
     Run all pre-apply gates in sequence. Raises PreApplyError on first failure.
@@ -452,11 +588,16 @@ def run_pre_apply_checks(
        30-day cooldown window (no-op for non-Lever URLs; pass
        override_ats_policy=True to downgrade a block to a logged warning)
     4. Artifacts exist — catches missing or corrupt PDFs
-    5. Platform supported — blocks autonomous mode on unverified ATS (HITL: warning only)
+    5. Location eligibility — blocks roles with mismatched right-to-work (or a
+       location carrying an explicit restriction marker); only runs when both
+       role_config and profile are supplied
+    6. Platform supported — blocks autonomous mode on unverified ATS (HITL: warning only)
 
     The company-repeat gate only runs when `role_config` is supplied (it needs the
     company name). Pass `allow_company_repeat=True` to downgrade that gate's block
     to a logged warning — the apply skill does this only on explicit user approval.
+    The location gate only runs when both `role_config` and `profile` are supplied;
+    pass `force_location=True` to bypass it.
     """
     check_duplicate(job_url, tracker_path)
     if role_config is not None:
@@ -467,6 +608,9 @@ def run_pre_apply_checks(
         )
     check_lever_cooldown(job_url, tracker_path, override_ats_policy=override_ats_policy)
     check_artifacts_exist(output_prefix, generated_dir)
+
+    if role_config is not None and profile is not None:
+        check_location_eligibility(role_config, profile, force_location=force_location)
 
     if autonomous:
         if ats_platform in ("unknown", ""):

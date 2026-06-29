@@ -416,26 +416,35 @@ Call `src/yolo.py:is_yolo_enabled(profile)`. If it returns `False` (key mismatch
 
 ### Step B — Pre-apply gates (autonomous mode)
 
-Run gates 1-4 using `run_pre_apply_checks(autonomous=True, role_config=<role_config>)`:
+Using the `profile` and `role_config` already loaded in Step 1 (`profile.json` and
+`roles/<role_id>.json`), run the gates via
+`run_pre_apply_checks(autonomous=True, role_config=role_config, profile=profile)`:
 1. `check_duplicate()` -- **policy halt**: `DUPLICATE` (exact role URL already in tracker)
 2. `check_company_repeat()` -- **policy halt**: `COMPANY_REPEAT` (>= threshold prior same-company rejections)
 3. `check_lever_cooldown()` -- **policy halt**: `LEVER_COOLDOWN` (same-company Lever resubmit within cooldown)
-4. `check_artifacts_exist()` + `check_platform_supported()` -- HITL fallback: `PLATFORM_CHECK_FAILED`
+4. `check_location_eligibility()` -- **policy halt**: `LOCATION_INELIGIBLE` (right-to-work / location-marker mismatch)
+5. `check_artifacts_exist()` + `check_platform_supported()` -- HITL fallback: `PLATFORM_CHECK_FAILED`
+
+`role_config` and `profile` must both be passed in; the location gate is skipped when either is
+omitted, so without them the role's `right_to_work`/`location` restriction is never enforced in
+the autonomous path. To intentionally bypass a known-good location override, pass
+`force_location=True`.
 
 **Route gate failures by kind — do NOT blanket-fall-through to HITL.**
 
-- **Policy blocks (`DUPLICATE`, `COMPANY_REPEAT`, `LEVER_COOLDOWN`) — explicit halt, ask for override.**
+- **Policy blocks (`DUPLICATE`, `COMPANY_REPEAT`, `LEVER_COOLDOWN`, `LOCATION_INELIGIBLE`) — explicit halt, ask for override.**
   These are deliberate policy decisions, not recoverable input problems. Do **not**
   drop into the standard HITL form-fill: that path would let the role be filled anyway
   unless the user happened to notice the history, silently bypassing the gate. Instead
   **STOP**, surface the specific block to the user (for `COMPANY_REPEAT`: the normalised
   company name and the prior-rejection count; for `DUPLICATE`: the matching tracked
-  application; for `LEVER_COOLDOWN`: the company slug and the most-recent submission date),
-  and proceed **only** if the user explicitly approves re-applying. The approval is
+  application; for `LEVER_COOLDOWN`: the company slug and the most-recent submission date;
+  for `LOCATION_INELIGIBLE`: the role's right-to-work/location restriction and the profile's
+  authorized countries), and proceed **only** if the user explicitly approves. The approval is
   exercised by re-running `run_pre_apply_checks()` with the matching real parameter —
   `allow_company_repeat=True` for `COMPANY_REPEAT`, `override_ats_policy=True` for
-  `LEVER_COOLDOWN` (there is no CLI flag for either). Without explicit approval, the run
-  ends here.
+  `LEVER_COOLDOWN`, `force_location=True` for `LOCATION_INELIGIBLE` (there is no CLI flag for
+  any of these). Without explicit approval, the run ends here.
 - **Recoverable failures (`PLATFORM_CHECK_FAILED` — missing/corrupt PDF or unverified
   ATS) — fall to the standard HITL flow.** These can be fixed or completed manually by
   the user, so the normal human-in-the-loop path is appropriate.
