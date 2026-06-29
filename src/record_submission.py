@@ -117,15 +117,6 @@ def main() -> int:
         ats_part = "unknown"
         url_part = submission_target
 
-    # Write provisional tracker entry before Submit so crash-between-submit-and-tracker
-    # is visible to duplicate detection on next run (issue #135).
-    if tracker_path_str is not None:
-        tracker_module.mark_submitted_unconfirmed(
-            role_id=role_id,
-            job_url=url_part,
-            tracker_path=Path(tracker_path_str),
-        )
-
     log: dict = {
         "schema_version": "1",
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -137,11 +128,27 @@ def main() -> int:
         "manifest_summary": manifest_data.get("summary", {}),
     }
 
+    # Write the fallible audit log FIRST. If this fails the apply flow aborts
+    # before Submit, so we must NOT have written the provisional tracker row yet —
+    # otherwise a never-submitted application would leave a submitted_unconfirmed
+    # row that check_duplicate blocks on the next legitimate retry (false block).
     try:
         output_path.write_text(json.dumps(log, indent=2, ensure_ascii=False))
     except OSError as exc:
         print(f"Error: could not write submission log to {output_path}: {exc}", file=sys.stderr)
         return 1
+
+    # Audit log is safely on disk. Now write the provisional tracker entry as the
+    # LAST thing before returning success. record_submission.py runs before the
+    # skill clicks Submit, so this still lands inside the crash window #135 guards:
+    # a crash between Submit and the post-submit tracker update stays visible to
+    # duplicate detection on the next run.
+    if tracker_path_str is not None:
+        tracker_module.mark_submitted_unconfirmed(
+            role_id=role_id,
+            job_url=url_part,
+            tracker_path=Path(tracker_path_str),
+        )
 
     print(f"Submission log written: {output_path}")
     return 0

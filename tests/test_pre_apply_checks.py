@@ -750,6 +750,45 @@ class TestRecordSubmissionRoleId:
         assert entries[0]["role_id"] != str(manifest)
         assert entries[0]["status"] == "submitted_unconfirmed"
 
+    def test_audit_write_failure_leaves_no_provisional_row(self, tmp_path: Path, monkeypatch):
+        """
+        If the audit-log write fails (output_path is an existing directory →
+        write_text raises), record_submission must return non-zero AND must NOT
+        have written a submitted_unconfirmed tracker row — otherwise a
+        never-submitted application would falsely block the next retry.
+        """
+        manifest = tmp_path / "manifest.json"
+        manifest.write_text(json.dumps({"role_id": "stripe_backend", "summary": {}}))
+        tracker = tmp_path / "tracker.json"
+
+        # Point output_path at an existing directory so write_text raises OSError.
+        output_dir = tmp_path / "audit_is_a_dir.json"
+        output_dir.mkdir()
+
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "record_submission.py",
+                str(manifest),
+                "lever:https://jobs.lever.co/stripe/abc123/apply",
+                "yolo-pre-authorized:abcd",
+                str(output_dir),
+                str(tracker),
+            ],
+        )
+        rc = record_submission.main()
+        assert rc != 0  # audit write failed → abort before Submit
+
+        # The provisional row must NOT have been written.
+        if tracker.exists():
+            entries = json.loads(tracker.read_text())
+            assert not any(
+                e.get("role_id") == "stripe_backend" and e.get("status") == "submitted_unconfirmed"
+                for e in entries
+            ), "audit-write failure must not leave a duplicate-blocking row"
+        # (tracker not existing at all is also acceptable — no mutation happened)
+
 
 class TestWorkableThankYouFalsePositive:
     def test_workable_thank_you_does_not_confirm(self):
