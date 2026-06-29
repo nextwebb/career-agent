@@ -73,8 +73,18 @@ _LEVER_HOSTS = ("jobs.lever.co", "jobs.eu.lever.co")
 # Tracker statuses that mean an application was NEVER actually submitted.
 # Lever retains any sent application, so we bias toward blocking: everything
 # past "draft" is treated as a real submission. A false block is recoverable
-# via --override-ats-policy; a false ALLOW causes a double-submit Lever penalty.
+# via the override_ats_policy=True parameter; a false ALLOW causes a
+# double-submit Lever penalty.
 _NOT_SUBMITTED_STATUSES = frozenset({"draft"})
+
+# How to bypass the gate. NOTE: this is NOT a CLI flag — run_pre_apply_checks is
+# invoked by the apply skill agent, not via argparse. The override is the
+# override_ats_policy=True parameter, which the apply skill passes only with
+# explicit user approval (see the apply skill's ATS-policy override step).
+_OVERRIDE_HINT = (
+    "To bypass (only with explicit user approval), re-run the pre-apply checks "
+    "with override_ats_policy=True (see the apply skill's ATS-policy override step)."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -251,7 +261,7 @@ def check_lever_cooldown(
     within `cooldown_days` of today, raise LeverCooldownError.
 
     Bias toward blocking: Lever retains any sent application, so a false block
-    (recoverable via --override-ats-policy) is preferred over a false allow
+    (recoverable via override_ats_policy=True) is preferred over a false allow
     (which causes a double-submit penalty). A matching entry with no usable
     submission date is therefore blocked, citing the unknown date — but a
     never-submitted draft never blocks.
@@ -299,7 +309,7 @@ def check_lever_cooldown(
             f"'{slug}' ({role_id}) was submitted on an unknown/unparseable date "
             f"('{raw_date}'), so it cannot be cleared of the inferred {cooldown_days}-day "
             f"cooldown (ASSUMPTION — not confirmed Lever policy). "
-            f"Re-run with --override-ats-policy to bypass."
+            f"{_OVERRIDE_HINT}"
         )
         _raise_or_warn(msg, override_ats_policy)
         return
@@ -313,7 +323,7 @@ def check_lever_cooldown(
             f"'{slug}' ({role_id}) was submitted on {raw_date} ({days_elapsed} day(s) "
             f"ago), within the inferred {cooldown_days}-day cooldown "
             f"(ASSUMPTION — not confirmed Lever policy). "
-            f"Re-run with --override-ats-policy to bypass."
+            f"{_OVERRIDE_HINT}"
         )
         _raise_or_warn(msg, override_ats_policy)
         return
@@ -344,7 +354,8 @@ def run_pre_apply_checks(
     1. Duplicate check — catches already-applied roles
     2. Artifacts exist — catches missing or corrupt PDFs
     3. Lever cooldown — blocks same-company Lever resubmit within the inferred
-       30-day cooldown window (no-op for non-Lever URLs; --override-ats-policy bypasses)
+       30-day cooldown window (no-op for non-Lever URLs; pass
+       override_ats_policy=True to downgrade a block to a logged warning)
     4. Platform supported — blocks autonomous mode on unverified ATS (HITL: warning only)
 
     All gates must pass before browser automation starts.
@@ -462,7 +473,8 @@ def _raise_or_warn(message: str, override_ats_policy: bool) -> None:
     """Raise LeverCooldownError, or downgrade to a stderr WARNING when overridden."""
     if override_ats_policy:
         print(
-            f"WARNING: ATS-policy gate bypassed via --override-ats-policy. {message}",
+            f"WARNING: ATS-policy gate bypassed via override_ats_policy=True "
+            f"(explicit user approval required). {message}",
             file=sys.stderr,
         )
         return

@@ -685,7 +685,9 @@ class TestLeverCooldownGate:
         )  # must not raise
         captured = capsys.readouterr()
         assert "WARNING" in captured.err
-        assert "override-ats-policy" in captured.err
+        # Warning must describe the real mechanism (a parameter), not a CLI flag.
+        assert "override_ats_policy=True" in captured.err
+        assert "--override-ats-policy" not in captured.err
 
     def test_no_tracker_file_passes(self, tmp_path: Path):
         check_lever_cooldown(

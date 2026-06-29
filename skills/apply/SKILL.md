@@ -432,11 +432,13 @@ URLs are a no-op. The window is `LEVER_COOLDOWN_DAYS` (default 30) in
 `src/pre_apply_checks.py` — this number is an **inferred assumption, not confirmed
 Lever policy**; it is documented as such at the constant and in the error message.
 
-**Override escape hatch:** pass `override_ats_policy=True` to
-`run_pre_apply_checks()` (surfaced as the `--override-ats-policy` flag) to bypass
-the cooldown gate. When set, a would-be block is downgraded to a stderr WARNING
-and the gate passes — use it when a slug match is a false positive (e.g. the prior
-submission was actually never sent) or when re-applying is intentional.
+**ATS policy override (the override step).** There is no CLI flag for this — the
+gate is invoked via `run_pre_apply_checks()`, not argparse. If the Lever cooldown
+gate blocks and **the user explicitly approves proceeding**, re-run
+`run_pre_apply_checks(..., override_ats_policy=True)`. With that parameter set, a
+would-be block is downgraded to a logged stderr WARNING and the gate passes. Use
+it only with explicit user approval — e.g. when the slug match is a false positive
+(the prior submission was actually never sent) or when re-applying is intentional.
 
 Then run the yolo gate battery via `src/yolo.py:run_yolo_gates(profile, role_config, workspace_dir, tracker_path)`:
 
