@@ -89,6 +89,63 @@ site:lever.co data platform engineer Europe relocation
 These patterns are examples, not a required search engine API. Use whatever public
 search or browser capability is available in the host session.
 
+## Freshness Pre-filter
+
+### Why
+
+At high application velocity, applying to stale listings wastes pipeline resources in
+two concrete ways:
+
+1. **Lever 30-day cooldown**: Lever enforces a 30-day per-company reapplication
+   window. Submitting to a closed role on Lever burns that window for the company,
+   blocking a fresh application when a matching open role is posted later.
+2. **Company-repeat counters**: Many ATS platforms track reapplication frequency as a
+   signal. Applications to closed roles inflate that counter without producing
+   recruiter engagement.
+
+Pipeline evidence: withdrawn/closed entries likely include roles that closed before
+applications were processed. The freshness gate prevents new additions to that bucket.
+
+### Freshness is a pre-filter, not a scoring factor
+
+Stale roles are **excluded entirely** before verification begins, not merely scored
+lower. This is intentional: a stale role with a high fit score still wastes a cooldown
+slot, so scoring it is counterproductive. The gate runs after lead discovery (Step 3)
+and before verification (Step 4), so excluded roles do not consume verification work.
+
+### Thresholds
+
+| Age | Action | Rationale |
+|---|---|---|
+| ≤14 days | Include (active) | Actively recruiting; recruiter pipeline is open. |
+| 15–30 days | Include, flag ⚠ stale | Role may still be open but pipeline could be closing; flag for user awareness. |
+| >30 days | Exclude by default | High probability closed or filled; cooldown risk outweighs lead value. |
+| Age unknown | Include, flag ? unknown | No date signal found; include conservatively but flag for user awareness. |
+
+The `--include-stale` flag overrides the >30-day exclusion for users who want
+exhaustive coverage and accept the cooldown risk.
+
+### How posting age is determined
+
+Extract age in this priority order:
+
+1. **ATS page signals**: Greenhouse, Lever, and Ashby often embed a `Posted` or
+   `Updated` timestamp directly on the job page. Prefer this over derived signals.
+2. **Relative strings on the page**: "Posted 3 days ago", "Posted 2 weeks ago",
+   "Posted about a month ago" — convert to approximate days.
+3. **Explicit date strings**: ISO dates or formatted dates in the page metadata or
+   visible on the post.
+4. **URL-embedded dates**: Some ATS platforms encode a posting date in the URL path
+   (e.g. `/jobs/2026/05/senior-engineer`).
+5. **Secondary signals** when no date is found: "No longer accepting applications"
+   triggers immediate exclusion; presence on the company's own careers page (not only
+   an aggregator) is a positive freshness signal.
+
+Record the inferred age and the signal source in the `Posting age` field of every
+output role so the user can audit the inference.
+
+---
+
 ## Role Verification
 
 A role can be counted as verified only when all of the following are true:
@@ -198,6 +255,7 @@ Work setup:     Remote within EU
 Apply:          https://jobs.example.com/examplecloud/senior-python-platform-engineer
 Source:         https://jobs.example.com/examplecloud/senior-python-platform-engineer
 Source type:    company-controlled ATS post
+Posting age:    8 days
 
 Verified facts:
   - The cited ATS post lists Python, distributed systems, AWS, and platform ownership.
