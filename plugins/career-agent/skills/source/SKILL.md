@@ -24,6 +24,7 @@ In Codex, invoke this skill with `$source`, the skills/plugin selector, or natur
 /source [country]                         : focus on a specific country or region
 /source [role_type]                       : focus on a role type (backend, data, AI)
 /source [country] [role_type]
+/source --include-stale                   : include roles older than 30 days (overrides freshness exclusion)
 ```
 
 Examples:
@@ -32,6 +33,7 @@ Examples:
 /source UK backend
 /source EU "data platform"
 /source remote AI infrastructure
+/source --include-stale remote backend
 ```
 
 ## Step 1: Build the candidate profile
@@ -143,6 +145,34 @@ Prioritise any role where the candidate's background gives a clear advantage:
 
 ---
 
+## Step 3b: Freshness gate (runs before scoring)
+
+Check posting age before including any role. Apply this gate after discovering candidates in Step 3 and before verification in Step 4. Roles that fail the gate are excluded from the verified set and do not consume a verification slot.
+
+### Freshness gate (runs before scoring)
+
+Check posting age before including any role:
+
+1. Extract posting date from: "Posted X days ago", "X hours ago", explicit
+   date strings, Greenhouse/Lever/Ashby timestamps in the URL or page.
+
+2. Apply cutoffs:
+   - ≤14 days: include (active)
+   - 15–30 days: include, flag ⚠ stale
+   - >30 days: exclude (skip) unless `--include-stale` is set
+   - Age not found: include, flag ? unknown age
+
+3. Secondary signals when no date is visible:
+   - "No longer accepting applications" → exclude immediately
+   - Role on company careers page AND job board → positive (still active)
+   - Role only on third-party aggregator, not on company site → flag ⚠ potentially stale
+
+4. Record inferred age in the output for each role.
+
+When `--include-stale` is passed, roles older than 30 days are included but retain the ⚠ stale flag in output so the user can make an informed choice.
+
+---
+
 ## Step 4: Verify each role
 
 For every candidate role:
@@ -195,6 +225,7 @@ Work setup:     [Remote | Hybrid | Onsite | Relocation]
 Apply:          [Direct application URL]
 Source:         [Company careers page URL used to verify]
 Source type:    [company-hosted | company-controlled ATS | public platform]
+Posting age:    [X days | ⚠ stale (X days) | ? unknown age]
 Sponsorship:    [Confirmed in job post | Source list claim only, not confirmed in job post | Company-level signal only | Not mentioned | Likely blocker]
 
 Fit score:      [X/100]
