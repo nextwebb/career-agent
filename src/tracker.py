@@ -39,6 +39,8 @@ STATUSES = [
     "autonomous_failed",
 ]
 
+GHOST_THRESHOLD_DAYS = 7
+
 
 def _normalise_url(url: str) -> str:
     """Normalise a URL for matching, consistent with pre_apply_checks.check_duplicate.
@@ -258,7 +260,25 @@ STATUS_ICONS = {
 }
 
 
-def list_entries(filter_status: str | None = None) -> None:
+def _ghost_risk_days(entry: dict) -> int | None:
+    """Return days since last_update if the entry is ghost-risk, else None.
+
+    Ghost risk: status == "applied" and last_update is >= GHOST_THRESHOLD_DAYS ago.
+    Returns the number of days (int) when the condition is met, None otherwise.
+    """
+    if entry.get("status") != "applied":
+        return None
+    last_update_str = entry.get("last_update")
+    if not last_update_str:
+        return None
+    try:
+        days = (date.today() - date.fromisoformat(last_update_str)).days
+    except ValueError:
+        return None
+    return days if days >= GHOST_THRESHOLD_DAYS else None
+
+
+def list_entries(filter_status: str | None = None, ghost_only: bool = False) -> None:
     entries = load()
     if not entries:
         print("  No applications tracked yet. Run --add <role_id>")
@@ -266,6 +286,9 @@ def list_entries(filter_status: str | None = None) -> None:
 
     if filter_status:
         entries = [e for e in entries if e["status"] == filter_status]
+
+    if ghost_only:
+        entries = [e for e in entries if _ghost_risk_days(e) is not None]
 
     # Group by status
     order = [
@@ -297,7 +320,9 @@ def list_entries(filter_status: str | None = None) -> None:
         print(f"  {icon} {status.upper()} ({len(group)})")
         for e in group:
             applied_str = f"  applied {e['applied']}" if e.get("applied") else ""
-            print(f"     {e['role_id']:35s} {e['company']} — {e['title']}{applied_str}")
+            ghost_days = _ghost_risk_days(e)
+            ghost_str = f"  ⚠ ghost risk ({ghost_days}d)" if ghost_days is not None else ""
+            print(f"     {e['role_id']:35s} {e['company']} — {e['title']}{applied_str}{ghost_str}")
             if e.get("notes"):
                 last = e["notes"][-1]
                 print(f"     {'':35s} └ {last['date']}: {last['text']}")
@@ -311,6 +336,11 @@ def main():
     parser.add_argument("--status", metavar="STATUS", help=f"Status: {', '.join(STATUSES)}")
     parser.add_argument("--note", metavar="ROLE_ID", help="Add a note to a role")
     parser.add_argument("--list", action="store_true", help="List all tracked applications")
+    parser.add_argument(
+        "--ghost",
+        action="store_true",
+        help="With --list: show only applied entries with ghost risk (>= 7 days without update)",
+    )
     parser.add_argument("text", nargs="?", help="Note text (used with --note)")
     args = parser.parse_args()
 
@@ -327,7 +357,7 @@ def main():
         else:
             add_note(args.note, args.text)
     elif args.list:
-        list_entries(filter_status=args.status)
+        list_entries(filter_status=args.status, ghost_only=args.ghost)
     else:
         parser.print_help()
 

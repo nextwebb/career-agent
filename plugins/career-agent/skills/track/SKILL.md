@@ -38,6 +38,33 @@ python3 "<career_agent_root>/src/tracker.py" --list
 
 Output groups applications by status with icons. Show this after every `/apply` handoff.
 
+#### Ghost risk annotation
+
+Applied entries with no update for 7 or more days are annotated inline:
+
+```
+📤 APPLIED (3)
+   stripe_backend                      Stripe — Backend Engineer  applied 2026-06-10  ⚠ ghost risk (21d)
+   acme_sre                            Acme — SRE                 applied 2026-06-18
+```
+
+The `⚠ ghost risk (Nd)` suffix shows the number of days since the last update. With a median rejection turnaround of 1 day, entries silent for 7+ days are very likely already decided but not yet logged.
+
+**Action:** mark ghost-risk entries as `rejected` with a note explaining the silence:
+
+```bash
+python3 "<career_agent_root>/src/tracker.py" --update stripe_backend --status rejected
+python3 "<career_agent_root>/src/tracker.py" --note stripe_backend "No response after 21d — marking rejected"
+```
+
+#### Filter to ghost-risk entries only
+
+```bash
+python3 "<career_agent_root>/src/tracker.py" --list --ghost
+```
+
+Shows only `applied` entries that meet the ghost-risk threshold (>= 7 days without update). Useful for pipeline cleanup: run periodically to surface stale applications and close them out.
+
 ### Add a role to tracking
 
 ```bash
