@@ -250,6 +250,8 @@ def update_status(role_id: str, status: str, close_reason: str | None = None) ->
                 _refresh_submission_metadata(e, role_id)
             if close_reason is not None:
                 e["close_reason"] = close_reason
+            elif status not in ("rejected", "withdrawn"):
+                e["close_reason"] = None
             save(entries)
             reason_str = f" [close_reason: {close_reason}]" if close_reason else ""
             print(f"  ✓ {role_id}: {old} → {status}{reason_str}")

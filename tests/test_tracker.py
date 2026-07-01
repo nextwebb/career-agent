@@ -391,3 +391,13 @@ class TestCloseReason:
 
         captured = capsys.readouterr()
         assert "[company_closed]" in captured.out
+
+    def test_close_reason_cleared_when_status_moves_to_active(self, workspace: Path):
+        """close_reason must reset to None when an entry transitions back to an active status."""
+        _write_role(workspace, "reopen_role")
+        tracker.add("reopen_role")
+        tracker.update_status("reopen_role", "rejected", close_reason="explicit_reject")
+        assert _entry(workspace, "reopen_role")["close_reason"] == "explicit_reject"
+
+        tracker.update_status("reopen_role", "interview")
+        assert _entry(workspace, "reopen_role")["close_reason"] is None
