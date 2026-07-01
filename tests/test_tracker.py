@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -228,3 +229,94 @@ class TestSubmissionTransitionRefresh:
         # Value stays as captured at add() time — the submission event owns the value.
         assert entry["ats_platform"] == "greenhouse"
         assert entry["variant"] == "A"
+
+
+# ---------------------------------------------------------------------------
+# Ghost detection
+# ---------------------------------------------------------------------------
+
+
+def _make_entry(role_id: str, status: str, last_update: date, **kwargs) -> dict:
+    """Build a minimal tracker entry dict."""
+    return {
+        "role_id": role_id,
+        "company": "Acme",
+        "title": "Engineer",
+        "url": "https://x/y",
+        "status": status,
+        "added": str(last_update),
+        "applied": str(last_update) if status != "draft" else None,
+        "last_update": str(last_update),
+        "notes": [],
+        **kwargs,
+    }
+
+
+class TestGhostDetection:
+    def test_applied_8_days_ago_appears_in_ghost_filter_and_has_annotation(
+        self, workspace: Path, capsys: pytest.CaptureFixture
+    ):
+        """Applied entry with last_update 8 days ago shows in --ghost and has the annotation."""
+        stale_date = date.today() - timedelta(days=8)
+        entries = [_make_entry("old_apply", "applied", stale_date)]
+        (workspace / "tracker.json").write_text(json.dumps(entries))
+
+        tracker.list_entries(ghost_only=True)
+
+        captured = capsys.readouterr()
+        assert "old_apply" in captured.out
+        assert "⚠ ghost risk (8d)" in captured.out
+
+    def test_applied_3_days_ago_does_not_appear_in_ghost_filter(
+        self, workspace: Path, capsys: pytest.CaptureFixture
+    ):
+        """Applied entry with last_update 3 days ago is below threshold, excluded from --ghost."""
+        recent_date = date.today() - timedelta(days=3)
+        entries = [_make_entry("new_apply", "applied", recent_date)]
+        (workspace / "tracker.json").write_text(json.dumps(entries))
+
+        tracker.list_entries(ghost_only=True)
+
+        captured = capsys.readouterr()
+        # No entries shown — the "No applications tracked" message should NOT appear
+        # (entries exist), but the role should not be printed.
+        assert "new_apply" not in captured.out
+        assert "⚠ ghost risk" not in captured.out
+
+    def test_rejected_30_days_ago_does_not_appear_in_ghost_filter(
+        self, workspace: Path, capsys: pytest.CaptureFixture
+    ):
+        """Rejected entry, even very stale, is excluded from --ghost (applied-only check)."""
+        old_date = date.today() - timedelta(days=30)
+        entries = [_make_entry("old_rejection", "rejected", old_date)]
+        (workspace / "tracker.json").write_text(json.dumps(entries))
+
+        tracker.list_entries(ghost_only=True)
+
+        captured = capsys.readouterr()
+        assert "old_rejection" not in captured.out
+        assert "⚠ ghost risk" not in captured.out
+
+    def test_list_without_ghost_shows_all_entries_including_ghost_risk(
+        self, workspace: Path, capsys: pytest.CaptureFixture
+    ):
+        """--list without --ghost shows all entries, ghost-risk ones get the annotation."""
+        stale_date = date.today() - timedelta(days=10)
+        recent_date = date.today() - timedelta(days=2)
+        entries = [
+            _make_entry("stale_apply", "applied", stale_date),
+            _make_entry("fresh_apply", "applied", recent_date),
+        ]
+        (workspace / "tracker.json").write_text(json.dumps(entries))
+
+        tracker.list_entries()
+
+        captured = capsys.readouterr()
+        assert "stale_apply" in captured.out
+        assert "fresh_apply" in captured.out
+        assert "⚠ ghost risk (10d)" in captured.out
+        # The fresh entry must NOT have a ghost annotation
+        lines = captured.out.splitlines()
+        for line in lines:
+            if "fresh_apply" in line:
+                assert "⚠ ghost risk" not in line
