@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.8.0](https://github.com/nextwebb/career-agent/compare/v1.7.1...v1.8.0) (2026-07-01)
+
+
+### Features
+
+* **source:** posting-age freshness gate before role scoring ([#163](https://github.com/nextwebb/career-agent/issues/163)) ([ab0fb29](https://github.com/nextwebb/career-agent/commit/ab0fb291e2051872a75bf3d571fa5aeb58c461f5))
+* **tracker:** close_reason field for withdrawn/rejected entries ([#164](https://github.com/nextwebb/career-agent/issues/164)) ([5e95146](https://github.com/nextwebb/career-agent/commit/5e95146d996ca83a9e1cba15c0f9123676aeeb1a))
+* **tracker:** ghost detection for stale applied entries ([#162](https://github.com/nextwebb/career-agent/issues/162)) ([ecf9e84](https://github.com/nextwebb/career-agent/commit/ecf9e847661ef45bf8296a74fc8b4dcc35b08be3))
+
 ## [1.7.1](https://github.com/nextwebb/career-agent/compare/v1.7.0...v1.7.1) (2026-06-29)
 
 
