@@ -41,6 +41,14 @@ STATUSES = [
 
 GHOST_THRESHOLD_DAYS = 7
 
+CLOSE_REASONS = [
+    "company_closed",
+    "user_withdrew",
+    "ghost",
+    "position_filled",
+    "explicit_reject",
+]
+
 
 def _normalise_url(url: str) -> str:
     """Normalise a URL for matching, consistent with pre_apply_checks.check_duplicate.
@@ -174,6 +182,7 @@ def add(role_id: str) -> None:
         "added": str(date.today()),
         "applied": None,
         "last_update": str(date.today()),
+        "close_reason": None,
         "notes": [],
     }
     entries.append(entry)
@@ -214,10 +223,21 @@ def _refresh_submission_metadata(entry: dict, role_id: str) -> None:
             entry[key] = value
 
 
-def update_status(role_id: str, status: str) -> None:
+CLOSE_REASON_STATUSES = frozenset({"rejected", "withdrawn"})
+
+
+def update_status(role_id: str, status: str, close_reason: str | None = None) -> None:
     if status not in STATUSES:
         print(f"  Invalid status '{status}'. Choose: {', '.join(STATUSES)}")
         return
+    if close_reason is not None and close_reason not in CLOSE_REASONS:
+        print(f"  Invalid close_reason '{close_reason}'. Choose: {', '.join(CLOSE_REASONS)}")
+        return
+    if close_reason is not None and status not in CLOSE_REASON_STATUSES:
+        print(
+            f"  Warning: --close-reason is normally set on withdrawn/rejected, "
+            f"not '{status}'. Writing anyway."
+        )
     entries = load()
     for e in entries:
         if e["role_id"] == role_id:
@@ -228,8 +248,13 @@ def update_status(role_id: str, status: str) -> None:
                 e["applied"] = str(date.today())
             if status in SUBMISSION_STATUSES:
                 _refresh_submission_metadata(e, role_id)
+            if close_reason is not None:
+                e["close_reason"] = close_reason
+            elif status not in ("rejected", "withdrawn"):
+                e["close_reason"] = None
             save(entries)
-            print(f"  ✓ {role_id}: {old} → {status}")
+            reason_str = f" [close_reason: {close_reason}]" if close_reason else ""
+            print(f"  ✓ {role_id}: {old} → {status}{reason_str}")
             return
     print(f"  Not found: {role_id}. Run --add first.")
 
@@ -322,7 +347,11 @@ def list_entries(filter_status: str | None = None, ghost_only: bool = False) -> 
             applied_str = f"  applied {e['applied']}" if e.get("applied") else ""
             ghost_days = _ghost_risk_days(e)
             ghost_str = f"  ⚠ ghost risk ({ghost_days}d)" if ghost_days is not None else ""
-            print(f"     {e['role_id']:35s} {e['company']} — {e['title']}{applied_str}{ghost_str}")
+            close_reason = e.get("close_reason")
+            reason_str = f" [{close_reason}]" if close_reason else ""
+            print(
+                f"     {e['role_id']:35s} {e['company']} — {e['title']}{applied_str}{ghost_str}{reason_str}"
+            )
             if e.get("notes"):
                 last = e["notes"][-1]
                 print(f"     {'':35s} └ {last['date']}: {last['text']}")
@@ -334,6 +363,13 @@ def main():
     parser.add_argument("--add", metavar="ROLE_ID", help="Add a role to the tracker")
     parser.add_argument("--update", metavar="ROLE_ID", help="Update status for a role")
     parser.add_argument("--status", metavar="STATUS", help=f"Status: {', '.join(STATUSES)}")
+    parser.add_argument(
+        "--close-reason",
+        metavar="REASON",
+        dest="close_reason",
+        choices=CLOSE_REASONS,
+        help=f"Close reason (use with --update --status withdrawn/rejected): {', '.join(CLOSE_REASONS)}",
+    )
     parser.add_argument("--note", metavar="ROLE_ID", help="Add a note to a role")
     parser.add_argument("--list", action="store_true", help="List all tracked applications")
     parser.add_argument(
@@ -350,7 +386,7 @@ def main():
         if not args.status:
             print(f"  --update requires --status. Options: {', '.join(STATUSES)}")
         else:
-            update_status(args.update, args.status)
+            update_status(args.update, args.status, close_reason=args.close_reason)
     elif args.note:
         if not args.text:
             print("  --note requires note text as final argument")

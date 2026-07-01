@@ -278,8 +278,6 @@ class TestGhostDetection:
         tracker.list_entries(ghost_only=True)
 
         captured = capsys.readouterr()
-        # No entries shown — the "No applications tracked" message should NOT appear
-        # (entries exist), but the role should not be printed.
         assert "new_apply" not in captured.out
         assert "⚠ ghost risk" not in captured.out
 
@@ -315,8 +313,91 @@ class TestGhostDetection:
         assert "stale_apply" in captured.out
         assert "fresh_apply" in captured.out
         assert "⚠ ghost risk (10d)" in captured.out
-        # The fresh entry must NOT have a ghost annotation
         lines = captured.out.splitlines()
         for line in lines:
             if "fresh_apply" in line:
                 assert "⚠ ghost risk" not in line
+
+
+# ---------------------------------------------------------------------------
+# close_reason field
+# ---------------------------------------------------------------------------
+
+
+class TestCloseReason:
+    def test_new_entry_has_close_reason_none(self, workspace: Path):
+        """A freshly added entry must carry close_reason: null."""
+        _write_role(workspace, "fresh_role")
+        tracker.add("fresh_role")
+        entry = _entry(workspace, "fresh_role")
+        assert "close_reason" in entry
+        assert entry["close_reason"] is None
+
+    def test_update_withdrawn_with_close_reason_company_closed(self, workspace: Path):
+        """--update --status withdrawn --close-reason company_closed writes the field."""
+        _write_role(workspace, "closed_role")
+        tracker.add("closed_role")
+        tracker.update_status("closed_role", "withdrawn", close_reason="company_closed")
+        entry = _entry(workspace, "closed_role")
+        assert entry["status"] == "withdrawn"
+        assert entry["close_reason"] == "company_closed"
+
+    def test_update_rejected_with_close_reason_ghost(self, workspace: Path):
+        """--update --status rejected --close-reason ghost writes the field."""
+        _write_role(workspace, "ghost_role")
+        tracker.add("ghost_role")
+        tracker.update_status("ghost_role", "rejected", close_reason="ghost")
+        entry = _entry(workspace, "ghost_role")
+        assert entry["status"] == "rejected"
+        assert entry["close_reason"] == "ghost"
+
+    def test_legacy_entry_without_close_reason_loads_without_keyerror(self, workspace: Path):
+        """An existing tracker entry that lacks close_reason must not raise KeyError."""
+        legacy = {
+            "role_id": "legacy_no_close",
+            "company": "Old Co",
+            "title": "Engineer",
+            "url": "https://old/role",
+            "status": "withdrawn",
+            "added": "2026-01-01",
+            "applied": "2026-01-02",
+            "last_update": "2026-01-03",
+            "notes": [],
+        }
+        (workspace / "tracker.json").write_text(json.dumps([legacy]))
+
+        tracker.update_status("legacy_no_close", "withdrawn")
+        entry = _entry(workspace, "legacy_no_close")
+        assert entry["status"] == "withdrawn"
+        assert entry.get("close_reason") is None
+
+    def test_list_shows_close_reason_annotation(self, workspace: Path, capsys):
+        """--list output appends [close_reason] when the field is set on an entry."""
+        entry_with_reason = {
+            "role_id": "annotated_role",
+            "company": "Acme",
+            "title": "Engineer",
+            "url": "https://x/y",
+            "status": "withdrawn",
+            "added": "2026-01-01",
+            "applied": "2026-01-02",
+            "last_update": "2026-01-03",
+            "close_reason": "company_closed",
+            "notes": [],
+        }
+        (workspace / "tracker.json").write_text(json.dumps([entry_with_reason]))
+
+        tracker.list_entries()
+
+        captured = capsys.readouterr()
+        assert "[company_closed]" in captured.out
+
+    def test_close_reason_cleared_when_status_moves_to_active(self, workspace: Path):
+        """close_reason must reset to None when an entry transitions back to an active status."""
+        _write_role(workspace, "reopen_role")
+        tracker.add("reopen_role")
+        tracker.update_status("reopen_role", "rejected", close_reason="explicit_reject")
+        assert _entry(workspace, "reopen_role")["close_reason"] == "explicit_reject"
+
+        tracker.update_status("reopen_role", "interview")
+        assert _entry(workspace, "reopen_role")["close_reason"] is None

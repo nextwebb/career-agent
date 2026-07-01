@@ -81,6 +81,23 @@ python3 "<career_agent_root>/src/tracker.py" --update <role_id> --status <status
 
 Run `--update <role_id> --status applied` automatically after the user confirms they clicked Submit.
 
+When marking a role as `withdrawn` or `rejected`, always set `--close-reason` to enable sourcing-lag vs. silent-rejection analysis:
+
+```bash
+python3 "<career_agent_root>/src/tracker.py" --update <role_id> --status withdrawn --close-reason company_closed
+python3 "<career_agent_root>/src/tracker.py" --update <role_id> --status rejected --close-reason explicit_reject
+```
+
+**Close reason decision guide:**
+
+| Value | When to use |
+|---|---|
+| `company_closed` | Job listing disappeared / role was taken down before or after applying |
+| `user_withdrew` | Candidate actively chose to withdraw (accepted another offer, changed mind) |
+| `ghost` | No response after >30 days of silence post-application or post-interview |
+| `position_filled` | Company confirmed the position was filled by someone else |
+| `explicit_reject` | Received an explicit rejection email or notification from the company |
+
 ### Add a note
 
 ```bash
@@ -111,9 +128,12 @@ Format:
     "added": "2026-06-10",
     "applied": "2026-06-11",
     "last_update": "2026-06-13",
+    "close_reason": null,
     "notes": [
       {"date": "2026-06-13", "text": "Technical screen scheduled for June 17"}
     ]
   }
 ]
 ```
+
+`close_reason` is `null` for active entries and set to one of `company_closed`, `user_withdrew`, `ghost`, `position_filled`, or `explicit_reject` when marking an entry `withdrawn` or `rejected`.
