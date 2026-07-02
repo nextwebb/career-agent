@@ -18,9 +18,9 @@
 
 **Agentic job application workflow for Claude Code and Codex.**
 
-One command generates a tailored CV + cover letter PDF per role with deterministic quality gates. For browser workflows with enough platform evidence and safe field classification, the agent fills safe ATS fields, then hands off sensitive, consent, attestation, legal, and Submit controls to you.
+One command generates a tailored CV + cover letter PDF per role with deterministic quality gates. For browser workflows with enough platform evidence and safe field classification, the agent assists with form filling and hands off CAPTCHAs, sensitive fields, consent checkboxes, and Submit to you.
 
-Not a template engine. Not a job tracker. An agent-assisted workflow with deterministic handoff points.
+Not a template engine. Not a job tracker. Not a fully autonomous applicant. An agent-assisted workflow with deterministic handoff points — think of it as a typing assistant with judgment, not a bot that applies for you.
 
 Design philosophy: keep the workflow lightweight, keep career data local, and make generated application materials comprehensive enough for review without pretending to guarantee recruiter or ATS outcomes.
 
@@ -38,10 +38,10 @@ Public docs describe npm `latest`. For pinned installs, use the README and files
 1. **`/source`**: Discover leads from available public/search sources, verify open roles on company-controlled pages, and rank them with a documented heuristic fit score
 2. **`/new-role`**: Scaffold a new role config interactively by scraping the JD
 3. **`/generate-cv`**: Build ATS-safe CV + cover letter PDFs tailored to the role, then run deterministic quality gates
-4. **`/apply`**: Open the job URL in a browser, fill safe fields only when the ATS case is understood, upload PDFs when safe, answer safe custom questions, then hand off to you for sensitive fields and Submit
+4. **`/apply`**: Open the job URL in a browser, assist by filling safe fields only when the ATS case is understood, upload PDFs when safe, answer safe custom questions, then hand off to you for CAPTCHAs, sensitive fields, and Submit
 5. **`/track`**: View your application pipeline, update statuses, add notes
 
-The agent never submits on your behalf. That boundary is intentional.
+The agent never submits on your behalf, and never attempts CAPTCHAs or bot-detection challenges. Those boundaries are intentional.
 
 `/source` evidence and ranking rules are documented in [docs/source-methodology.md](docs/source-methodology.md).
 
@@ -54,7 +54,7 @@ The agent never submits on your behalf. That boundary is intentional.
 | Profile bootstrap from CV/LinkedIn | ✅ `/setup-profile` | ❌ manual markdown file |
 | CV variant system (A/B/C by audience) | ✅ per-role | ❌ single template |
 | Per-role cover letter PDF | ✅ | ✅ `/cover` |
-| Browser form filling | ✅ guarded handoff with Greenhouse, Greenhouse EU, Lever, Workable, Ashby, Teamtailor | ✅ `/apply` |
+| Browser form filling | ✅ assisted form filling with guarded handoff (Greenhouse, Greenhouse EU, Lever, Workable, Ashby, Teamtailor) — CAPTCHAs and bot-detection challenges handed to user | ✅ `/apply` |
 | ATS-aware single-column PDF | ✅ reportlab | ✅ HTML→PDF |
 | Human-in-loop handoff | ✅ sensitive fields + Submit | ✅ |
 | Profile data local + gitignored | ✅ | ✅ |
@@ -229,6 +229,8 @@ The role config picks a variant. The CV builder selects the matching experience 
 ---
 
 ## ATS platform support notes
+
+**CAPTCHA and bot-detection note:** CAPTCHAs can appear on any supported platform. The agent does not solve CAPTCHAs or bypass bot-detection — these are always handed off to you. Platform support means field-filling strategy is documented; it does not mean submission will succeed without human involvement. Industry data (Jobscan / Scale.jobs 2026) shows fully automated tools produce 1–6% callback rates versus 40–60% for human-assisted applications, which is why this project is designed as an assistive workflow, not an autonomous applicant.
 
 These are implementation notes for supported ATS patterns, not a guarantee that every live form variant will work. Verify each form before filling, and stop on unsupported ATS pages, login walls, CAPTCHA, ambiguous consent, or hidden fields that cannot be classified.
 
