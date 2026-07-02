@@ -73,8 +73,10 @@ Render the run log as markdown:
 python3 eval/report.py --run-id demo-2026-07-02 --out eval/runs/demo-2026-07-02.md
 ```
 
-`--summary` exits non-zero if any case falls below its `pass_threshold_pct`, so it
-plugs into CI as-is once real runs start being recorded.
+`--summary` exits non-zero if any case is below its `pass_threshold_pct` **or** has
+fewer recorded runs than the case's `runs` count. Under-sampled cases render as
+`INCOMPLETE`, so a single lucky pass cannot satisfy CI — you must actually run each
+case the required number of times.
 
 ## Known state (as of 2026-07-02)
 

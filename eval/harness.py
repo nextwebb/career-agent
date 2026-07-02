@@ -136,13 +136,26 @@ def aggregate(entries: list[dict]) -> dict[str, dict]:
     return by_case
 
 
+def verdict_for(case: dict, agg_entry: dict) -> str:
+    """PASS only if we have the required N runs AND pass_pct >= threshold.
+
+    Under-sampled cases return INCOMPLETE so an in-flight eval log cannot
+    silently satisfy CI by recording one lucky pass.
+    """
+    if agg_entry["total"] < case["runs"]:
+        return "INCOMPLETE"
+    if agg_entry["pass_pct"] >= case["pass_threshold_pct"]:
+        return "PASS"
+    return "FAIL"
+
+
 def cmd_summary(data: dict, run_id: str) -> int:
     entries = load_run_log(run_id)
     if not entries:
         print(f"no entries found for run_id={run_id!r} at {run_log_path(run_id)}")
         return 1
     agg = aggregate(entries)
-    header = f"{'ID':<5} {'TIER':<16} {'RUNS':>5} {'PASS%':>7} {'THRESHOLD':>10} {'VERDICT':<10}"
+    header = f"{'ID':<5} {'TIER':<16} {'RUNS':>7} {'PASS%':>7} {'THRESHOLD':>10} {'VERDICT':<10}"
     print(header)
     print("-" * len(header))
     exit_code = 0
@@ -151,12 +164,12 @@ def cmd_summary(data: dict, run_id: str) -> int:
         if cid not in agg:
             continue
         a = agg[cid]
-        meets = a["pass_pct"] >= case["pass_threshold_pct"]
-        verdict = "PASS" if meets else "FAIL"
-        if not meets:
+        verdict = verdict_for(case, a)
+        if verdict != "PASS":
             exit_code = 1
+        runs_col = f"{a['total']}/{case['runs']}"
         print(
-            f"{cid:<5} {tier:<16} {a['total']:>5} {a['pass_pct']:>6.1f}% "
+            f"{cid:<5} {tier:<16} {runs_col:>7} {a['pass_pct']:>6.1f}% "
             f"{case['pass_threshold_pct']:>9}% {verdict:<10}"
         )
     return exit_code

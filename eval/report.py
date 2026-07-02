@@ -18,6 +18,7 @@ from harness import (  # type: ignore[import-not-found]
     load_cases,
     load_run_log,
     run_log_path,
+    verdict_for,
 )
 
 
@@ -38,16 +39,15 @@ def render_markdown(data: dict, run_id: str) -> str:
     lines.append("## Results")
     lines.append("")
     lines.append("| ID | Tier | Name | Runs | Pass % | Threshold | Verdict |")
-    lines.append("|----|------|------|-----:|-------:|----------:|---------|")
+    lines.append("|----|------|------|------|-------:|----------:|---------|")
     for tier, case in iter_cases(data):
         cid = case["id"]
         if cid not in agg:
             continue
         a = agg[cid]
-        meets = a["pass_pct"] >= case["pass_threshold_pct"]
-        verdict = "PASS" if meets else "FAIL"
+        verdict = verdict_for(case, a)
         lines.append(
-            f"| {cid} | {tier} | {case['name']} | {a['total']} | "
+            f"| {cid} | {tier} | {case['name']} | {a['total']}/{case['runs']} | "
             f"{a['pass_pct']:.1f}% | {case['pass_threshold_pct']}% | {verdict} |"
         )
 
