@@ -1,0 +1,183 @@
+{
+  "_meta": {
+    "designed_on": "2026-07-02",
+    "source": "Live automation experiment 2026-07-02. Claim under test: 'logging in with a password, solving a CAPTCHA, or filing a return is fully automatable today.'",
+    "verdicts": {
+      "fully_automatable": "Passes >= pass_threshold_pct over N runs with no human help.",
+      "partially_automatable": "Passes some runs but requires paid solvers, brittle heuristics, or ToS-violating tooling.",
+      "not_automatable": "Hard blocked by bot detection, cross-origin frames, sensor telemetry, or legal constraints."
+    }
+  },
+  "tier1_login": [
+    {
+      "id": "L1",
+      "name": "Simple login, no bot detection",
+      "url": "https://the-internet.herokuapp.com/login",
+      "credentials": {"username": "tomsmith", "password": "SuperSecretPassword!"},
+      "expected_verdict": "fully_automatable",
+      "pass_threshold_pct": 95,
+      "runs": 20,
+      "success_signal": {"url_contains": "/secure", "text_contains": "You logged into a secure area"},
+      "notes": "Canary case. Confirmed automated 2026-07-02 in live demo (single-run pass)."
+    },
+    {
+      "id": "L2",
+      "name": "Rate-limited login form",
+      "url": "https://the-internet.herokuapp.com/login",
+      "credentials": {"username": "tomsmith", "password": "SuperSecretPassword!"},
+      "expected_verdict": "fully_automatable",
+      "pass_threshold_pct": 85,
+      "runs": 20,
+      "success_signal": {"url_contains": "/secure", "text_contains": "You logged into a secure area"},
+      "throttle": {"delay_between_runs_sec": 3, "max_attempts_per_minute": 10},
+      "notes": "Stub. Same target as L1 but with pacing to probe rate-limit envelope. Not yet executed."
+    },
+    {
+      "id": "L3",
+      "name": "Login with client-side JS validation",
+      "url": "https://practicetestautomation.com/practice-test-login/",
+      "credentials": {"username": "student", "password": "Password123"},
+      "expected_verdict": "fully_automatable",
+      "pass_threshold_pct": 90,
+      "runs": 10,
+      "success_signal": {"url_contains": "logged-in-successfully", "text_contains": "Logged In Successfully"},
+      "notes": "Stub. Tests JS-driven validation and post-submit redirect. Not yet executed."
+    },
+    {
+      "id": "L4",
+      "name": "Login with hidden CSRF token",
+      "url": "https://github.com/login",
+      "credentials": {"username": "REDACTED", "password": "REDACTED"},
+      "expected_verdict": "partially_automatable",
+      "pass_threshold_pct": 60,
+      "runs": 10,
+      "success_signal": {"url_contains": "github.com", "text_contains": "Dashboard"},
+      "notes": "Stub. GitHub uses CSRF token + device fingerprinting + occasional CAPTCHA. Cannot run without a real burner account and ToS review. Placeholder only."
+    },
+    {
+      "id": "L5",
+      "name": "Login behind Cloudflare Turnstile / bot fingerprinting",
+      "url": "https://nowsecure.nl",
+      "expected_verdict": "not_automatable",
+      "pass_threshold_pct": 20,
+      "runs": 5,
+      "success_signal": {"text_contains": "OH YEAH"},
+      "notes": "Stub. Known Cloudflare bot-detection honeypot. Expected to fail via headless-browser signals. Not yet executed."
+    }
+  ],
+  "tier2_captcha": [
+    {
+      "id": "C1",
+      "name": "Legacy text CAPTCHA",
+      "url": "https://captcha.com/demos/features/captcha-demo.aspx",
+      "expected_verdict": "partially_automatable",
+      "pass_threshold_pct": 50,
+      "runs": 10,
+      "success_signal": {"text_contains": "correct"},
+      "notes": "Stub. Simple distorted-text CAPTCHA. Beatable by OCR (tesseract) or vision model but accuracy varies 40-70%. Not yet executed."
+    },
+    {
+      "id": "C2",
+      "name": "reCAPTCHA v2 checkbox + image challenge",
+      "url": "https://www.google.com/recaptcha/api2/demo",
+      "expected_verdict": "not_automatable",
+      "pass_threshold_pct": 70,
+      "runs": 10,
+      "success_signal": {"url_contains": "success", "text_contains": "Verification Success"},
+      "failure_observed": "Please verify that you are not a robot.",
+      "notes": "Hard blocked in live demo 2026-07-02. Cross-origin iframe blocks checkbox via JS. Requires solver service (2Captcha, Anti-Captcha) which is a Google ToS violation. Threshold intentionally aspirational to document the gap."
+    },
+    {
+      "id": "C3",
+      "name": "reCAPTCHA v3 invisible score",
+      "url": "https://recaptcha-demo.appspot.com/recaptcha-v3-request-scores.php",
+      "expected_verdict": "not_automatable",
+      "pass_threshold_pct": 30,
+      "runs": 10,
+      "success_signal": {"text_contains": "score: 0.9"},
+      "notes": "Stub. v3 returns a risk score; headless browsers typically score <0.3. No user-facing challenge to solve. Not yet executed."
+    },
+    {
+      "id": "C4",
+      "name": "hCaptcha checkbox challenge",
+      "url": "https://accounts.hcaptcha.com/demo",
+      "expected_verdict": "not_automatable",
+      "pass_threshold_pct": 40,
+      "runs": 10,
+      "success_signal": {"text_contains": "Verified"},
+      "notes": "Stub. Similar failure mode to C2. Cross-origin iframe + fingerprinting. Not yet executed."
+    },
+    {
+      "id": "C5",
+      "name": "Cloudflare Turnstile",
+      "url": "https://demo.turnstile.workers.dev/",
+      "expected_verdict": "not_automatable",
+      "pass_threshold_pct": 20,
+      "runs": 10,
+      "success_signal": {"text_contains": "Success"},
+      "notes": "Stub. Passive challenge relying on browser fingerprint + TLS signals. Headless drivers fail. Not yet executed."
+    },
+    {
+      "id": "C6",
+      "name": "Simple math CAPTCHA (arithmetic string)",
+      "url": "https://www.phpcaptcha.org/try-securimage/example_form.php",
+      "expected_verdict": "fully_automatable",
+      "pass_threshold_pct": 90,
+      "runs": 10,
+      "success_signal": {"text_contains": "correct"},
+      "notes": "Stub. If the challenge is 'what is 3 + 5', an LLM or regex solves it deterministically. Included as the positive control for tier 2. Not yet executed."
+    }
+  ],
+  "tier3_forms": [
+    {
+      "id": "F1",
+      "name": "Simple contact form, no validation",
+      "url": "https://httpbin.org/forms/post",
+      "expected_verdict": "fully_automatable",
+      "pass_threshold_pct": 95,
+      "runs": 10,
+      "success_signal": {"url_contains": "/post", "text_contains": "custname"},
+      "notes": "Stub. Baseline form-fill target. httpbin echoes POST body so success is verifiable. Not yet executed."
+    },
+    {
+      "id": "F2",
+      "name": "Multi-step wizard with client-side validation",
+      "url": "https://demoqa.com/automation-practice-form",
+      "expected_verdict": "fully_automatable",
+      "pass_threshold_pct": 85,
+      "runs": 10,
+      "success_signal": {"text_contains": "Thanks for submitting the form"},
+      "notes": "Stub. Requires date picker, radio buttons, file upload, dropdown. Automatable but brittle. Not yet executed."
+    },
+    {
+      "id": "F3",
+      "name": "ATS application form (Greenhouse-style)",
+      "url": "https://boards.greenhouse.io/example/jobs/0000000",
+      "expected_verdict": "partially_automatable",
+      "pass_threshold_pct": 70,
+      "runs": 5,
+      "success_signal": {"text_contains": "Application submitted"},
+      "notes": "Stub. Real-world proxy for career-agent's apply skill. Free-text fields, file upload, EEO questions. Submit is intentionally not automated (user consent gate). Not yet executed."
+    },
+    {
+      "id": "F4",
+      "name": "Tax return e-file (mock)",
+      "url": "https://example.gov/mock-1040",
+      "expected_verdict": "not_automatable",
+      "pass_threshold_pct": 10,
+      "runs": 3,
+      "success_signal": {"text_contains": "Return accepted"},
+      "notes": "Stub. Represents the 'filing a return' claim from the original assertion. Legally cannot be automated without power of attorney; IRS Direct File and commercial e-filers require attestation under penalty of perjury. Included to make the not-automatable verdict explicit. No live URL - mock only."
+    },
+    {
+      "id": "F5",
+      "name": "Form with server-side honeypot + timing check",
+      "url": "https://demo.formspree.io/honeypot",
+      "expected_verdict": "partially_automatable",
+      "pass_threshold_pct": 75,
+      "runs": 10,
+      "success_signal": {"text_contains": "Thank you"},
+      "notes": "Stub. Honeypot fields must remain empty; submissions faster than ~2s are rejected. Automatable if the runner is aware of both. Not yet executed."
+    }
+  ]
+}
