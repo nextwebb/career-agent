@@ -5,7 +5,7 @@ description: Fill an ATS form via browser automation, upload PDFs, answer safe r
 
 # apply
 
-Fill an ATS job application form using browser automation. Upload CV + cover letter PDFs, answer safe required fields, then hand off to the user for sensitive, consent, attestation, legal, and Submit controls.
+Assisted ATS job application fill via browser automation, ending in a guarded handoff. Upload CV + cover letter PDFs, answer safe required fields, then hand off to the user for sensitive, consent, attestation, legal, CAPTCHA, bot-detection, and Submit controls. This skill does not solve CAPTCHAs or bypass bot-detection systems — that is a deliberate policy boundary, not a technical gap.
 
 ## Triggers
 
@@ -34,6 +34,8 @@ Check before starting:
 5. Open a fresh tab/page for every ATS run before navigating. Never reuse an arbitrary active tab. If the user explicitly asks to continue in an existing SPA tab, first clear `window.onbeforeunload`, patch `history.pushState` / `history.replaceState` only for the navigation attempt, and verify within 3 seconds that the URL changed. If navigation is blocked, stop with a setup-specific handoff reason.
 6. In Codex, use Browser for public ATS pages and Chrome only when signed-in browser state, cookies, extensions, or file URL access are required. Codex Chrome `/apply` remains experimental unless `docs/apply-codex-chrome-verification.md` contains a non-submitted evidence record for the exact ATS case and URL pattern.
 7. For Codex Chrome runs, review `docs/apply-codex-chrome-verification.md` before filling. If the ATS case is unverified, failed, ambiguous, or missing from the matrix, tell the user it is experimental and stop or proceed only with a manual fallback/handoff plan that never submits.
+
+Note: CAPTCHA challenges can appear on any ATS platform, including supported ones (Greenhouse uses invisible reCAPTCHA; Ashby has fraud detection). Platform support means the field-filling strategy is documented — it does not mean the portal is CAPTCHA-free or that submission will succeed unassisted.
 
 ## Steps
 
@@ -398,7 +400,9 @@ Wait for user confirmation before any further action on this form.
 - Cross-origin iframe blocking tools: navigate directly to embed URL as a top-level page
 - Greenhouse `Toggle flyout` opens Google Drive / file-provider UI: close immediately, record selector failure, hand off the field
 - CDP timeout / debugger disconnect: reduce payload size — do not inject large inline base64; use localhost fetch or chunked sessionStorage
-- Unsupported ATS, CAPTCHA, login wall, hidden required field, or ambiguous consent/legal field: stop and hand off with exact field label and URL
+- CAPTCHA appeared (any form — checkbox, image challenge, audio, invisible): STOP. Do not retry the submission. Do not call any solver service or attempt to bypass it programmatically. Hand off with: "A CAPTCHA appeared on this form. Please solve it manually and confirm when done — I'll resume filling from where I stopped. Automated CAPTCHA solving is a deliberate policy boundary, not a technical gap: it violates the portal's terms of service and transfers legal risk to you without your informed consent." Resume only after the user confirms the CAPTCHA is solved.
+- Bot-detection challenge (Cloudflare interstitial, DataDome challenge, hCaptcha, Arkose/FunCaptcha, or any challenge that is not a standard form field): STOP. Do not add stealth headers, do not spoof fingerprints, do not retry silently. Tell the user: "This portal appears to use anti-automation controls beyond standard form fields. Attempting to bypass these would violate the portal's terms of service. Please apply manually for this role or use the portal's official API if one is available."
+- Unsupported ATS, login wall, hidden required field, or ambiguous consent/legal field: stop and hand off with exact field label and URL
 - Multiple file inputs, multi-step flow, or hidden required fields that cannot be confidently classified: stop and hand off with screenshots and the field labels found
 
 ---
@@ -591,3 +595,5 @@ Autonomous submission completed: <title> @ <company>
 | `WORKSPACE_GENERATION_FAILED` | Translator raised an error | Fall to HITL |
 | `JOBQA_GATE_FAILED` | jobqa exited non-zero | Fall to HITL |
 | `SUBMISSION_LOG_FAILED` | record_submission.py exited non-zero | Abort -- do NOT click Submit |
+| `CAPTCHA_DETECTED` | Any CAPTCHA (visible or invisible reCAPTCHA/hCaptcha) appeared during fill or after Submit | Halt — do NOT retry, do NOT call any solver; hand off to user for manual solve, resume only after explicit user confirmation |
+| `BOT_DETECTION_DETECTED` | Cloudflare/DataDome/Arkose/FunCaptcha interstitial or behavioural challenge appeared | Halt — do NOT add stealth headers or spoof fingerprints; direct user to apply manually or use the portal's official API |
