@@ -65,8 +65,10 @@ def cmd_dry_run(data: dict, tier: str) -> int:
     for _, case in iter_cases(data, tier):
         print(f"  [{case['id']}] {case['name']}")
         print(f"       url:      {case.get('url', '(none)')}")
-        print(f"       expected: {case['expected_verdict']} "
-              f"(>= {case['pass_threshold_pct']}% over {case['runs']} runs)")
+        print(
+            f"       expected: {case['expected_verdict']} "
+            f"(>= {case['pass_threshold_pct']}% over {case['runs']} runs)"
+        )
     return 0
 
 
@@ -119,8 +121,10 @@ def aggregate(entries: list[dict]) -> dict[str, dict]:
     by_case: dict[str, dict] = {}
     for e in entries:
         cid = e["case_id"]
-        agg = by_case.setdefault(cid, {"passes": 0, "fails": 0, "tier": e["tier"],
-                                       "expected_verdict": e["expected_verdict"]})
+        agg = by_case.setdefault(
+            cid,
+            {"passes": 0, "fails": 0, "tier": e["tier"], "expected_verdict": e["expected_verdict"]},
+        )
         if e["outcome"] == "pass":
             agg["passes"] += 1
         else:
@@ -151,16 +155,22 @@ def cmd_summary(data: dict, run_id: str) -> int:
         verdict = "PASS" if meets else "FAIL"
         if not meets:
             exit_code = 1
-        print(f"{cid:<5} {tier:<16} {a['total']:>5} {a['pass_pct']:>6.1f}% "
-              f"{case['pass_threshold_pct']:>9}% {verdict:<10}")
+        print(
+            f"{cid:<5} {tier:<16} {a['total']:>5} {a['pass_pct']:>6.1f}% "
+            f"{case['pass_threshold_pct']:>9}% {verdict:<10}"
+        )
     return exit_code
 
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Eval harness for the 3-tier automation matrix.")
-    p.add_argument("--list", action="store_true", help="List all cases (optionally filter by --tier).")
+    p.add_argument(
+        "--list", action="store_true", help="List all cases (optionally filter by --tier)."
+    )
     p.add_argument("--tier", choices=TIERS, help="Restrict to a single tier.")
-    p.add_argument("--dry-run", action="store_true", help="Print planned run for --tier without executing.")
+    p.add_argument(
+        "--dry-run", action="store_true", help="Print planned run for --tier without executing."
+    )
     p.add_argument("--record", metavar="CASE_ID", help="Record an outcome for a case.")
     p.add_argument("--outcome", choices=("pass", "fail"), help="Outcome for --record.")
     p.add_argument("--run-id", default="default", help="Run identifier (namespaces the JSONL log).")
