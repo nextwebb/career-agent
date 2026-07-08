@@ -1710,6 +1710,181 @@ class TestPdfQualityGates:
         assert all(entry["company"] == "Acme" for entry in resolved)
 
 
+class TestAdditionalExperienceTruncation:
+    @staticmethod
+    def _condense(entry: str) -> str:
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cv_builder import _condense_additional_experience_entry
+
+            return _condense_additional_experience_entry(entry)
+        finally:
+            sys.path.pop(0)
+
+    @staticmethod
+    def _char_cap() -> int:
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cv_builder import ADDITIONAL_EXPERIENCE_CHAR_CAP
+
+            return ADDITIONAL_EXPERIENCE_CHAR_CAP
+        finally:
+            sys.path.pop(0)
+
+    def test_paragraph_entry_with_colon_keeps_only_pre_colon_portion(self):
+        entry = (
+            "Technical Lead — RAOATECH IT-ELECTROMECH LIMITED (Edtech, Lagos, "
+            "Nov 2020–May 2021): Built Edtech LMS with Node.js/Express.js."
+        )
+        result = self._condense(entry)
+        assert (
+            result
+            == "Technical Lead — RAOATECH IT-ELECTROMECH LIMITED (Edtech, Lagos, Nov 2020–May 2021)"
+        )
+        assert "Built Edtech LMS" not in result
+
+    def test_entry_without_colon_truncates_at_char_cap(self):
+        cap = self._char_cap()
+        # 200 non-colon characters — should truncate to cap plus a single ellipsis.
+        entry = "A" * 200
+        result = self._condense(entry)
+        assert result == f"{'A' * cap}…"
+        assert len(result) == cap + 1
+
+    def test_short_entry_renders_unchanged(self):
+        entry = "Backend Engineer @ EarlierCo (2015–2017)"
+        assert self._condense(entry) == entry
+
+    def test_entry_starting_with_colon_becomes_empty(self):
+        assert self._condense(": body only") == ""
+
+    def test_entry_only_colon_becomes_empty(self):
+        assert self._condense(":") == ""
+
+    def test_multiple_colons_split_on_first_only(self):
+        assert self._condense("Foo: bar: baz") == "Foo"
+
+    @staticmethod
+    def _extract_pdf_text(pdf_path: Path) -> str:
+        pypdf = pytest.importorskip("pypdf")
+        return "\n".join(page.extract_text() or "" for page in pypdf.PdfReader(str(pdf_path)).pages)
+
+    def _render_cv(self, tmp_path: Path, entries: list[str]) -> Path:
+        pytest.importorskip("reportlab")
+        pytest.importorskip("pypdf")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cv_builder import build_cv
+            from generate_application import prepare_generation_config
+
+            profile = json.loads(
+                (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+            )
+            profile["additional_experience"] = entries
+            role = json.loads(
+                (ROOT / "tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            config = prepare_generation_config(profile, role)
+            cv_path = tmp_path / f"{config['output_prefix']}_CV.pdf"
+            build_cv(profile, config, str(cv_path))
+            return cv_path
+        finally:
+            sys.path.pop(0)
+
+    def _earlier_experience_line_count(self, cv_text: str) -> int:
+        """Count physical PDF lines occupied by the 'Earlier experience:' block.
+
+        pypdf yields one text line per rendered PDF line, so contiguous non-empty
+        lines starting at the 'Earlier experience:' marker and ending before the
+        next section header approximate the on-page line count.
+        """
+        pdf_lines = cv_text.split("\n")
+        start = next(
+            (idx for idx, line in enumerate(pdf_lines) if "Earlier experience:" in line),
+            None,
+        )
+        assert start is not None, "Earlier experience: line not found in CV"
+        count = 0
+        for line in pdf_lines[start:]:
+            stripped = line.strip()
+            if not stripped:
+                break
+            # Next section header is uppercase (see SEC_HEAD style). Stop there.
+            if stripped.isupper() and len(stripped) > 3:
+                break
+            count += 1
+        return count
+
+    def test_four_paragraph_entries_produce_three_lines_or_fewer(self, tmp_path):
+        paragraph_entries = [
+            (
+                "Technical Lead — RAOATECH IT-ELECTROMECH LIMITED (Edtech, Lagos, "
+                "Nov 2020–May 2021): Built Edtech LMS with Node.js/Express.js across "
+                "7 infrastructure components (S3, IAM, CloudFront, EC2, Docker, Redis, "
+                "MongoDB); TDD with Jest and CI/CD via GitHub Actions."
+            ),
+            (
+                "Senior Engineer — MidCo (Fintech, Remote, Jan 2018–Oct 2020): Led "
+                "migration from monolith to microservices with Node.js and Kubernetes; "
+                "reduced deploy time by 60% and improved reliability."
+            ),
+            (
+                "Software Engineer — FirstCo (Startup, Berlin, Mar 2016–Dec 2017): "
+                "Shipped React front-end and GraphQL API; owned observability with "
+                "Datadog and PagerDuty."
+            ),
+            (
+                "Analyst Intern — StartupCo (Consumer, London, Jun 2015–Feb 2016): "
+                "Built internal analytics pipeline in Python and PostgreSQL powering "
+                "weekly board reports."
+            ),
+        ]
+        cv_path = self._render_cv(tmp_path, paragraph_entries)
+        cv_text = self._extract_pdf_text(cv_path)
+        assert self._earlier_experience_line_count(cv_text) <= 3
+        # The dropped description bodies must not leak into the rendered CV.
+        assert "Built Edtech LMS" not in cv_text
+        assert "monolith to microservices" not in cv_text
+
+    def test_existing_quality_gate_still_passes_on_condensed_output(self, tmp_path):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cl_builder import build_cover_letter
+            from cv_builder import build_cv
+            from generate_application import prepare_generation_config
+            from quality_gates import OK, run_quality_gates
+        finally:
+            sys.path.pop(0)
+
+        profile = json.loads(
+            (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+        )
+        profile["additional_experience"] = [
+            (
+                "Technical Lead — RAOATECH IT-ELECTROMECH LIMITED (Edtech, Lagos, "
+                "Nov 2020–May 2021): Built Edtech LMS with Node.js/Express.js."
+            ),
+            "Backend Engineer @ EarlierCo (2015–2017)",
+        ]
+        role = json.loads(
+            (ROOT / "tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        config = prepare_generation_config(profile, role)
+        cv_path = tmp_path / f"{config['output_prefix']}_CV.pdf"
+        cl_path = tmp_path / f"{config['output_prefix']}_CoverLetter.pdf"
+        build_cv(profile, config, str(cv_path))
+        build_cover_letter(profile, config, str(cl_path))
+        report = run_quality_gates(profile, config, cv_path, cl_path)
+        assert any(
+            result.name == "additional_experience_condensed" and result.status == OK
+            for result in report.results
+        )
+
+
 class TestPerBulletResultSignal:
     """Cover per_bullet_result_signal detection on individual experience bullets."""
 
