@@ -1613,6 +1613,70 @@ class TestPdfQualityGates:
             for result in report.results
         )
 
+    @staticmethod
+    def _same_company_gate(experience: list[dict[str, Any]]):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from quality_gates import _same_company_date_overlap
+
+            return _same_company_date_overlap({"experience": experience})
+        finally:
+            sys.path.pop(0)
+
+    def test_same_company_overlap_warns_when_structured_dates_overlap(self):
+        result = self._same_company_gate(
+            [
+                {"id": "role_a", "company": "Acme", "start": "2023-01", "end": "2023-08"},
+                {"id": "role_b", "company": "Acme", "start": "2023-06", "end": "2024-01"},
+            ]
+        )
+        assert result.status == "WARN"
+        assert result.name == "same_company_date_overlap"
+        assert "role_a" in result.message
+        assert "role_b" in result.message
+
+    def test_same_company_sequential_promotion_does_not_warn(self):
+        # Touching endpoints (Jan-Jun then Jul-Dec) must not fire.
+        result = self._same_company_gate(
+            [
+                {"id": "role_a", "company": "Acme", "start": "2023-01", "end": "2023-07"},
+                {"id": "role_b", "company": "Acme", "start": "2023-07", "end": "2024-01"},
+            ]
+        )
+        assert result.status == "PASS"
+
+    def test_same_company_overlap_skips_when_structured_dates_absent(self):
+        # Backward compat: profiles without start/end must not false-positive.
+        result = self._same_company_gate(
+            [
+                {"id": "role_a", "company": "Acme", "company_line": "Acme · 2022 – 2023"},
+                {"id": "role_b", "company": "Acme", "company_line": "Acme · 2023 – 2024"},
+            ]
+        )
+        assert result.status == "PASS"
+        assert "skipped" in result.message.lower()
+
+    def test_same_company_overlap_ignores_different_companies(self):
+        result = self._same_company_gate(
+            [
+                {"id": "role_a", "company": "Acme", "start": "2023-01", "end": "2023-12"},
+                {"id": "role_b", "company": "Globex", "start": "2023-06", "end": "2024-06"},
+            ]
+        )
+        assert result.status == "PASS"
+
+    def test_same_company_overlap_handles_present_end_date(self):
+        # An open-ended "present" role that overlaps an earlier same-company
+        # role must be flagged rather than silently skipped or crashing.
+        result = self._same_company_gate(
+            [
+                {"id": "role_a", "company": "Acme", "start": "2022-01", "end": "2024-01"},
+                {"id": "role_b", "company": "Acme", "start": "2023-06", "end": "present"},
+            ]
+        )
+        assert result.status == "WARN"
+        assert "present" in result.message
+
 
 class TestRoleConfigDefaults:
     """Cover prepare_generation_config inheritance for openness and additional_experience."""
