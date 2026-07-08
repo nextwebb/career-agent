@@ -1756,6 +1756,7 @@ class TestExperienceStructuredDates:
         assert "end" not in prepared["experience"][1]
 
     def test_is_current_role_helper_recognises_present_literal(self):
+        pytest.importorskip("reportlab")
         sys.path.insert(0, str(ROOT / "src"))
         try:
             from cv_builder import is_current_role
