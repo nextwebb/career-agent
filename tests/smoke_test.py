@@ -2267,7 +2267,6 @@ class TestExperienceTypeRouting:
                 "headline": "Test",
                 "summary": "Test summary.",
                 "skills": [{"label": "Languages", "items": "Python"}],
-                "impact_statements": [{"title": "Impact", "body": "Body."}],
             }
 
             from generate_application import prepare_generation_config
@@ -2380,7 +2379,6 @@ class TestExperienceTypeRouting:
                 "headline": "Test",
                 "summary": "Test.",
                 "skills": [{"label": "Languages", "items": "Python"}],
-                "impact_statements": [{"title": "Impact", "body": "Body."}],
                 "projects": None,
             }
             prepared = prepare_generation_config(profile, config, create_output_dir=False)
@@ -2656,7 +2654,6 @@ class TestSectionOrderCvTemplate:
                 "headline": "Test",
                 "summary": "Synthetic role summary for section-order verification.",
                 "skills": [{"label": "Languages", "items": "Python"}],
-                "impact_statements": [{"title": "Impact", "body": "Body."}],
             }
             prepared = prepare_generation_config(profile, config, create_output_dir=False)
             cv_path = tmp_path / "cv.pdf"

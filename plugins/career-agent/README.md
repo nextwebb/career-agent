@@ -181,7 +181,7 @@ Or create it manually: `profile.json` (gitignored: never committed) holds your p
 }
 ```
 
-See `profile.example.json` for the full schema including `variants`, `impact_statements`, and per-job bullet sets.
+See `profile.example.json` for the full schema including `variants` and per-job bullet sets.
 
 ---
 

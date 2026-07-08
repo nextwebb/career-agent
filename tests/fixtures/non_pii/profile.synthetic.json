@@ -28,34 +28,17 @@
     "A": {
       "label": "AI/LLM Evaluation",
       "headline": "Senior Software Engineer - LLM Evaluation, Python, Reliability",
-      "summary": "Synthetic engineer with 6 years of fictional experience building evaluation services, review workflows, and reliability tooling for model-assisted products.",
-      "impact_order": ["evaluation", "platform_reliability", "developer_productivity"]
+      "summary": "Synthetic engineer with 6 years of fictional experience building evaluation services, review workflows, and reliability tooling for model-assisted products."
     },
     "B": {
       "label": "Data Platform",
       "headline": "Senior Software Engineer - Data Platforms, Python, Observability",
-      "summary": "Synthetic engineer with 6 years of fictional experience building batch workflows, validation reports, and observable data platform services.",
-      "impact_order": ["platform_reliability", "developer_productivity", "evaluation"]
+      "summary": "Synthetic engineer with 6 years of fictional experience building batch workflows, validation reports, and observable data platform services."
     },
     "C": {
       "label": "Backend APIs",
       "headline": "Senior Software Engineer - Backend APIs, Python, Reliability",
-      "summary": "Synthetic engineer with 6 years of fictional experience building backend APIs, service reliability tooling, and developer-facing platform workflows.",
-      "impact_order": ["developer_productivity", "platform_reliability", "evaluation"]
-    }
-  },
-  "impact_statements": {
-    "platform_reliability": {
-      "title": "Platform Reliability",
-      "body": "Improved fictional service reliability by defining retry policies, observability dashboards, and incident review templates across 12 synthetic services."
-    },
-    "developer_productivity": {
-      "title": "Developer Productivity",
-      "body": "Reduced synthetic onboarding time from 4 days to 1 day by creating CLI workflows, API examples, and validation reports for fictional engineering teams."
-    },
-    "evaluation": {
-      "title": "Evaluation Workflows",
-      "body": "Built fictional evaluation pipelines that compared 30 scenario fixtures per release and produced traceable quality reports for review."
+      "summary": "Synthetic engineer with 6 years of fictional experience building backend APIs, service reliability tooling, and developer-facing platform workflows."
     }
   },
   "experience": [

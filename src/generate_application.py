@@ -169,22 +169,6 @@ def _apply_summary_closing_line(summary: str, profile: dict[str, Any]) -> str:
     return f"{stripped} {closing}"
 
 
-def _resolve_impact_statements(profile: dict[str, Any], variant: str) -> list[dict[str, Any]]:
-    impact = profile.get("impact_statements", [])
-    if not isinstance(impact, dict):
-        return list(impact) if isinstance(impact, list) else []
-
-    ordered_keys = []
-    variant_data = profile.get("variants", {}).get(variant, {})
-    if isinstance(variant_data, dict):
-        impact_order = variant_data.get("impact_order", [])
-        if isinstance(impact_order, list):
-            ordered_keys = [key for key in impact_order if key in impact]
-
-    remaining_keys = [key for key in impact if key not in ordered_keys]
-    return [impact[key] for key in [*ordered_keys, *remaining_keys]]
-
-
 def _select_bullets(experience: dict[str, Any], variant: str, override: Any = None) -> list[str]:
     if isinstance(override, dict) and isinstance(override.get("bullets"), list):
         return [str(bullet) for bullet in override["bullets"] if str(bullet).strip()]
@@ -275,7 +259,6 @@ def prepare_generation_config(
         else:
             prepared["openness"] = profile.get("relocation") or ""
 
-    prepared.setdefault("impact_statements", _resolve_impact_statements(profile, variant))
     prepared.setdefault("experience", _resolve_experience(profile, prepared))
     prepared.setdefault("skills", profile.get("skills", []))
 
