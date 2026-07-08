@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.10.1](https://github.com/nextwebb/career-agent/compare/v1.10.0...v1.10.1) (2026-07-08)
+
+
+### Documentation
+
+* **agents:** add reading order and doc map, sync stale CV section list ([#192](https://github.com/nextwebb/career-agent/issues/192)) ([b1b64f5](https://github.com/nextwebb/career-agent/commit/b1b64f50efe272c57b8365b7c6142de6647a3dc2))
+* **polish:** match Lever URL pattern and add yolo qualifier to apply skill description ([#197](https://github.com/nextwebb/career-agent/issues/197)) ([6c02f2f](https://github.com/nextwebb/career-agent/commit/6c02f2f8d4adc4d5904af6ef9c4b9a01abf2d8d4))
+* **skills:** remove dead impact_statements and impact_order references ([#195](https://github.com/nextwebb/career-agent/issues/195)) ([3158511](https://github.com/nextwebb/career-agent/commit/31585111f269ca158727aec9fd25feaf46fa3d2f))
+
 ## [1.10.0](https://github.com/nextwebb/career-agent/compare/v1.9.0...v1.10.0) (2026-07-08)
 
 
