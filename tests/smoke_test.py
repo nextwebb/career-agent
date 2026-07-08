@@ -1569,8 +1569,13 @@ class TestPdfQualityGates:
     def test_additional_experience_gate_warns_when_full_entry_blocks(self, tmp_path, monkeypatch):
         sys.path.insert(0, str(ROOT / "src"))
         try:
-            import quality_gates
             from generate_application import prepare_generation_config
+            from quality_gates import (
+                WARN,
+                PdfSnapshot,
+                _read_pdf,
+                run_quality_gates,
+            )
         finally:
             sys.path.pop(0)
 
@@ -1585,15 +1590,13 @@ class TestPdfQualityGates:
         # full entry blocks (each on its own line with a company_line) rather
         # than the condensed "Earlier experience:" one-liner. The gate must
         # WARN even though the config still lists the entries.
-        real_read_pdf = quality_gates._read_pdf
-
         def fake_read_pdf(path):
-            snapshot, error = real_read_pdf(path)
+            snapshot, error = _read_pdf(path)
             if snapshot is None or str(path) != str(cv_path):
                 return snapshot, error
             stripped_text = snapshot.text.replace("Earlier experience:", "")
             return (
-                quality_gates.PdfSnapshot(
+                PdfSnapshot(
                     path=snapshot.path,
                     text=stripped_text,
                     pages=snapshot.pages,
@@ -1603,10 +1606,10 @@ class TestPdfQualityGates:
                 None,
             )
 
-        monkeypatch.setattr(quality_gates, "_read_pdf", fake_read_pdf)
-        report = quality_gates.run_quality_gates(profile, config, cv_path, cl_path)
+        monkeypatch.setattr("quality_gates._read_pdf", fake_read_pdf)
+        report = run_quality_gates(profile, config, cv_path, cl_path)
         assert any(
-            result.name == "additional_experience_condensed" and result.status == quality_gates.WARN
+            result.name == "additional_experience_condensed" and result.status == WARN
             for result in report.results
         )
 
