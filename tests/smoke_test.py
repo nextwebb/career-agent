@@ -1710,6 +1710,128 @@ class TestPdfQualityGates:
         assert all(entry["company"] == "Acme" for entry in resolved)
 
 
+class TestPerBulletResultSignal:
+    """Cover per_bullet_result_signal detection on individual experience bullets."""
+
+    @staticmethod
+    def _load_quality_helpers():
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from quality_gates import (
+                NUMERIC_EVIDENCE_PATTERN,
+                _bullet_has_result_signal,
+                _bullets_missing_result,
+            )
+
+            return (
+                _bullet_has_result_signal,
+                _bullets_missing_result,
+                NUMERIC_EVIDENCE_PATTERN,
+            )
+        finally:
+            sys.path.pop(0)
+
+    def test_bullet_with_digit_passes(self):
+        has_signal, _, _ = self._load_quality_helpers()
+        assert has_signal("Cut deploy time from 45 minutes to 15 minutes for the API team.")
+
+    def test_bullet_with_percent_placeholder_passes(self):
+        has_signal, _, _ = self._load_quality_helpers()
+        assert has_signal("Improved onboarding completion by [~%] across pilot cohort.")
+
+    def test_bullet_with_action_scope_tech_only_warns(self):
+        has_signal, missing, _ = self._load_quality_helpers()
+        bullet = "Improved data pipeline reliability and observability for agentic decision loops."
+        assert not has_signal(bullet)
+        config = {"experience": [{"id": "job_1", "bullets": [bullet]}]}
+        assert missing(config) == ["job_1[0]"]
+
+    def test_entry_with_suppress_flag_skips_all_its_bullets(self):
+        _, missing, _ = self._load_quality_helpers()
+        config = {
+            "experience": [
+                {
+                    "id": "confidential_role",
+                    "suppress_result_check": True,
+                    "bullets": [
+                        "Led platform architecture for financial services client under NDA.",
+                        "Owned regulator engagement for classified compliance initiatives.",
+                    ],
+                }
+            ]
+        }
+        assert missing(config) == []
+
+    def test_bullet_with_scale_phrase_passes(self):
+        has_signal, _, _ = self._load_quality_helpers()
+        assert has_signal("Reduced deployment time for the checkout service.")
+
+    def test_bare_improved_without_by_does_not_falsely_pass(self):
+        has_signal, _, _ = self._load_quality_helpers()
+        # `improved` alone carries no magnitude — must not be treated as
+        # a Result signal on its own.
+        assert not has_signal("Improved developer experience across the team.")
+
+    def test_lowercase_placeholder_does_not_pass(self):
+        has_signal, _, _ = self._load_quality_helpers()
+        # Placeholder convention is case-sensitive by design so typos
+        # like `[~n]` do not silently mask a missing result.
+        assert not has_signal("Grew adoption of the tooling by [~n].")
+
+    def test_suppress_flag_at_profile_level_has_no_effect(self):
+        _, missing, _ = self._load_quality_helpers()
+        # The suppress flag is only honoured on individual entries, not
+        # at profile/config top level.
+        config = {
+            "suppress_result_check": True,
+            "experience": [
+                {
+                    "id": "job_1",
+                    "bullets": ["Improved data pipeline reliability across teams."],
+                }
+            ],
+        }
+        assert missing(config) == ["job_1[0]"]
+
+    def test_impact_density_and_per_bullet_gate_share_numeric_regex(self):
+        _, _, pattern = self._load_quality_helpers()
+        # Both gates must consult the same compiled regex object so
+        # numeric-evidence semantics stay in one source of truth.
+        source = (ROOT / "src/quality_gates.py").read_text(encoding="utf-8")
+        assert source.count("NUMERIC_EVIDENCE_PATTERN.search") >= 2
+        assert pattern.search("saved 3 hours per week")
+        assert pattern.search("30%")
+        assert pattern.search("3x throughput")
+        assert not pattern.search("no numbers here")
+
+    def test_stringy_suppress_flag_does_not_silently_suppress_warnings(self):
+        # bool("false") is True in Python; a config author who writes
+        # "false" as a string would otherwise mask the whole role's
+        # warnings. _resolve_experience only propagates the flag when it
+        # is exactly the boolean True.
+        _, missing, _ = self._load_quality_helpers()
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from generate_application import _resolve_experience
+        finally:
+            sys.path.pop(0)
+
+        profile = {
+            "experience": [
+                {
+                    "id": "job_1",
+                    "title": "Engineer",
+                    "company": "Acme",
+                    "bullets": ["Improved data pipeline reliability across teams."],
+                    "suppress_result_check": "false",
+                }
+            ]
+        }
+        resolved = _resolve_experience(profile, {"variant": ""})
+        assert resolved[0]["suppress_result_check"] is False
+        assert missing({"experience": resolved}) == ["job_1[0]"]
+
+
 class TestRoleConfigDefaults:
     """Cover prepare_generation_config inheritance for openness and additional_experience."""
 
