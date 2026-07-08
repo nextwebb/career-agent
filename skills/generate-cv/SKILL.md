@@ -24,7 +24,7 @@ In Codex, invoke this skill with `$generate-cv`, the skills/plugin selector, or 
 ## Role config keys (rendering behaviour)
 
 - `openness` *(optional)* — banner line shown under the headline. Overrides `profile.openness`. Omit the key entirely to inherit the profile-level default; set to `""` to suppress the banner for this role.
-- `additional_experience` *(optional)* — list of one-line summaries for older/minor roles. Set to `[]` to suppress the "Additional Relevant Experience" section for this specific role even when `profile.additional_experience` has entries; omit the key entirely to inherit the profile list.
+- `additional_experience` *(optional)* — list of one-line summaries for older/minor roles. Rendered as a single condensed line prefixed `Earlier experience:` and joined by ` · ` to preserve page budget. Set to `[]` to suppress the line for this specific role even when `profile.additional_experience` has entries; omit the key entirely to inherit the profile list.
 
 ## Steps
 
@@ -91,7 +91,7 @@ If the packaged script cannot be found, stop and report that the career-agent pa
 3. Professional Summary (variant-specific)
 4. Core Skills
 5. Professional Experience (reverse chronological, variant-ordered bullets)
-6. Additional Relevant Experience *(optional — flat bullet list of older/minor roles)*
+6. Earlier experience *(optional — single condensed line: `Earlier experience: Role @ Company · Role @ Company`)*
 7. Selected Impact
 8. Projects *(optional)*
 9. Certifications & Community & Learning *(optional — from profile.certifications)*

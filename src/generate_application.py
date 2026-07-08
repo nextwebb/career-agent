@@ -238,7 +238,7 @@ def prepare_generation_config(
     prepared.setdefault("skills", profile.get("skills", []))
 
     # Role config may set additional_experience: [] to suppress the
-    # "Additional Relevant Experience" section for a specific submission.
+    # condensed "Earlier experience:" line for a specific submission.
     # setdefault preserves an explicit empty list, so the per-role suppress
     # wins over a non-empty profile default.
     prepared.setdefault("additional_experience", profile.get("additional_experience", []))

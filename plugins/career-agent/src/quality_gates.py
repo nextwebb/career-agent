@@ -381,6 +381,29 @@ def run_quality_gates(
             GateResult(OK, "impact_evidence_density", "Impact evidence density is acceptable.")
         )
 
+    additional_experience = config.get("additional_experience", []) or []
+    additional_entries = [str(line).strip() for line in additional_experience if str(line).strip()]
+    if additional_entries:
+        condensed_marker = "earlier experience"
+        lower_cv_text = cv_text.lower()
+        if condensed_marker not in lower_cv_text:
+            results.append(
+                GateResult(
+                    WARN,
+                    "additional_experience_condensed",
+                    "additional_experience is present but not rendered as the condensed "
+                    "'Earlier experience:' one-line section.",
+                )
+            )
+        else:
+            results.append(
+                GateResult(
+                    OK,
+                    "additional_experience_condensed",
+                    "additional_experience renders as a condensed one-line section.",
+                )
+            )
+
     weak_hits = [phrase for phrase in WEAK_PHRASES if phrase in combined_text.lower()]
     if weak_hits:
         results.append(

@@ -1496,6 +1496,123 @@ class TestPdfQualityGates:
         )
         assert profile["location"] in self._extract_pdf_text(cv_path)
 
+    def test_additional_experience_four_entries_render_as_single_condensed_line(self, tmp_path):
+        # Baseline render with additional_experience absent to count bullets
+        # produced by the rest of the CV.
+        _, baseline_cv_path, _ = self._render_with_profile_overrides(tmp_path, {})
+        baseline_bullets = self._extract_pdf_text(baseline_cv_path).count("•")
+
+        entries = [
+            "Backend Engineer @ EarlierCo",
+            "Software Engineer @ MidCo",
+            "Analyst @ FirstCo",
+            "Intern @ StartupCo",
+        ]
+        with_ae_dir = tmp_path / "with_ae"
+        with_ae_dir.mkdir()
+        _, cv_path, _ = self._render_with_profile_overrides(
+            with_ae_dir,
+            {"additional_experience": entries},
+        )
+        cv_text = self._extract_pdf_text(cv_path)
+        # Collapse layout-driven line wraps to compare against the intended
+        # single-paragraph rendering.
+        normalised_text = " ".join(cv_text.split())
+
+        # Prefix appears exactly once — one condensed line, not per-entry blocks.
+        assert normalised_text.count("Earlier experience:") == 1
+        # All entries joined by the middle-dot appear as a single paragraph.
+        assert " · ".join(entries) in normalised_text
+        # No new bullet markers were introduced — entries are NOT rendered as
+        # four independent bullet blocks.
+        assert cv_text.count("•") == baseline_bullets
+        # Old-style section header must be gone.
+        assert "Additional Relevant Experience" not in cv_text
+
+    def test_additional_experience_empty_omits_line_entirely(self, tmp_path):
+        _, cv_path, _ = self._render_with_profile_overrides(
+            tmp_path,
+            {"additional_experience": []},
+        )
+        cv_text = self._extract_pdf_text(cv_path)
+        assert "Earlier experience:" not in cv_text
+        assert "Additional Relevant Experience" not in cv_text
+
+    def test_additional_experience_absent_omits_line_entirely(self, tmp_path):
+        # No key at all in the profile; profile.synthetic.json also omits it.
+        profile, cv_path, _ = self._render_with_profile_overrides(tmp_path, {})
+        # Confirm the fixture path exercises the "absent" branch.
+        assert "additional_experience" not in profile or not profile["additional_experience"]
+        cv_text = self._extract_pdf_text(cv_path)
+        assert "Earlier experience:" not in cv_text
+
+    def test_additional_experience_gate_passes_when_condensed(self, tmp_path):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from generate_application import prepare_generation_config
+            from quality_gates import OK, run_quality_gates
+        finally:
+            sys.path.pop(0)
+
+        profile, cv_path, cl_path = self._render_with_profile_overrides(
+            tmp_path,
+            {"additional_experience": ["Backend Engineer @ EarlierCo (2015–2017)"]},
+        )
+        role = self._load_fixture("tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json")
+        config = prepare_generation_config(profile, role)
+        report = run_quality_gates(profile, config, cv_path, cl_path)
+        assert any(
+            result.name == "additional_experience_condensed" and result.status == OK
+            for result in report.results
+        )
+
+    def test_additional_experience_gate_warns_when_full_entry_blocks(self, tmp_path, monkeypatch):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from generate_application import prepare_generation_config
+            from quality_gates import (
+                WARN,
+                PdfSnapshot,
+                _read_pdf,
+                run_quality_gates,
+            )
+        finally:
+            sys.path.pop(0)
+
+        profile, cv_path, cl_path = self._render_with_profile_overrides(
+            tmp_path,
+            {"additional_experience": ["Backend Engineer @ EarlierCo"]},
+        )
+        role = self._load_fixture("tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json")
+        config = prepare_generation_config(profile, role)
+
+        # Simulate a regression where the CV renders additional_experience as
+        # full entry blocks (each on its own line with a company_line) rather
+        # than the condensed "Earlier experience:" one-liner. The gate must
+        # WARN even though the config still lists the entries.
+        def fake_read_pdf(path):
+            snapshot, error = _read_pdf(path)
+            if snapshot is None or str(path) != str(cv_path):
+                return snapshot, error
+            stripped_text = snapshot.text.replace("Earlier experience:", "")
+            return (
+                PdfSnapshot(
+                    path=snapshot.path,
+                    text=stripped_text,
+                    pages=snapshot.pages,
+                    links=snapshot.links,
+                    image_count=snapshot.image_count,
+                ),
+                None,
+            )
+
+        monkeypatch.setattr("quality_gates._read_pdf", fake_read_pdf)
+        report = run_quality_gates(profile, config, cv_path, cl_path)
+        assert any(
+            result.name == "additional_experience_condensed" and result.status == WARN
+            for result in report.results
+        )
+
 
 class TestRoleConfigDefaults:
     """Cover prepare_generation_config inheritance for openness and additional_experience."""

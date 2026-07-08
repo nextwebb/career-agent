@@ -99,6 +99,11 @@
       }
     }
   ],
+  "additional_experience": [
+    "Backend Engineer @ EarlierCo (2015–2017)",
+    "Software Engineer Intern @ StartupCo (2014)"
+  ],
+  "_additional_experience_note": "Optional. Older/minor roles rendered as a single condensed line prefixed 'Earlier experience:' and joined by ' · ', to preserve page budget. Omit or set to [] to suppress. Per-role roles/<id>.json can override; set [] there to suppress for a specific submission.",
   "education": [
     {
       "degree": "B.Sc. Computer Science",
