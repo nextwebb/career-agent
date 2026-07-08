@@ -125,6 +125,16 @@ def _collapse_skill_groups(skills: list[dict]) -> list[dict]:
     return [entry for entry in output if entry is not None]
 
 
+def is_current_role(role: dict) -> bool:
+    """Return True when the experience entry's ``end`` marks it as ongoing.
+
+    Metadata helper for consumers that need to know whether a role is
+    current (e.g. tense selection, recency ordering). Rendering is
+    unchanged: ``company_line`` remains the sole display source.
+    """
+    return role.get("end") == "present"
+
+
 def _s(name, **kw):
     base = dict(
         fontName="Helvetica",
