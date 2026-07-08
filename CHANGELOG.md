@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.9.0](https://github.com/nextwebb/career-agent/compare/v1.8.0...v1.9.0) (2026-07-08)
+
+
+### Features
+
+* **cv:** add optional start/end fields to experience entries — closes [#171](https://github.com/nextwebb/career-agent/issues/171) ([#176](https://github.com/nextwebb/career-agent/issues/176)) ([83bea9f](https://github.com/nextwebb/career-agent/commit/83bea9fbbcc6e7110d0c6212883999cb2fb5da1a))
+* **cv:** experience type field for auto section routing — closes [#169](https://github.com/nextwebb/career-agent/issues/169) ([#179](https://github.com/nextwebb/career-agent/issues/179)) ([70d969d](https://github.com/nextwebb/career-agent/commit/70d969d7f483c7a83306a3bd4660c24b53d2081c))
+* **cv:** render additional_experience as condensed one-line section — closes [#172](https://github.com/nextwebb/career-agent/issues/172) ([#180](https://github.com/nextwebb/career-agent/issues/180)) ([9423287](https://github.com/nextwebb/career-agent/commit/942328760428e91a5b6aaababcfbe6ea2c8ecfa2))
+* **cv:** skills grouping via optional group field — partial [#174](https://github.com/nextwebb/career-agent/issues/174) ([#175](https://github.com/nextwebb/career-agent/issues/175)) ([4f72211](https://github.com/nextwebb/career-agent/commit/4f7221122c1decbd9f33bb6d10113b9d82dcb11b))
+* **quality:** detect same-company date overlap in experience entries — closes [#170](https://github.com/nextwebb/career-agent/issues/170) ([#177](https://github.com/nextwebb/career-agent/issues/177)) ([79ce845](https://github.com/nextwebb/career-agent/commit/79ce8453c2b6e7912cd21d4f645fce2249d8cee7))
+
+
+### Fixes
+
+* **quality:** remove duplicate _entry_label definition ([#182](https://github.com/nextwebb/career-agent/issues/182)) ([8a1193f](https://github.com/nextwebb/career-agent/commit/8a1193f5043f27834bada01790ee53c5e945aa59))
+
 ## [1.8.0](https://github.com/nextwebb/career-agent/compare/v1.7.1...v1.8.0) (2026-07-01)
 
 
