@@ -83,6 +83,8 @@
       "company_line": "Company Name · Industry · Location · Start – End",
       "start": "2022-08",
       "end": "present",
+      "tech_stack": "Python, FastAPI, PostgreSQL, AWS, Terraform",
+      "_tech_stack_note": "Optional. Verbatim comma-joined tech list rendered as a 'Tech Stack:' line below the role's bullets. Omit to render as before.",
       "bullets": {
         "default": [
           "Bullet 1 for this role...",

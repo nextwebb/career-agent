@@ -446,14 +446,27 @@ def run_quality_gates(
     else:
         results.append(GateResult(OK, "cv_required_sections", "Required CV sections are present."))
 
-    canonical_order = [
-        "Professional Summary",
-        "Core Skills",
-        "Professional Experience",
-        "Selected Impact",
-        "Education",
+    # Whitelist of accepted section orders. The gate passes when the CV
+    # matches any listed order. Only sections that always render are used
+    # as anchors; Awards & Recognition, Projects, and legacy Selected Impact
+    # are optional and appear conditionally, so they are not required
+    # anchors here (their positional correctness is covered separately).
+    expected_section_orders = [
+        [
+            "Professional Summary",
+            "Core Skills",
+            "Professional Experience",
+            "Education",
+        ],
+        [
+            "Professional Summary",
+            "Core Skills",
+            "Professional Experience",
+            "Selected Impact",
+            "Education",
+        ],
     ]
-    if _ordered(cv_text, canonical_order):
+    if any(_ordered(cv_text, order) for order in expected_section_orders):
         results.append(GateResult(OK, "cv_section_order", "CV sections are in expected order."))
     else:
         results.append(

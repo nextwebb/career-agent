@@ -1322,7 +1322,6 @@ class TestPdfQualityGates:
         assert "+15550100000" in cv_text.replace(" ", "")
         assert "Designed Python APIs for fictional partner onboarding" in cv_text
         assert "Implemented fictional model-evaluation jobs" not in cv_text
-        assert cv_text.index("Developer Productivity") < cv_text.index("Platform Reliability")
 
     def test_quality_gates_fail_on_placeholder_text(self, tmp_path):
         sys.path.insert(0, str(ROOT / "src"))
@@ -2400,6 +2399,154 @@ class TestReadmeAndDocs:
         assert "does not install the Codex plugin" in docs
         assert "codex plugin marketplace add nextwebb/career-agent" in docs_text
         assert "codex plugin add career-agent@career-agent" in docs_text
+
+
+class TestSectionOrderCvTemplate:
+    @staticmethod
+    def _build_pdf(tmp_path: Path, profile_overrides=None, experience=None, certifications=None):
+        pytest.importorskip("reportlab")
+        pypdf = pytest.importorskip("pypdf")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cv_builder import build_cv
+            from generate_application import prepare_generation_config
+
+            profile = json.loads(
+                (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+            )
+            if profile_overrides:
+                profile.update(profile_overrides)
+            if experience is not None:
+                profile["experience"] = experience
+            if certifications is not None:
+                profile["certifications"] = certifications
+            config = {
+                "role_id": "synth_section_order",
+                "company": "Synth Co",
+                "title": "Engineer",
+                "url": "https://example.com/jobs/synth",
+                "ats_platform": "unknown",
+                "variant": "C",
+                "output_prefix": "synth_section_order",
+                "headline": "Test",
+                "summary": "Synthetic role summary for section-order verification.",
+                "skills": [{"label": "Languages", "items": "Python"}],
+                "impact_statements": [{"title": "Impact", "body": "Body."}],
+            }
+            prepared = prepare_generation_config(profile, config, create_output_dir=False)
+            cv_path = tmp_path / "cv.pdf"
+            build_cv(profile, prepared, str(cv_path))
+            text = "\n".join(
+                page.extract_text() or "" for page in pypdf.PdfReader(str(cv_path)).pages
+            )
+            return profile, prepared, cv_path, text
+        finally:
+            sys.path.pop(0)
+
+    def test_generated_pdf_section_order_matches_spec(self, tmp_path):
+        _, _, _, text = self._build_pdf(tmp_path, certifications=["Award: Fictional Prize 2025"])
+        headings_in_order = [
+            "PROFESSIONAL SUMMARY",
+            "CORE SKILLS",
+            "PROFESSIONAL EXPERIENCE",
+            "EDUCATION",
+            "AWARDS & RECOGNITION",
+        ]
+        positions = [text.index(heading) for heading in headings_in_order]
+        assert positions == sorted(
+            positions
+        ), f"Expected order {headings_in_order}, got positions {positions}"
+
+    def test_selected_impact_section_is_absent_from_pdf(self, tmp_path):
+        _, _, _, text = self._build_pdf(tmp_path)
+        assert "SELECTED IMPACT" not in text.upper()
+
+    def test_awards_and_recognition_replaces_old_certifications_title(self, tmp_path):
+        _, _, _, text = self._build_pdf(tmp_path, certifications=["Award: Fictional Prize 2025"])
+        assert "AWARDS & RECOGNITION" in text.upper()
+        assert "CERTIFICATIONS & COMMUNITY" not in text.upper()
+
+    def test_experience_entry_with_tech_stack_renders_line(self, tmp_path):
+        experience = [
+            {
+                "id": "job_1",
+                "type": "employment",
+                "title": "Engineer",
+                "company": "Alpha Co",
+                "company_line": "Alpha Co - 2022-2024",
+                "tech_stack": "Python, FastAPI, PostgreSQL",
+                "bullets": {"default": ["Shipped fictional feature by 30%."]},
+            }
+        ]
+        _, _, _, text = self._build_pdf(tmp_path, experience=experience)
+        assert "Tech Stack:" in text
+        assert "Python, FastAPI, PostgreSQL" in text
+
+    def test_experience_entry_without_tech_stack_omits_line(self, tmp_path):
+        experience = [
+            {
+                "id": "job_1",
+                "type": "employment",
+                "title": "Engineer",
+                "company": "Alpha Co",
+                "company_line": "Alpha Co - 2022-2024",
+                "bullets": {"default": ["Shipped fictional feature by 30%."]},
+            }
+        ]
+        _, _, _, text = self._build_pdf(tmp_path, experience=experience)
+        assert "Tech Stack:" not in text
+
+    def test_quality_gate_section_order_passes_on_new_order(self, tmp_path):
+        pytest.importorskip("reportlab")
+        pytest.importorskip("pypdf")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cl_builder import build_cover_letter
+            from cv_builder import build_cv
+            from generate_application import prepare_generation_config
+            from quality_gates import run_quality_gates
+
+            profile = json.loads(
+                (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+            )
+            profile["certifications"] = ["Award: Fictional Prize 2025"]
+            role = json.loads(
+                (ROOT / "tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            prepared = prepare_generation_config(profile, role, create_output_dir=False)
+            cv_path = tmp_path / "cv.pdf"
+            cl_path = tmp_path / "cl.pdf"
+            build_cv(profile, prepared, str(cv_path))
+            build_cover_letter(profile, prepared, str(cl_path))
+            report = run_quality_gates(profile, prepared, cv_path, cl_path)
+            order_result = next(r for r in report.results if r.name == "cv_section_order")
+            assert order_result.status == "PASS", order_result.message
+        finally:
+            sys.path.pop(0)
+
+    def test_backward_compat_profile_without_tech_stack_renders_as_before(self, tmp_path):
+        experience_without = [
+            {
+                "id": "job_1",
+                "type": "employment",
+                "title": "Engineer",
+                "company": "Alpha Co",
+                "company_line": "Alpha Co - 2022-2024",
+                "bullets": {"default": ["Shipped fictional feature by 30%."]},
+            }
+        ]
+        _, _, _, text_without = self._build_pdf(tmp_path, experience=experience_without)
+        experience_with = [{**experience_without[0], "tech_stack": "Python"}]
+        _, _, _, text_with = self._build_pdf(tmp_path, experience=experience_with)
+        # Text without tech_stack must contain exactly the same content as
+        # text_with minus the Tech Stack line — the sanity check here is
+        # simply that removing tech_stack does not remove any other content
+        # while removing the Tech Stack marker itself.
+        assert "Tech Stack:" not in text_without
+        assert "Tech Stack:" in text_with
+        assert "Shipped fictional feature by 30%." in text_without
 
 
 if __name__ == "__main__":
