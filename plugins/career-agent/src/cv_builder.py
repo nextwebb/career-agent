@@ -67,6 +67,64 @@ def resolve_cv_display(profile: dict) -> dict[str, bool]:
     return resolved
 
 
+def _collapse_skill_groups(skills: list[dict]) -> list[dict]:
+    """Merge skills entries that share a ``group`` field into one entry per group.
+
+    Entries with a falsy or missing ``group`` are returned as-is. When two or
+    more entries share the same non-empty ``group`` value, they are merged into
+    a single entry: ``label`` becomes the group name and ``items`` is the
+    order-preserving, deduplicated concatenation of their ``items`` strings
+    (split on ``·`` and re-joined with the same separator).
+
+    Order of first appearance is preserved for both grouped and ungrouped
+    entries: a group occupies the slot of its first member.
+    """
+    separator = "·"
+    grouped_slots: dict[str, int] = {}
+    grouped_items: dict[str, list[str]] = {}
+    grouped_seen: dict[str, set[str]] = {}
+    # First skill entry seen for each group. Used to restore the singleton
+    # verbatim when a group ends up with exactly one member — merging a
+    # singleton would drop its original label and lose information.
+    grouped_singletons: dict[str, dict] = {}
+    grouped_counts: dict[str, int] = {}
+    output: list[dict | None] = []
+
+    for skill in skills:
+        group = skill.get("group") or ""
+        if not group:
+            output.append(dict(skill))
+            continue
+
+        if group not in grouped_slots:
+            grouped_slots[group] = len(output)
+            grouped_items[group] = []
+            grouped_seen[group] = set()
+            grouped_singletons[group] = dict(skill)
+            grouped_counts[group] = 0
+            output.append(None)
+
+        grouped_counts[group] += 1
+
+        items_field = skill.get("items", "")
+        for part in items_field.split(separator):
+            part = part.strip()
+            if part and part not in grouped_seen[group]:
+                grouped_seen[group].add(part)
+                grouped_items[group].append(part)
+
+    for group, slot in grouped_slots.items():
+        if grouped_counts[group] == 1:
+            output[slot] = grouped_singletons[group]
+        else:
+            output[slot] = {
+                "label": group,
+                "items": f" {separator} ".join(grouped_items[group]),
+            }
+
+    return [entry for entry in output if entry is not None]
+
+
 def _s(name, **kw):
     base = dict(
         fontName="Helvetica",
@@ -223,7 +281,7 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
 
     # ── Core Skills ──────────────────────────────────────────────────────────
     story += section("Core Skills")
-    for skill in config["skills"]:
+    for skill in _collapse_skill_groups(config["skills"]):
         story.append(Paragraph(f"<b>{skill['label']}</b>:&nbsp;&nbsp;{skill['items']}", SK))
     story.append(sp(4))
 
