@@ -2,6 +2,8 @@
 
 Thanks for your interest in career-agent. Contributions are welcome: please read this first.
 
+If you are an LLM or coding agent (not a human contributor), see `AGENTS.md` for the required reading order and doc map instead.
+
 ## Issues first
 
 Open an issue before writing code. This lets us align on scope and avoid duplicate effort. PRs without a linked issue may be closed.
