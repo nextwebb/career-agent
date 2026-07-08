@@ -1689,6 +1689,83 @@ class TestRoleConfigDefaults:
         ), "Explicit empty openness should suppress banner; relocation must not be injected"
 
 
+class TestExperienceStructuredDates:
+    @staticmethod
+    def _load_synthetic_profile() -> dict[str, Any]:
+        return json.loads(
+            (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+        )
+
+    def _prepare(self, profile: dict[str, Any], role: dict[str, Any]) -> dict[str, Any]:
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from generate_application import prepare_generation_config
+
+            return prepare_generation_config(profile, role, create_output_dir=False)
+        finally:
+            sys.path.pop(0)
+
+    def test_start_and_end_pass_through_to_resolved_experience(self):
+        profile = self._load_synthetic_profile()
+        for entry in profile["experience"]:
+            entry["start"] = "2021-01"
+            entry["end"] = "2024-06"
+        prepared = self._prepare(profile, {"variant": "C"})
+        assert prepared["experience"], "expected at least one resolved experience entry"
+        for resolved in prepared["experience"]:
+            assert resolved["start"] == "2021-01"
+            assert resolved["end"] == "2024-06"
+
+    def test_end_present_literal_preserved_verbatim(self):
+        profile = self._load_synthetic_profile()
+        profile["experience"][0]["start"] = "2022-08"
+        profile["experience"][0]["end"] = "present"
+        prepared = self._prepare(profile, {"variant": "C"})
+        assert prepared["experience"][0]["end"] == "present"
+
+    def test_entries_without_start_end_render_identically_to_baseline(self):
+        # Backward compatibility: absence of start/end must not add keys,
+        # must not alter title/company_line/client_line/bullets, and must
+        # not raise even though "present" is not ISO-parseable.
+        profile = self._load_synthetic_profile()
+        for entry in profile["experience"]:
+            entry.pop("start", None)
+            entry.pop("end", None)
+        prepared = self._prepare(profile, {"variant": "C"})
+        for resolved in prepared["experience"]:
+            assert "start" not in resolved
+            assert "end" not in resolved
+            assert set(resolved.keys()) == {
+                "title",
+                "company_line",
+                "client_line",
+                "bullets",
+            }
+
+    def test_mixed_entries_only_thread_dates_where_present(self):
+        profile = self._load_synthetic_profile()
+        assert len(profile["experience"]) >= 2, "fixture must provide multiple entries"
+        profile["experience"][0]["start"] = "2022-08"
+        profile["experience"][0]["end"] = "present"
+        profile["experience"][1].pop("start", None)
+        profile["experience"][1].pop("end", None)
+        prepared = self._prepare(profile, {"variant": "C"})
+        assert prepared["experience"][0]["start"] == "2022-08"
+        assert prepared["experience"][0]["end"] == "present"
+        assert "start" not in prepared["experience"][1]
+        assert "end" not in prepared["experience"][1]
+
+    def test_is_current_role_helper_recognises_present_literal(self):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cv_builder import is_current_role
+        finally:
+            sys.path.pop(0)
+        assert is_current_role({"end": "present"}) is True
+        assert is_current_role({"end": "2024-06"}) is False
+        assert is_current_role({}) is False
+
+
 class TestProfileAdditionalExperienceValidation:
     """Cover validate_profile type checks for additional_experience."""
 

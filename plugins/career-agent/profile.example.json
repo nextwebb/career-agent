@@ -79,6 +79,8 @@
       "title": "Senior Software Engineer",
       "company": "Company Name",
       "company_line": "Company Name · Industry · Location · Start – End",
+      "start": "2022-08",
+      "end": "present",
       "bullets": {
         "default": [
           "Bullet 1 for this role...",

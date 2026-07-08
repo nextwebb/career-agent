@@ -185,14 +185,19 @@ def _resolve_experience(profile: dict[str, Any], config: dict[str, Any]) -> list
         experience_id = experience.get("id", "")
         override = overrides.get(experience_id) if isinstance(overrides, dict) else None
         bullets = _select_bullets(experience, variant, override)
-        resolved.append(
-            {
-                "title": experience.get("title", ""),
-                "company_line": experience.get("company_line", experience.get("company", "")),
-                "client_line": experience.get("client_line", ""),
-                "bullets": bullets,
-            }
-        )
+        resolved_role: dict[str, Any] = {
+            "title": experience.get("title", ""),
+            "company_line": experience.get("company_line", experience.get("company", "")),
+            "client_line": experience.get("client_line", ""),
+            "bullets": bullets,
+        }
+        # Optional structured dates. Passed through only when present so
+        # existing profiles without these keys render exactly as before.
+        if "start" in experience:
+            resolved_role["start"] = experience["start"]
+        if "end" in experience:
+            resolved_role["end"] = experience["end"]
+        resolved.append(resolved_role)
 
     return resolved
 
