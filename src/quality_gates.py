@@ -178,6 +178,121 @@ def _compact(value: str) -> str:
     return re.sub(r"\s+", "", value).lower()
 
 
+# Sentinel for open-ended "present" end dates. Chosen far in the future so the
+# overlap comparison sorts correctly against any real month.
+_PRESENT_SENTINEL = (9999, 12)
+
+
+def _parse_experience_month(value: Any) -> tuple[int, int] | None:
+    """Parse a structured start/end field into a (year, month) tuple.
+
+    Accepts common ISO-like forms (``YYYY-MM``, ``YYYY-MM-DD``, ``YYYY``),
+    plus the special string ``present`` (case-insensitive) for open-ended
+    end dates. Returns None when the value cannot be parsed, signalling the
+    overlap gate should skip the pair rather than false-positive.
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    if text.lower() in {"present", "current", "now"}:
+        return _PRESENT_SENTINEL
+    match = re.match(r"^(\d{4})(?:-(\d{1,2}))?(?:-\d{1,2})?$", text)
+    if not match:
+        return None
+    year = int(match.group(1))
+    month = int(match.group(2)) if match.group(2) else 1
+    if not 1 <= month <= 12:
+        return None
+    return (year, month)
+
+
+def _experience_date_pair(entry: dict[str, Any]) -> tuple[tuple[int, int], tuple[int, int]] | None:
+    """Return (start, end) tuples for an experience entry, or None if absent."""
+    start = _parse_experience_month(entry.get("start"))
+    end = _parse_experience_month(entry.get("end"))
+    if start is None or end is None:
+        return None
+    return start, end
+
+
+def _ranges_overlap(
+    a: tuple[tuple[int, int], tuple[int, int]],
+    b: tuple[tuple[int, int], tuple[int, int]],
+) -> bool:
+    """Half-open interval overlap: touching endpoints do not overlap."""
+    a_start, a_end = a
+    b_start, b_end = b
+    return a_start < b_end and b_start < a_end
+
+
+def _entry_label(entry: dict[str, Any], index: int) -> str:
+    identifier = entry.get("id")
+    if isinstance(identifier, str) and identifier.strip():
+        return identifier.strip()
+    return f"experience[{index}]"
+
+
+def _format_range(dates: tuple[tuple[int, int], tuple[int, int]]) -> str:
+    start, end = dates
+    end_label = "present" if end == _PRESENT_SENTINEL else f"{end[0]:04d}-{end[1]:02d}"
+    return f"{start[0]:04d}-{start[1]:02d}..{end_label}"
+
+
+def _same_company_date_overlap(config: dict[str, Any]) -> GateResult:
+    """Flag same-company experience entries whose date ranges overlap.
+
+    Requires structured ``start``/``end`` fields on both entries of a pair;
+    when either is absent the pair is silently skipped so profiles that have
+    not yet migrated to structured dates are not penalised.
+    """
+    gate = "same_company_date_overlap"
+    entries: list[tuple[int, dict[str, Any]]] = []
+    for index, entry in enumerate(config.get("experience", [])):
+        if isinstance(entry, dict):
+            entries.append((index, entry))
+
+    overlaps: list[str] = []
+    skipped_pairs = 0
+    for i in range(len(entries)):
+        index_a, entry_a = entries[i]
+        company_a = str(entry_a.get("company", "")).strip().lower()
+        if not company_a:
+            continue
+        dates_a = _experience_date_pair(entry_a)
+        for j in range(i + 1, len(entries)):
+            index_b, entry_b = entries[j]
+            company_b = str(entry_b.get("company", "")).strip().lower()
+            if company_a != company_b:
+                continue
+            dates_b = _experience_date_pair(entry_b)
+            if dates_a is None or dates_b is None:
+                skipped_pairs += 1
+                continue
+            if _ranges_overlap(dates_a, dates_b):
+                label_a = _entry_label(entry_a, index_a)
+                label_b = _entry_label(entry_b, index_b)
+                overlaps.append(
+                    f"{label_a} ({_format_range(dates_a)}) and "
+                    f"{label_b} ({_format_range(dates_b)})"
+                )
+
+    if overlaps:
+        return GateResult(
+            WARN,
+            gate,
+            f"Same-company date overlap detected: {'; '.join(overlaps)}.",
+        )
+    if skipped_pairs:
+        return GateResult(
+            OK,
+            gate,
+            f"structured dates unavailable for {skipped_pairs} pair(s) — skipped.",
+        )
+    return GateResult(OK, gate, "No same-company date overlaps detected.")
+
+
 def run_quality_gates(
     profile: dict[str, Any],
     config: dict[str, Any],
@@ -356,6 +471,8 @@ def run_quality_gates(
         )
     else:
         results.append(GateResult(OK, "cover_letter_page_count", "Cover letter fits on one page."))
+
+    results.append(_same_company_date_overlap(config))
 
     bullets = _experience_bullets(config)
     normalised_bullets = _normalise_lines(bullets)

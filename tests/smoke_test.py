@@ -1613,6 +1613,102 @@ class TestPdfQualityGates:
             for result in report.results
         )
 
+    @staticmethod
+    def _same_company_gate(experience: list[dict[str, Any]]):
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from quality_gates import _same_company_date_overlap
+
+            return _same_company_date_overlap({"experience": experience})
+        finally:
+            sys.path.pop(0)
+
+    def test_same_company_overlap_warns_when_structured_dates_overlap(self):
+        result = self._same_company_gate(
+            [
+                {"id": "role_a", "company": "Acme", "start": "2023-01", "end": "2023-08"},
+                {"id": "role_b", "company": "Acme", "start": "2023-06", "end": "2024-01"},
+            ]
+        )
+        assert result.status == "WARN"
+        assert result.name == "same_company_date_overlap"
+        assert "role_a" in result.message
+        assert "role_b" in result.message
+
+    def test_same_company_sequential_promotion_does_not_warn(self):
+        # Touching endpoints (Jan-Jun then Jul-Dec) must not fire.
+        result = self._same_company_gate(
+            [
+                {"id": "role_a", "company": "Acme", "start": "2023-01", "end": "2023-07"},
+                {"id": "role_b", "company": "Acme", "start": "2023-07", "end": "2024-01"},
+            ]
+        )
+        assert result.status == "PASS"
+
+    def test_same_company_overlap_skips_when_structured_dates_absent(self):
+        # Backward compat: profiles without start/end must not false-positive.
+        result = self._same_company_gate(
+            [
+                {"id": "role_a", "company": "Acme", "company_line": "Acme · 2022 – 2023"},
+                {"id": "role_b", "company": "Acme", "company_line": "Acme · 2023 – 2024"},
+            ]
+        )
+        assert result.status == "PASS"
+        assert "skipped" in result.message.lower()
+
+    def test_same_company_overlap_ignores_different_companies(self):
+        result = self._same_company_gate(
+            [
+                {"id": "role_a", "company": "Acme", "start": "2023-01", "end": "2023-12"},
+                {"id": "role_b", "company": "Globex", "start": "2023-06", "end": "2024-06"},
+            ]
+        )
+        assert result.status == "PASS"
+
+    def test_same_company_overlap_handles_present_end_date(self):
+        # An open-ended "present" role that overlaps an earlier same-company
+        # role must be flagged rather than silently skipped or crashing.
+        result = self._same_company_gate(
+            [
+                {"id": "role_a", "company": "Acme", "start": "2022-01", "end": "2024-01"},
+                {"id": "role_b", "company": "Acme", "start": "2023-06", "end": "present"},
+            ]
+        )
+        assert result.status == "WARN"
+        assert "present" in result.message
+
+    def test_resolve_experience_propagates_company_and_id_for_gate(self):
+        # Codex P1 regression guard. The overlap gate reads entry["company"];
+        # _resolve_experience previously dropped it, silently masking real
+        # duplicates. Assert both the gate-critical keys survive resolution.
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from generate_application import _resolve_experience
+        finally:
+            sys.path.pop(0)
+
+        profile = {
+            "experience": [
+                {
+                    "id": "role_a",
+                    "title": "Senior Engineer",
+                    "company": "Acme",
+                    "company_line": "Acme · 2023–2024",
+                    "bullets": ["shipped a thing"],
+                },
+                {
+                    "id": "role_b",
+                    "title": "Staff Engineer",
+                    "company": "Acme",
+                    "company_line": "Acme · 2024–present",
+                    "bullets": ["shipped another thing"],
+                },
+            ]
+        }
+        resolved = _resolve_experience(profile, {"variant": ""})
+        assert [entry["id"] for entry in resolved] == ["role_a", "role_b"]
+        assert all(entry["company"] == "Acme" for entry in resolved)
+
 
 class TestRoleConfigDefaults:
     """Cover prepare_generation_config inheritance for openness and additional_experience."""
@@ -1724,9 +1820,12 @@ class TestExperienceStructuredDates:
         assert prepared["experience"][0]["end"] == "present"
 
     def test_entries_without_start_end_render_identically_to_baseline(self):
-        # Backward compatibility: absence of start/end must not add keys,
-        # must not alter title/company_line/client_line/bullets, and must
-        # not raise even though "present" is not ISO-parseable.
+        # Backward compatibility for the start/end pair specifically: absence
+        # must not inject those two keys, must not alter title/company_line/
+        # client_line/bullets, and must not raise even though "present" is
+        # not ISO-parseable. Other keys added by _resolve_experience (id,
+        # company) are covered by separate tests and are not part of this
+        # invariant.
         profile = self._load_synthetic_profile()
         for entry in profile["experience"]:
             entry.pop("start", None)
@@ -1735,12 +1834,8 @@ class TestExperienceStructuredDates:
         for resolved in prepared["experience"]:
             assert "start" not in resolved
             assert "end" not in resolved
-            assert set(resolved.keys()) == {
-                "title",
-                "company_line",
-                "client_line",
-                "bullets",
-            }
+            for required in ("title", "company_line", "client_line", "bullets"):
+                assert required in resolved
 
     def test_mixed_entries_only_thread_dates_where_present(self):
         profile = self._load_synthetic_profile()

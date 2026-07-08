@@ -186,7 +186,9 @@ def _resolve_experience(profile: dict[str, Any], config: dict[str, Any]) -> list
         override = overrides.get(experience_id) if isinstance(overrides, dict) else None
         bullets = _select_bullets(experience, variant, override)
         resolved_role: dict[str, Any] = {
+            "id": experience_id,
             "title": experience.get("title", ""),
+            "company": experience.get("company", ""),
             "company_line": experience.get("company_line", experience.get("company", "")),
             "client_line": experience.get("client_line", ""),
             "bullets": bullets,
