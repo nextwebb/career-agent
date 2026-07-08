@@ -192,7 +192,7 @@ def _resolve_experience(profile: dict[str, Any], config: dict[str, Any]) -> list
             "company_line": experience.get("company_line", experience.get("company", "")),
             "client_line": experience.get("client_line", ""),
             "bullets": bullets,
-            "suppress_result_check": bool(experience.get("suppress_result_check", False)),
+            "suppress_result_check": experience.get("suppress_result_check") is True,
         }
         if "start" in experience:
             resolved_role["start"] = experience["start"]

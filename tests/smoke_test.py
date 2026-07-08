@@ -1804,6 +1804,33 @@ class TestPerBulletResultSignal:
         assert pattern.search("3x throughput")
         assert not pattern.search("no numbers here")
 
+    def test_stringy_suppress_flag_does_not_silently_suppress_warnings(self):
+        # bool("false") is True in Python; a config author who writes
+        # "false" as a string would otherwise mask the whole role's
+        # warnings. _resolve_experience only propagates the flag when it
+        # is exactly the boolean True.
+        _, missing, _ = self._load_quality_helpers()
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from generate_application import _resolve_experience
+        finally:
+            sys.path.pop(0)
+
+        profile = {
+            "experience": [
+                {
+                    "id": "job_1",
+                    "title": "Engineer",
+                    "company": "Acme",
+                    "bullets": ["Improved data pipeline reliability across teams."],
+                    "suppress_result_check": "false",
+                }
+            ]
+        }
+        resolved = _resolve_experience(profile, {"variant": ""})
+        assert resolved[0]["suppress_result_check"] is False
+        assert missing({"experience": resolved}) == ["job_1[0]"]
+
 
 class TestRoleConfigDefaults:
     """Cover prepare_generation_config inheritance for openness and additional_experience."""
