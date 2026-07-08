@@ -1,11 +1,11 @@
 ---
 name: apply
-description: Fill an ATS form via browser automation, upload PDFs, answer safe required fields, then hand off for sensitive, consent, attestation, legal, and Submit controls
+description: Fill an ATS form via browser automation, upload PDFs, answer safe required fields, then hand off for sensitive, consent, attestation, legal, and Submit controls (unless yolo mode is authorised — see the yolo submission section below)
 ---
 
 # apply
 
-Fill an ATS job application form using browser automation. Upload CV + cover letter PDFs, answer safe required fields, then hand off to the user for sensitive, consent, attestation, legal, and Submit controls.
+Fill an ATS job application form using browser automation. Upload CV + cover letter PDFs, answer safe required fields, then hand off to the user for sensitive, consent, attestation, legal, and Submit controls (unless yolo mode is authorised — see the yolo submission section below).
 
 ## Triggers
 

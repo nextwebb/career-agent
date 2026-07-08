@@ -33,7 +33,7 @@ Six platforms are enforced by the `role.ats_platform` whitelist in `src/validati
 - **Greenhouse** (`greenhouse`, direct): `https://job-boards.greenhouse.io/<company>/jobs/<id>`
 - **Greenhouse** (`greenhouse`, iframe embed): navigate to `https://boards.greenhouse.io/embed/job_app?for=<company>&token=<id>` as a top-level page: cross-origin iframes block all DOM tools
 - **Greenhouse EU** (`greenhouse_eu`): `https://job-boards.eu.greenhouse.io/<company>/jobs/<id>`; identical field-filling strategy to `greenhouse`
-- **Lever** (`lever`): `https://jobs.lever.co/<company>/<id>` (EU variant: `jobs.eu.lever.co`)
+- **Lever** (`lever`): `https://jobs.lever.co/<company>/<uuid>/apply` (EU variant: `jobs.eu.lever.co`)
 - **Workable** (`workable`): `https://apply.workable.com/<company>/j/<id>/apply/`
 - **Ashby** (`ashby`): `https://jobs.ashbyhq.com/<company>/<uuid>/application`
 - **Teamtailor** (`teamtailor`): `https://career.teamtailor.com/jobs/<id>/applications/new` or `https://<company>.teamtailor.com/jobs/<id>/applications/new`
