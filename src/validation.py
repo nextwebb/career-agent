@@ -61,6 +61,7 @@ def validate_profile(data: dict, strict: bool = False) -> tuple[bool, list[str]]
         if not isinstance(data["experience"], list):
             errors.append("'experience' must be a list")
         else:
+            valid_experience_types = {"employment", "open_source", "consulting", "contract"}
             for i, exp in enumerate(data["experience"]):
                 if not isinstance(exp, dict):
                     errors.append(f"'experience[{i}]' must be a dictionary")
@@ -75,6 +76,14 @@ def validate_profile(data: dict, strict: bool = False) -> tuple[bool, list[str]]
                     errors.append(f"'experience[{i}].company' is required")
                 if "bullets" not in exp:
                     errors.append(f"'experience[{i}].bullets' is required")
+
+                # Optional type routes entries to CV sections (employment →
+                # Work Experience, open_source → Projects). Absent = employment.
+                if "type" in exp and exp["type"] not in valid_experience_types:
+                    errors.append(
+                        f"'experience[{i}].type' must be one of: "
+                        f"{', '.join(sorted(valid_experience_types))}"
+                    )
 
     # Validate education
     if "education" in data and not isinstance(data["education"], list):

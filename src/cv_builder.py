@@ -169,7 +169,8 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         openness                 str   Availability line (optional, overrides profile.openness)
         summary                  str   HTML-safe summary paragraph
         skills                   list[{label, items}]
-        experience               list[{title, company_line, client_line?, bullets: list[str]}]
+        experience               list[{title, company_line, client_line?, bullets: list[str],
+                                       type?: employment|open_source|consulting|contract}]
         additional_experience    list[str]  Older/minor roles rendered as one
                                             condensed line prefixed
                                             "Earlier experience:" (optional)
@@ -298,8 +299,17 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     story.append(sp(4))
 
     # ── Professional Experience ───────────────────────────────────────────────
+    # entry.type routes an experience item to a CV section: `open_source` →
+    # Projects, anything else (including missing) → Work Experience. Order is
+    # preserved within each section.
+    work_experience = [
+        role for role in config["experience"] if role.get("type", "employment") != "open_source"
+    ]
+    open_source_experience = [
+        role for role in config["experience"] if role.get("type") == "open_source"
+    ]
     story += section("Professional Experience")
-    for role in config["experience"]:
+    for role in work_experience:
         header_parts = [Paragraph(role["title"], JOB_TITLE)]
         if role.get("company_line"):
             header_parts.append(Paragraph(role["company_line"], COMPANY))
@@ -339,9 +349,22 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     story.append(sp(2))
 
     # ── Projects (optional) ───────────────────────────────────────────────────
-    projects = config.get("projects", [])
-    if projects:
+    # Merges open_source experience entries with any config["projects"]. For
+    # experience items, company_line acts as the tech context line.
+    projects = config.get("projects") or []
+    if projects or open_source_experience:
         story += section("Projects")
+        for role in open_source_experience:
+            story.append(Paragraph(role["title"], JOB_TITLE))
+            tech_line = role.get("company_line") or role.get("client_line") or ""
+            if tech_line:
+                story.append(Paragraph(tech_line, CLIENT))
+            bullets = role.get("bullets", [])
+            if isinstance(bullets, dict):
+                bullets = bullets.get("default", [])
+            for b in bullets:
+                story.append(bul(b))
+            story.append(sp(4))
         for proj in projects:
             story.append(Paragraph(proj["title"], JOB_TITLE))
             if proj.get("tech_line"):
