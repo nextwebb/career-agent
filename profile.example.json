@@ -76,6 +76,8 @@
   "experience": [
     {
       "id": "job_1",
+      "type": "employment",
+      "_type_note": "Optional. One of: employment, open_source, consulting, contract. Defaults to 'employment'. Entries with type 'open_source' render under the Projects section instead of Work Experience.",
       "title": "Senior Software Engineer",
       "company": "Company Name",
       "company_line": "Company Name · Industry · Location · Start – End",
@@ -97,6 +99,18 @@
         "C": [
           "Backend-focused bullet for variant C...",
           "API-focused bullet..."
+        ]
+      }
+    },
+    {
+      "id": "oss_1",
+      "type": "open_source",
+      "title": "career-agent",
+      "company": "Personal project",
+      "company_line": "Python · reportlab · pytest",
+      "bullets": {
+        "default": [
+          "Describe an open-source project you maintain or contribute to. Renders under the Projects section on the generated CV."
         ]
       }
     }

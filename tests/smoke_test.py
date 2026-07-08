@@ -2014,6 +2014,163 @@ class TestProfileAdditionalExperienceValidation:
         assert is_valid, errors
 
 
+class TestExperienceTypeRouting:
+    """Cover experience.type routing between Work Experience and Projects sections."""
+
+    @staticmethod
+    def _base_profile() -> dict[str, Any]:
+        return {
+            "name": {"first": "Alex", "last": "Example"},
+            "email": "alex@example.com",
+            "links": {},
+            "education": [],
+            "skills": [],
+            "experience": [],
+        }
+
+    def _resolve(self, profile: dict[str, Any]) -> list[dict[str, Any]]:
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from generate_application import _resolve_experience
+
+            return _resolve_experience(profile, {"variant": "C"})
+        finally:
+            sys.path.pop(0)
+
+    def _validate_profile(self, profile: dict[str, Any]) -> tuple[bool, list[str]]:
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from validation import validate_profile
+
+            return validate_profile(profile)
+        finally:
+            sys.path.pop(0)
+
+    def test_mixed_types_route_open_source_to_projects_and_employment_to_experience(self, tmp_path):
+        pytest.importorskip("reportlab")
+        pypdf = pytest.importorskip("pypdf")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cv_builder import build_cv
+
+            profile = json.loads(
+                (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+            )
+            profile["experience"] = [
+                {
+                    "id": "emp_a",
+                    "type": "employment",
+                    "title": "EmploymentAlpha Role",
+                    "company": "Alpha Co",
+                    "company_line": "Alpha Co - 2022-2024",
+                    "bullets": {"default": ["Alpha bullet distinctive text."]},
+                },
+                {
+                    "id": "emp_b",
+                    "type": "employment",
+                    "title": "EmploymentBeta Role",
+                    "company": "Beta Co",
+                    "company_line": "Beta Co - 2020-2022",
+                    "bullets": {"default": ["Beta bullet distinctive text."]},
+                },
+                {
+                    "id": "oss_1",
+                    "type": "open_source",
+                    "title": "OpenSourceGamma Project",
+                    "company": "Gamma OSS",
+                    "company_line": "Python - reportlab",
+                    "bullets": {"default": ["Gamma open source bullet distinctive text."]},
+                },
+            ]
+            config = {
+                "role_id": "synth_types",
+                "company": "Synth Co",
+                "title": "Engineer",
+                "url": "https://example.com/jobs/synth",
+                "ats_platform": "unknown",
+                "variant": "C",
+                "output_prefix": "synth_types",
+                "headline": "Test",
+                "summary": "Test summary.",
+                "skills": [{"label": "Languages", "items": "Python"}],
+                "impact_statements": [{"title": "Impact", "body": "Body."}],
+            }
+
+            from generate_application import prepare_generation_config
+
+            prepared = prepare_generation_config(profile, config, create_output_dir=False)
+            cv_path = tmp_path / "cv.pdf"
+            build_cv(profile, prepared, str(cv_path))
+            cv_text = "\n".join(
+                page.extract_text() or "" for page in pypdf.PdfReader(str(cv_path)).pages
+            )
+        finally:
+            sys.path.pop(0)
+
+        experience_header_idx = cv_text.index("PROFESSIONAL EXPERIENCE")
+        projects_header_idx = cv_text.index("PROJECTS")
+        alpha_idx = cv_text.index("EmploymentAlpha Role")
+        beta_idx = cv_text.index("EmploymentBeta Role")
+        gamma_idx = cv_text.index("OpenSourceGamma Project")
+
+        assert experience_header_idx < alpha_idx < projects_header_idx
+        assert experience_header_idx < beta_idx < projects_header_idx
+        assert alpha_idx < beta_idx, "within-section order should be preserved"
+        assert projects_header_idx < gamma_idx
+        assert "Gamma open source bullet distinctive text." in cv_text
+        # open_source item must not appear in Work Experience section
+        assert cv_text.index("Gamma open source bullet distinctive text.") > projects_header_idx
+
+    def test_missing_type_defaults_to_employment_backward_compat(self):
+        profile = self._base_profile()
+        profile["experience"] = [
+            {
+                "id": "job_1",
+                "title": "Role 1",
+                "company": "Co 1",
+                "bullets": ["b1"],
+            },
+            {
+                "id": "job_2",
+                "title": "Role 2",
+                "company": "Co 2",
+                "bullets": ["b2"],
+            },
+        ]
+        resolved = self._resolve(profile)
+        assert [r["type"] for r in resolved] == ["employment", "employment"]
+
+    def test_invalid_type_rejected_at_load_time(self):
+        profile = self._base_profile()
+        profile["experience"] = [
+            {
+                "id": "job_1",
+                "title": "Role",
+                "company": "Co",
+                "bullets": ["b"],
+                "type": "personal",
+            }
+        ]
+        is_valid, errors = self._validate_profile(profile)
+        assert not is_valid
+        assert any("'experience[0].type' must be one of" in e for e in errors)
+
+    def test_all_valid_types_accepted(self):
+        profile = self._base_profile()
+        profile["experience"] = [
+            {
+                "id": f"job_{i}",
+                "title": f"Role {i}",
+                "company": f"Co {i}",
+                "bullets": ["b"],
+                "type": t,
+            }
+            for i, t in enumerate(["employment", "open_source", "consulting", "contract"])
+        ]
+        is_valid, errors = self._validate_profile(profile)
+        assert is_valid, errors
+
+
 class TestRoleConfigValidation:
     """Cover validate_role_config type checks for new keys."""
 
