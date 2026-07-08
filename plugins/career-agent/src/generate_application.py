@@ -244,6 +244,13 @@ def prepare_generation_config(
     prepared.setdefault("experience", _resolve_experience(profile, prepared))
     prepared.setdefault("skills", profile.get("skills", []))
 
+    # jd_skills is optional on the role config. Only thread it when the role
+    # explicitly provides a list — a missing key means "no JD tailoring",
+    # which is a distinct signal from an explicit empty list (still no
+    # tailoring but the author has committed to that choice).
+    if isinstance(config.get("jd_skills"), list):
+        prepared["jd_skills"] = list(config["jd_skills"])
+
     # Role config may set additional_experience: [] to suppress the
     # condensed "Earlier experience:" line for a specific submission.
     # setdefault preserves an explicit empty list, so the per-role suppress

@@ -43,5 +43,7 @@
   "sponsorship_available": "unknown",
   "remote_status": "unknown",
   "required_skills": [],
+  "jd_skills": ["Python", "AWS Lambda", "S3", "Terraform"],
+  "_jd_skills_note": "Optional. Skills lifted verbatim from the JD. cv_builder intersects these with profile.skills (case-insensitive match, exact string) and only renders categories with ≥1 hit, padded from profile order to a floor of 4 items. Never invents skills outside profile.json. Remove the key entirely to render the profile's skills in declared order, still capped at 6 categories × 6 items.",
   "notes": "Add any notes about this application here — e.g. referral contact, deadline, status."
 }

@@ -277,6 +277,18 @@ def validate_role_config(data: dict, strict: bool = False) -> tuple[bool, list[s
                 if not isinstance(skill, str):
                     errors.append(f"'required_skills[{i}]' must be a string")
 
+    # Validate jd_skills if present — drives the JD-tailored skills renderer
+    # in cv_builder. A string would be iterated character-by-character and
+    # match nothing; typed elements would silently miss the case-insensitive
+    # comparison. Fail loudly instead of degrading to profile-order fallback.
+    if "jd_skills" in data:
+        if not isinstance(data["jd_skills"], list):
+            errors.append("'jd_skills' must be a list of strings")
+        else:
+            for i, skill in enumerate(data["jd_skills"]):
+                if not isinstance(skill, str):
+                    errors.append(f"'jd_skills[{i}]' must be a string")
+
     # Validate custom_answers if present
     if "custom_answers" in data and not isinstance(data["custom_answers"], dict):
         errors.append("'custom_answers' must be a dictionary")
