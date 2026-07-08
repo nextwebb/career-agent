@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.10.0](https://github.com/nextwebb/career-agent/compare/v1.9.0...v1.10.0) (2026-07-08)
+
+
+### Features
+
+* **cv:** JD-driven skills rendering with intersection and caps ([#186](https://github.com/nextwebb/career-agent/issues/186)) ([ae93191](https://github.com/nextwebb/career-agent/commit/ae93191f2d3345a2ddf11fffd362eefe5bdc3f22)), closes [#184](https://github.com/nextwebb/career-agent/issues/184)
+
+
+### Fixes
+
+* **cv:** inject summary_closing_line into rendered summary ([#191](https://github.com/nextwebb/career-agent/issues/191)) ([92cb999](https://github.com/nextwebb/career-agent/commit/92cb9999a1aff24a4824edb190df00f4a9801fa0))
+* **cv:** section ordering, drop Selected Impact, rename Certifications, add Tech Stack per role ([#188](https://github.com/nextwebb/career-agent/issues/188)) ([a682b5f](https://github.com/nextwebb/career-agent/commit/a682b5fda4eacf7de78811d498928953e578f6a8)), closes [#187](https://github.com/nextwebb/career-agent/issues/187)
+* **cv:** truncate additional_experience entries — closes [#183](https://github.com/nextwebb/career-agent/issues/183) ([#185](https://github.com/nextwebb/career-agent/issues/185)) ([845cfaf](https://github.com/nextwebb/career-agent/commit/845cfaf8603f0b08f5591a5e2dbfa4d4e271e35a))
+
 ## [1.9.0](https://github.com/nextwebb/career-agent/compare/v1.8.0...v1.9.0) (2026-07-08)
 
 
