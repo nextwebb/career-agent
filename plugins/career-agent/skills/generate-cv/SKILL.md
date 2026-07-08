@@ -92,10 +92,9 @@ If the packaged script cannot be found, stop and report that the career-agent pa
 4. Core Skills
 5. Professional Experience (reverse chronological, variant-ordered bullets)
 6. Earlier experience *(optional — single condensed line: `Earlier experience: Role @ Company · Role @ Company`)*
-7. Selected Impact
-8. Projects *(optional)*
-9. Certifications & Community & Learning *(optional — from profile.certifications)*
-10. Education
+7. Education
+8. Projects *(optional — merges `open_source` experience entries with `role.projects`)*
+9. Awards & Recognition *(optional — sourced from `profile.certifications`)*
 
 **Cover letter structure:**
 1. Applicant name + contact line (top)

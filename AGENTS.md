@@ -1,5 +1,36 @@
 # AGENTS.md
 
+## Read order for LLM and coding agents
+
+If you are an LLM or coding agent working in this repo, read these files in this order before writing code. Do not skip.
+
+1. **AGENTS.md** (this file) — repository expectations and doc map
+2. **ENGINEERING_PRINCIPLES.md** — Python style, type hints, testing, commit format, security, deps
+3. **CLAUDE.md** — project overview, skills, ATS platforms, human-in-the-loop rules, PDF spec
+4. **docs/validation-policy.md** — required CI gates and validation policy
+5. Domain-specific docs when the surface applies:
+   - `skills/<name>/SKILL.md` for the skill you are touching
+   - `docs/source-methodology.md` if working on `/source`
+   - `docs/apply-codex-chrome-verification.md` if working on browser automation
+   - `docs/review-routing.md` if changing CODEOWNERS or review flow
+
+For humans contributing PRs, start with `CONTRIBUTING.md` instead.
+
+## Docs map
+
+| File | Scope | When to read |
+|---|---|---|
+| `AGENTS.md` | Agent entry point, doc map, high-level expectations | Always first |
+| `ENGINEERING_PRINCIPLES.md` | Coding standards (style, types, tests, commits, security) | Before writing Python |
+| `CLAUDE.md` | Project purpose, skills, HITL rules, PDF spec | Before touching the workflow, `/apply`, or PDF layer |
+| `CONTRIBUTING.md` | Human contributor setup + local checks | Human PRs |
+| `SECURITY.md` | Vulnerability reporting | Never inline — direct users here |
+| `docs/validation-policy.md` | CI gates, docs-versioning, external-app-suite policy | Before making claims about validation status |
+| `docs/review-routing.md` | CODEOWNERS + review flow | When changing `.github/CODEOWNERS` |
+| `docs/source-methodology.md` | `/source` evidence and ranking rules | When editing `skills/source/` |
+| `docs/apply-codex-chrome-verification.md` | Codex Chrome verification matrix per ATS | When editing `skills/apply/` or verifying a new ATS |
+| `README.md` | Public-facing overview | Do not rely on it for engineering rules |
+
 ## Repository expectations
 
 - This repository is `career-agent`, a local-first job application workflow for Claude Code and Codex.
