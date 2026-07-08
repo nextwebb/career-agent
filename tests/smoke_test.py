@@ -2170,6 +2170,52 @@ class TestExperienceTypeRouting:
         is_valid, errors = self._validate_profile(profile)
         assert is_valid, errors
 
+    def test_null_projects_config_does_not_crash_with_open_source_entries(self, tmp_path):
+        # A role config that explicitly sets projects: null and a profile
+        # that has an open_source experience entry must still render — the
+        # Projects section renders the open_source entries and treats a
+        # null projects field as empty.
+        pytest.importorskip("reportlab")
+        pytest.importorskip("pypdf")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cv_builder import build_cv
+            from generate_application import prepare_generation_config
+
+            profile = json.loads(
+                (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+            )
+            profile["experience"] = [
+                {
+                    "id": "oss_1",
+                    "type": "open_source",
+                    "title": "OSS Project",
+                    "company": "OSS",
+                    "company_line": "Python",
+                    "bullets": {"default": ["OSS bullet."]},
+                }
+            ]
+            config = {
+                "role_id": "synth_null_projects",
+                "company": "Synth Co",
+                "title": "Engineer",
+                "url": "https://example.com/jobs/synth",
+                "ats_platform": "unknown",
+                "variant": "C",
+                "output_prefix": "synth_null_projects",
+                "headline": "Test",
+                "summary": "Test.",
+                "skills": [{"label": "Languages", "items": "Python"}],
+                "impact_statements": [{"title": "Impact", "body": "Body."}],
+                "projects": None,
+            }
+            prepared = prepare_generation_config(profile, config, create_output_dir=False)
+            cv_path = tmp_path / "cv.pdf"
+            build_cv(profile, prepared, str(cv_path))
+            assert cv_path.exists()
+        finally:
+            sys.path.pop(0)
+
 
 class TestRoleConfigValidation:
     """Cover validate_role_config type checks for new keys."""

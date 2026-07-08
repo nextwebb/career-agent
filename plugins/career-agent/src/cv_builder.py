@@ -351,7 +351,7 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     # ── Projects (optional) ───────────────────────────────────────────────────
     # Merges open_source experience entries with any config["projects"]. For
     # experience items, company_line acts as the tech context line.
-    projects = config.get("projects", [])
+    projects = config.get("projects") or []
     if projects or open_source_experience:
         story += section("Projects")
         for role in open_source_experience:
