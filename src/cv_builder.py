@@ -20,6 +20,28 @@ GREY = colors.HexColor("#555566")
 LGREY = colors.HexColor("#888899")
 ACCENT = colors.HexColor("#2563eb")
 
+# Per-entry char cap for the condensed "Earlier experience:" line. Applied only
+# when an entry has no ":" to split on, so paragraph-length entries without the
+# expected "Role — Company (Context): body" shape still degrade gracefully.
+ADDITIONAL_EXPERIENCE_CHAR_CAP = 90
+
+
+def _condense_additional_experience_entry(entry: str) -> str:
+    """Reduce a single additional_experience entry to a condensed label.
+
+    Rule: keep only the pre-colon portion when a ":" is present; otherwise
+    truncate at ADDITIONAL_EXPERIENCE_CHAR_CAP with an ellipsis. Trailing
+    ":"/"." and whitespace are stripped either way so joined output stays tidy.
+    """
+    text = entry.strip()
+    colon_index = text.find(":")
+    if colon_index != -1:
+        text = text[:colon_index]
+    text = text.rstrip().rstrip(":.").rstrip()
+    if colon_index == -1 and len(text) > ADDITIONAL_EXPERIENCE_CHAR_CAP:
+        text = f"{text[:ADDITIONAL_EXPERIENCE_CHAR_CAP]}…"
+    return text
+
 
 def _get_name(profile: dict) -> str:
     """Extract full name from profile, handling both string and dict formats."""
@@ -329,7 +351,12 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     # prefixed with "Earlier experience:". Omitted entirely when empty/absent.
     additional = config.get("additional_experience", [])
     if additional:
-        entries = [str(line).strip() for line in additional if str(line).strip()]
+        entries = [
+            _condense_additional_experience_entry(str(line))
+            for line in additional
+            if str(line).strip()
+        ]
+        entries = [entry for entry in entries if entry]
         if entries:
             joined = " · ".join(entries)
             story.append(Paragraph(f"<b>Earlier experience:</b>&nbsp;{joined}", SUMMARY))
