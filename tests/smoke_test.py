@@ -1496,9 +1496,7 @@ class TestPdfQualityGates:
         )
         assert profile["location"] in self._extract_pdf_text(cv_path)
 
-    def test_additional_experience_four_entries_render_as_single_condensed_line(
-        self, tmp_path
-    ):
+    def test_additional_experience_four_entries_render_as_single_condensed_line(self, tmp_path):
         # Baseline render with additional_experience absent to count bullets
         # produced by the rest of the CV.
         _, baseline_cv_path, _ = self._render_with_profile_overrides(tmp_path, {})
@@ -1560,9 +1558,7 @@ class TestPdfQualityGates:
             tmp_path,
             {"additional_experience": ["Backend Engineer @ EarlierCo (2015–2017)"]},
         )
-        role = self._load_fixture(
-            "tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json"
-        )
+        role = self._load_fixture("tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json")
         config = prepare_generation_config(profile, role)
         report = run_quality_gates(profile, config, cv_path, cl_path)
         assert any(
@@ -1570,9 +1566,7 @@ class TestPdfQualityGates:
             for result in report.results
         )
 
-    def test_additional_experience_gate_warns_when_full_entry_blocks(
-        self, tmp_path, monkeypatch
-    ):
+    def test_additional_experience_gate_warns_when_full_entry_blocks(self, tmp_path, monkeypatch):
         sys.path.insert(0, str(ROOT / "src"))
         try:
             import quality_gates
@@ -1585,9 +1579,7 @@ class TestPdfQualityGates:
             tmp_path,
             {"additional_experience": ["Backend Engineer @ EarlierCo"]},
         )
-        role = self._load_fixture(
-            "tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json"
-        )
+        role = self._load_fixture("tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json")
         config = prepare_generation_config(profile, role)
 
         # Simulate a regression where the CV renders additional_experience as
