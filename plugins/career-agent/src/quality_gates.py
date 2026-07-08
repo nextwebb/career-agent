@@ -308,13 +308,6 @@ def _ranges_overlap(
     return a_start < b_end and b_start < a_end
 
 
-def _entry_label(entry: dict[str, Any], index: int) -> str:
-    identifier = entry.get("id")
-    if isinstance(identifier, str) and identifier.strip():
-        return identifier.strip()
-    return f"experience[{index}]"
-
-
 def _format_range(dates: tuple[tuple[int, int], tuple[int, int]]) -> str:
     start, end = dates
     end_label = "present" if end == _PRESENT_SENTINEL else f"{end[0]:04d}-{end[1]:02d}"
