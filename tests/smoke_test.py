@@ -2492,6 +2492,56 @@ class TestProfileOpennessRelocationWarning:
         assert "profile.relocation and profile.openness contain identical text" in stderr
 
 
+class TestJdDrivenSkillsEndToEnd:
+    """Render a real PDF with jd_skills and assert the expected headings."""
+
+    def test_pdf_renders_only_jd_matched_categories_from_eight_category_profile(self, tmp_path):
+        pytest.importorskip("reportlab")
+        pypdf = pytest.importorskip("pypdf")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cv_builder import build_cv
+            from generate_application import prepare_generation_config
+
+            profile = json.loads(
+                (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+            )
+            profile["skills"] = [
+                {"label": "Languages", "items": "Python · TypeScript · Go"},
+                {"label": "Cloud", "items": "AWS Lambda · S3 · Terraform · Docker"},
+                {"label": "Data", "items": "Airflow · dbt · Snowflake"},
+                {"label": "Messaging", "items": "Kafka · RabbitMQ"},
+                {"label": "Observability", "items": "Datadog · Grafana"},
+                {"label": "AI", "items": "OpenAI · Anthropic"},
+                {"label": "Frontend", "items": "React · Vue"},
+                {"label": "Integrations", "items": "Stripe · Twilio"},
+            ]
+            role = json.loads(
+                (ROOT / "tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            # Four JD-matched categories: Languages, Cloud, Data, Messaging.
+            # Observability/AI/Frontend/Integrations have zero hits — dropped.
+            role["jd_skills"] = ["Python", "AWS Lambda", "S3", "Airflow", "Kafka"]
+
+            config = prepare_generation_config(profile, role, create_output_dir=False)
+            cv_path = tmp_path / "cv.pdf"
+            build_cv(profile, config, str(cv_path))
+            cv_text = "\n".join(
+                page.extract_text() or "" for page in pypdf.PdfReader(str(cv_path)).pages
+            )
+        finally:
+            sys.path.pop(0)
+
+        for expected_label in ["Languages", "Cloud", "Data", "Messaging"]:
+            assert expected_label in cv_text, f"expected {expected_label} to render"
+        for dropped_label in ["Observability", "AI", "Frontend", "Integrations"]:
+            # Match on the ':' rendering the label uses in the PDF to avoid
+            # incidental matches against words like 'observability' in prose.
+            assert f"{dropped_label}:" not in cv_text, f"{dropped_label} should be dropped"
+
+
 class TestGitignore:
     """Validate .gitignore prevents committing PII."""
 

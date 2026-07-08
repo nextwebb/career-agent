@@ -43,6 +43,16 @@ def _condense_additional_experience_entry(entry: str) -> str:
     return text
 
 
+# Skills tailoring caps. Chosen to fit ~½ page for a senior profile and to
+# never invent items outside profile.json. Kept as module-level so tests can
+# assert against the same source of truth as the renderer.
+SKILLS_MAX_CATEGORIES = 6
+SKILLS_MAX_ITEMS_PER_CATEGORY = 6
+SKILLS_PADDING_FLOOR = 4
+SKILLS_MAX_TOTAL_ITEMS = 40
+SKILLS_ITEM_SEPARATOR = "·"
+
+
 def _get_name(profile: dict) -> str:
     """Extract full name from profile, handling both string and dict formats."""
     name = profile["name"]
@@ -145,6 +155,108 @@ def _collapse_skill_groups(skills: list[dict]) -> list[dict]:
             }
 
     return [entry for entry in output if entry is not None]
+
+
+def _split_items(items_field) -> list[str]:
+    """Split a skills ``items`` string on ``·`` (the profile schema separator).
+
+    Whitespace around each part is stripped. Empty parts are discarded.
+    A non-string value (defensive: profile authors sometimes pass a list
+    literal in tests) is returned as-is after stringifying each element.
+    """
+    if isinstance(items_field, list):
+        return [str(part).strip() for part in items_field if str(part).strip()]
+    if not isinstance(items_field, str):
+        return []
+    return [part.strip() for part in items_field.split(SKILLS_ITEM_SEPARATOR) if part.strip()]
+
+
+def _tailor_skills_to_jd(skills: list[dict], jd_skills) -> list[dict]:
+    """Return a JD-tailored skills list bounded by module-level caps.
+
+    See issue-driven acceptance criteria in the README/CHANGELOG. This function
+    is pure: given the same inputs it always returns the same output, no I/O,
+    no randomness. Casing of rendered items always follows profile.json —
+    JD casing is used only for the case-insensitive comparison key.
+    """
+    # Normalise the JD list once. `None`, `[]`, or non-list values disable
+    # intersection/padding and fall through to a pure cap-only pass so the
+    # renderer still shrinks a 13-category profile to the global caps.
+    jd_lookup: set[str] = set()
+    if isinstance(jd_skills, list):
+        for entry in jd_skills:
+            if isinstance(entry, str) and entry.strip():
+                jd_lookup.add(entry.strip().casefold())
+
+    tailored: list[dict] = []
+    padded_only_flags: list[bool] = []
+
+    for skill in skills:
+        original_items = _split_items(skill.get("items", ""))
+        if not original_items:
+            continue
+
+        if jd_lookup:
+            matched = [item for item in original_items if item.casefold() in jd_lookup]
+            if not matched:
+                continue
+
+            # Pad from the same category only, preserving profile order and
+            # skipping items already in `matched` (dedupe against the JD hit
+            # list, not against the raw category — see property test).
+            if len(matched) < SKILLS_PADDING_FLOOR:
+                matched_lookup = {item.casefold() for item in matched}
+                for item in original_items:
+                    if len(matched) >= SKILLS_PADDING_FLOOR:
+                        break
+                    if item.casefold() in matched_lookup:
+                        continue
+                    matched.append(item)
+                    matched_lookup.add(item.casefold())
+
+            rendered_items = matched[:SKILLS_MAX_ITEMS_PER_CATEGORY]
+            jd_hit_count = sum(1 for item in rendered_items if item.casefold() in jd_lookup)
+        else:
+            rendered_items = original_items[:SKILLS_MAX_ITEMS_PER_CATEGORY]
+            # With no JD list every surviving category is treated as
+            # "profile-declared", so the drop-preference below applies to none.
+            jd_hit_count = len(rendered_items)
+
+        tailored.append(
+            {
+                "label": skill.get("label", ""),
+                "items": f" {SKILLS_ITEM_SEPARATOR} ".join(rendered_items),
+            }
+        )
+        padded_only_flags.append(jd_hit_count == 0)
+
+    # Global category cap. Padded-only categories (0 JD hits after intersection)
+    # go first; ties resolved by later profile-declared position so the drop
+    # order stays deterministic across runs regardless of dict/hash iteration.
+    if len(tailored) > SKILLS_MAX_CATEGORIES:
+        drop_order = sorted(
+            range(len(tailored)),
+            key=lambda i: (0 if padded_only_flags[i] else 1, -i),
+        )
+        to_drop = set(drop_order[: len(tailored) - SKILLS_MAX_CATEGORIES])
+        tailored = [entry for i, entry in enumerate(tailored) if i not in to_drop]
+
+    # Global item cap. Trim one item from the tail category at a time so a
+    # cluster of small categories is preserved and only the last (least
+    # profile-priority) block shrinks.
+    def _count_total(entries: list[dict]) -> int:
+        return sum(len(_split_items(entry["items"])) for entry in entries)
+
+    while _count_total(tailored) > SKILLS_MAX_TOTAL_ITEMS and tailored:
+        tail = tailored[-1]
+        tail_items = _split_items(tail["items"])
+        if len(tail_items) <= 1:
+            tailored.pop()
+            continue
+        tail_items.pop()
+        tail["items"] = f" {SKILLS_ITEM_SEPARATOR} ".join(tail_items)
+
+    return tailored
 
 
 def is_current_role(role: dict) -> bool:
@@ -315,8 +427,14 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     story += [Paragraph(config["summary"], SUMMARY), sp(6)]
 
     # ── Core Skills ──────────────────────────────────────────────────────────
+    # Group collapse runs first so user-declared ``group`` intent still applies,
+    # then JD tailoring filters/caps the collapsed representation. Missing
+    # jd_skills falls through to a pure cap-only pass (v1.9.0 categories/items
+    # over the caps get trimmed; anything within stays as-is).
+    collapsed_skills = _collapse_skill_groups(config["skills"])
+    tailored_skills = _tailor_skills_to_jd(collapsed_skills, config.get("jd_skills"))
     story += section("Core Skills")
-    for skill in _collapse_skill_groups(config["skills"]):
+    for skill in tailored_skills:
         story.append(Paragraph(f"<b>{skill['label']}</b>:&nbsp;&nbsp;{skill['items']}", SK))
     story.append(sp(4))
 
