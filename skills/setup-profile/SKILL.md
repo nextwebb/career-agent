@@ -89,29 +89,10 @@ For each variant, produce:
 - `label`: short audience label (e.g. "AI/LLM/Evaluation")
 - `headline`: 1-line headline tailored to that audience, ≤ 12 words
 - `summary`: 2-3 sentence paragraph: lead with years of experience, name the most relevant technical stack for that audience, close with availability/location preference
-- `impact_order`: ordered list of 4-6 impact statement keys (defined in step 4) ranked from most to least relevant for that audience
 
 If a variant fit is ambiguous (e.g. no clear AI or data experience), say so: "I could not find strong evidence for Variant A (AI/LLM). I've written a best-effort headline and summary: please review and adjust."
 
-### 4. Build impact_statements
-
-Identify 4-6 named impact areas from the work history. These are reusable bullet building blocks that appear in the CV summary section.
-
-**Naming convention:** short snake_case key, e.g. `llm_eval`, `etl`, `distributed`, `agentic`, `api_design`, `open_source`
-
-For each impact area, write:
-- `title`: short display title (3-6 words, title case)
-- `body`: 2-3 sentences. Lead with a metric or concrete outcome where the CV provides one. Be specific: name technologies, scale, or business impact. Never invent numbers not present in the source.
-
-Example structure (do not copy verbatim: fill from actual CV):
-```json
-"llm_eval": {
-  "title": "LLM Evaluation",
-  "body": "Built evaluation harness for <X> models across <Y> benchmarks, reducing manual review time by <Z>%. Integrated with <tool> to track regression across model versions."
-}
-```
-
-### 5. Write per-job bullets × 4
+### 4. Write per-job bullets × 4
 
 For every role in `experience`, produce four bullet sets:
 
@@ -127,7 +108,7 @@ Rules:
 - Each bullet should begin with a strong past-tense verb (Built, Designed, Reduced, Led, Migrated, Shipped, etc.).
 - Aim for 3-5 bullets per role per variant; 2 is acceptable for short-tenure or early-career roles.
 
-### 6. Check before overwriting
+### 5. Check before overwriting
 
 Before writing `profile.json`:
 
@@ -141,7 +122,7 @@ If the user says no, stop. If yes, proceed.
 
 If `profile.json` does not exist, proceed without asking.
 
-### 7. Write profile.json
+### 6. Write profile.json
 
 Write a complete, valid JSON file to `profile.json` in the project root. The file must match the exact schema from `profile.example.json`:
 
@@ -164,12 +145,9 @@ Write a complete, valid JSON file to `profile.json` in the project root. The fil
   "headline": "...",
   "summary": "...",
   "variants": {
-    "A": { "label": "...", "headline": "...", "summary": "...", "impact_order": ["..."] },
-    "B": { "label": "...", "headline": "...", "summary": "...", "impact_order": ["..."] },
-    "C": { "label": "...", "headline": "...", "summary": "...", "impact_order": ["..."] }
-  },
-  "impact_statements": {
-    "<key>": { "title": "...", "body": "..." }
+    "A": { "label": "...", "headline": "...", "summary": "..." },
+    "B": { "label": "...", "headline": "...", "summary": "..." },
+    "C": { "label": "...", "headline": "...", "summary": "..." }
   },
   "experience": [
     {
@@ -200,7 +178,7 @@ If a field cannot be populated from the source (e.g. GitHub URL not found), writ
 
 Roles must be listed in reverse chronological order (most recent first). Assign IDs `job_1`, `job_2`, ... starting from the most recent.
 
-### 8. Report
+### 7. Report
 
 After writing `profile.json`, output a structured report:
 
@@ -235,7 +213,7 @@ Fields left blank (update manually):
   - links.blog
 ```
 
-### 9. Offer edit loop
+### 8. Offer edit loop
 
 After the report, ask:
 
@@ -243,7 +221,7 @@ After the report, ask:
 Tell me what to adjust: for example:
   - "Rewrite job_1 bullets for AI roles"
   - "Update my LinkedIn URL to https://..."
-  - "Make Variant B the primary and reorder impact_order"
+  - "Make Variant B the primary"
   - "Add a GitHub URL: https://github.com/..."
 ```
 

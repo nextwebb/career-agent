@@ -36,11 +36,9 @@ Read `roles/<role_id>.json`. If it does not exist, tell the user to create it (o
 
 ### 2. Resolve CV variant
 
-The role config's `variant` field is `A`, `B`, or `C`.
+The role config's `variant` field is `A`, `B`, or `C`. `A` targets AI/LLM/Evaluation, `B` targets Data Platform/Pipelines, and `C` targets Senior Backend/APIs.
 
-- **A**: AI/LLM/Evaluation roles: order experience bullets by `impact_order` in `profile.variants.A`
-- **B**: Data Platform/Pipelines: order by `profile.variants.B.impact_order`
-- **C**: Senior Backend/APIs: order by `profile.variants.C.impact_order`
+The selected variant pulls `headline` and `summary` from `profile.variants.<variant>` (only if the role config does not already set those keys) and drives per-job bullet selection.
 
 For each job in `profile.experience`, check if the role config has `experience_overrides` for that job ID. If yes, use those bullets. If no, use the variant-specific bullets from `profile.experience[i].bullets[variant]`. Fall back to `default` if the variant key is missing.
 
