@@ -2774,6 +2774,129 @@ class TestSectionOrderCvTemplate:
         assert "Shipped fictional feature by 30%." in text_without
 
 
+class TestSummaryClosingLineInjection:
+    CLOSING = (
+        "EU BlueCard eligible, supported by German NGO Imagine Foundation "
+        "(Germany-based NGO offering career coaching and integration support "
+        "for international talent)."
+    )
+
+    @staticmethod
+    def _prepare(profile: dict[str, Any], role: dict[str, Any]) -> dict[str, Any]:
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from generate_application import prepare_generation_config
+
+            return prepare_generation_config(profile, role, create_output_dir=False)
+        finally:
+            sys.path.pop(0)
+
+    def _base_profile(self) -> dict[str, Any]:
+        return {
+            "name": {"first": "Ada", "last": "Lovelace"},
+            "email": "ada@example.com",
+            "headline": "Engineer",
+            "summary": "Profile-level summary line.",
+            "variants": {
+                "A": {"summary": "Variant A summary line."},
+            },
+        }
+
+    def _base_role(self, **overrides: Any) -> dict[str, Any]:
+        role = {
+            "role_id": "closing_line_case",
+            "company": "Acme",
+            "title": "Engineer",
+            "url": "https://example.com/jobs/x",
+            "ats_platform": "unknown",
+            "variant": "",
+            "output_prefix": "closing_line_case",
+        }
+        role.update(overrides)
+        return role
+
+    def test_summary_closing_line_appended_when_field_set(self):
+        profile = self._base_profile()
+        profile["cv_instructions"] = {"summary_closing_line": self.CLOSING}
+        config = self._prepare(profile, self._base_role())
+        assert config["summary"] == f"Profile-level summary line. {self.CLOSING}"
+
+    def test_closing_line_absent_when_field_missing_backward_compat(self):
+        profile = self._base_profile()
+        config = self._prepare(profile, self._base_role())
+        assert config["summary"] == "Profile-level summary line."
+
+    def test_closing_line_not_appended_twice_on_regeneration(self):
+        profile = self._base_profile()
+        profile["summary"] = f"Profile-level summary line. {self.CLOSING}"
+        profile["cv_instructions"] = {"summary_closing_line": self.CLOSING}
+        config = self._prepare(profile, self._base_role())
+        assert config["summary"].count(self.CLOSING) == 1
+        assert config["summary"] == f"Profile-level summary line. {self.CLOSING}"
+
+    def test_closing_line_applied_when_summary_from_variant_data(self):
+        profile = self._base_profile()
+        profile["cv_instructions"] = {"summary_closing_line": self.CLOSING}
+        config = self._prepare(profile, self._base_role(variant="A"))
+        assert config["summary"] == f"Variant A summary line. {self.CLOSING}"
+
+    def test_closing_line_applied_when_summary_from_role_config_override(self):
+        profile = self._base_profile()
+        profile["cv_instructions"] = {"summary_closing_line": self.CLOSING}
+        role = self._base_role(variant="A", summary="Role-level override summary.")
+        config = self._prepare(profile, role)
+        assert config["summary"] == f"Role-level override summary. {self.CLOSING}"
+
+    def test_empty_closing_line_field_treated_as_absent(self):
+        profile = self._base_profile()
+        profile["cv_instructions"] = {"summary_closing_line": "   "}
+        config = self._prepare(profile, self._base_role())
+        assert config["summary"] == "Profile-level summary line."
+
+    def test_non_string_closing_line_does_not_crash(self):
+        profile = self._base_profile()
+        profile["cv_instructions"] = {"summary_closing_line": 42}
+        config = self._prepare(profile, self._base_role())
+        assert config["summary"] == "Profile-level summary line."
+
+    def test_summary_ending_with_whitespace_still_matches_suffix(self):
+        profile = self._base_profile()
+        profile["summary"] = f"Profile-level summary line. {self.CLOSING}\n"
+        profile["cv_instructions"] = {"summary_closing_line": self.CLOSING}
+        config = self._prepare(profile, self._base_role())
+        assert config["summary"].count(self.CLOSING) == 1
+
+    def test_closing_line_appears_verbatim_in_rendered_pdf(self, tmp_path):
+        pytest.importorskip("reportlab")
+        pypdf = pytest.importorskip("pypdf")
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from cv_builder import build_cv
+            from generate_application import prepare_generation_config
+
+            profile = json.loads(
+                (ROOT / "tests/fixtures/non_pii/profile.synthetic.json").read_text(encoding="utf-8")
+            )
+            profile["cv_instructions"] = {"summary_closing_line": self.CLOSING}
+            role = json.loads(
+                (ROOT / "tests/fixtures/non_pii/roles/synthetic_quality_gate_pass.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            prepared = prepare_generation_config(profile, role, create_output_dir=False)
+            cv_path = tmp_path / "cv.pdf"
+            build_cv(profile, prepared, str(cv_path))
+            text = "\n".join(
+                page.extract_text() or "" for page in pypdf.PdfReader(str(cv_path)).pages
+            )
+        finally:
+            sys.path.pop(0)
+        # PDF text extraction may insert line breaks anywhere; normalise
+        # whitespace before checking that the closing line appears verbatim.
+        normalised = " ".join(text.split())
+        assert self.CLOSING in normalised
+
+
 if __name__ == "__main__":
     import pytest
 

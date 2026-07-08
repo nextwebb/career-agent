@@ -31,6 +31,11 @@
   "years_experience": 7,
   "headline": "Senior Software Engineer — Python · Distributed Systems · AI",
   "summary": "7+ years building production Python systems across distributed architectures, data platforms, and AI/LLM evaluation workflows. Open to remote EMEA/US roles.",
+  "cv_instructions": {
+    "_comment": "Optional. Rendering instructions applied to every generated CV. Omit the block or leave summary_closing_line empty to render the summary as-is.",
+    "summary_closing_line": "",
+    "_summary_closing_line_note": "Optional. When set, this string is appended verbatim as the final sentence of the CV summary paragraph (with a single leading space). Idempotent: re-runs do not duplicate the line if the summary already ends with it."
+  },
   "variants": {
     "A": {
       "label": "AI/LLM/Evaluation",
