@@ -140,6 +140,35 @@ def load_role(role_id: str) -> dict[str, Any]:
     return config
 
 
+def _apply_summary_closing_line(summary: str, profile: dict[str, Any]) -> str:
+    """Append profile.cv_instructions.summary_closing_line to summary when set.
+
+    Idempotent: if the resolved summary already ends with the closing line
+    (after rstrip), returns the input unchanged so regeneration does not
+    double-append. Non-string closing values and empty/whitespace-only values
+    are treated as absent — backward compatible with profiles that omit
+    cv_instructions entirely.
+    """
+
+    instructions = profile.get("cv_instructions")
+    if not isinstance(instructions, dict):
+        return summary
+    raw_closing = instructions.get("summary_closing_line", "")
+    if not isinstance(raw_closing, str):
+        return summary
+    closing = raw_closing.strip()
+    if not closing:
+        return summary
+    if not isinstance(summary, str):
+        return summary
+    stripped = summary.rstrip()
+    if stripped.endswith(closing):
+        return summary
+    if not stripped:
+        return closing
+    return f"{stripped} {closing}"
+
+
 def _resolve_impact_statements(profile: dict[str, Any], variant: str) -> list[dict[str, Any]]:
     impact = profile.get("impact_statements", [])
     if not isinstance(impact, dict):
@@ -231,6 +260,10 @@ def prepare_generation_config(
     # Fall back to profile defaults if still missing
     prepared.setdefault("headline", profile.get("headline", ""))
     prepared.setdefault("summary", profile.get("summary", ""))
+    # Inject the profile-level closing line onto whichever summary won
+    # resolution (role override, variant data, or profile fallback) so the
+    # rendered CV matches profile.cv_instructions.summary_closing_line.
+    prepared["summary"] = _apply_summary_closing_line(prepared.get("summary", ""), profile)
     # openness resolution (only when role config omits the key):
     # - Profile explicitly sets openness (even to "") → honour it, including
     #   the empty-string case which suppresses the CV banner intentionally.
