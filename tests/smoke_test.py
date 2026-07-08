@@ -1571,7 +1571,6 @@ class TestPdfQualityGates:
         try:
             import quality_gates
             from generate_application import prepare_generation_config
-            from quality_gates import WARN, run_quality_gates
         finally:
             sys.path.pop(0)
 
@@ -1605,9 +1604,9 @@ class TestPdfQualityGates:
             )
 
         monkeypatch.setattr(quality_gates, "_read_pdf", fake_read_pdf)
-        report = run_quality_gates(profile, config, cv_path, cl_path)
+        report = quality_gates.run_quality_gates(profile, config, cv_path, cl_path)
         assert any(
-            result.name == "additional_experience_condensed" and result.status == WARN
+            result.name == "additional_experience_condensed" and result.status == quality_gates.WARN
             for result in report.results
         )
 
