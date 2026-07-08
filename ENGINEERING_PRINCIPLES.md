@@ -275,17 +275,20 @@ Ask:
 
 ### Current Dependencies
 - **reportlab**: PDF generation (REQUIRED, no viable alternative)
+- **pypdf**: PDF text extraction for quality gates (REQUIRED)
 
 ### Dependency Pinning
 **requirements.txt:**
 ```
 reportlab>=4.0
+pypdf>=4.0
 ```
 
 **CI (pyproject.toml):**
 ```toml
 dependencies = [
     "reportlab>=4.0",
+    "pypdf>=4.0",
 ]
 ```
 

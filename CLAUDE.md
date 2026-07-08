@@ -1,6 +1,6 @@
 # career-agent
 
-Agentic job application workflow. Generates tailored CVs with deterministic quality gates and fills safe ATS fields via browser automation, then hands off sensitive fields and Submit to the user.
+Agentic job application workflow. Generates tailored CVs with deterministic quality gates and fills safe ATS fields via browser automation, then hands off sensitive fields and Submit to the user (unless yolo mode is authorised — see the human-in-the-loop rules below for the exact conditions).
 
 Philosophy: keep the workflow lightweight and local-first, put deterministic gates behind agent actions, and treat generated materials as review-ready drafts rather than guarantees of recruiter or ATS outcomes.
 
@@ -8,7 +8,7 @@ Philosophy: keep the workflow lightweight and local-first, put deterministic gat
 
 - `/setup-profile`: Build profile.json from your CV or LinkedIn PDF: extracts work history, generates 3 CV variants, drafts source-backed per-job bullets for review
 - `/generate-cv <role_id>`: Build ATS-safe CV + cover letter PDFs for a role and run deterministic quality gates
-- `/apply <role_id>`: Fill safe ATS fields, upload PDFs, answer safe questions, hand off to user for sensitive fields + Submit
+- `/apply <role_id>`: Fill safe ATS fields, upload PDFs, answer safe questions, hand off to user for sensitive fields + Submit (unless yolo mode is authorised — see the human-in-the-loop rules below)
 - `/new-role [url]`: Scaffold a new role config interactively
 - `/track [role_id] [status]`: View pipeline, update application status, add notes
 - `/source [country] [role_type]`: Find roles and verify source pages are open from your CV/LinkedIn/profile.json + optional company docs
@@ -28,10 +28,15 @@ Philosophy: keep the workflow lightweight and local-first, put deterministic gat
 
 ## ATS platforms supported
 
-- **Greenhouse** (direct): `https://job-boards.greenhouse.io/<company>/jobs/<id>`
-- **Greenhouse** (iframe embed): navigate to `https://boards.greenhouse.io/embed/job_app?for=<company>&token=<id>` as a top-level page: cross-origin iframes block all DOM tools
-- **Lever**: `https://jobs.lever.co/<company>/<id>`
-- **Workable**: `https://apply.workable.com/<company>/j/<id>/apply/`
+Six platforms are enforced by the `role.ats_platform` whitelist in `src/validation.py`: `greenhouse`, `greenhouse_eu`, `lever`, `workable`, `ashby`, `teamtailor`.
+
+- **Greenhouse** (`greenhouse`, direct): `https://job-boards.greenhouse.io/<company>/jobs/<id>`
+- **Greenhouse** (`greenhouse`, iframe embed): navigate to `https://boards.greenhouse.io/embed/job_app?for=<company>&token=<id>` as a top-level page: cross-origin iframes block all DOM tools
+- **Greenhouse EU** (`greenhouse_eu`): `https://job-boards.eu.greenhouse.io/<company>/jobs/<id>`; identical field-filling strategy to `greenhouse`
+- **Lever** (`lever`): `https://jobs.lever.co/<company>/<id>` (EU variant: `jobs.eu.lever.co`)
+- **Workable** (`workable`): `https://apply.workable.com/<company>/j/<id>/apply/`
+- **Ashby** (`ashby`): `https://jobs.ashbyhq.com/<company>/<uuid>/application`
+- **Teamtailor** (`teamtailor`): `https://career.teamtailor.com/jobs/<id>/applications/new` or `https://<company>.teamtailor.com/jobs/<id>/applications/new`
 
 ## Known ATS quirks
 
