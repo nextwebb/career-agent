@@ -157,20 +157,6 @@ def validate_profile(data: dict, strict: bool = False) -> tuple[bool, list[str]]
                 if not isinstance(line, str):
                     errors.append(f"'additional_experience[{i}]' must be a string")
 
-    # Validate impact_statements if present
-    if "impact_statements" in data:
-        if not isinstance(data["impact_statements"], dict):
-            errors.append("'impact_statements' must be a dictionary")
-        else:
-            for key, statement in data["impact_statements"].items():
-                if not isinstance(statement, dict):
-                    errors.append(f"'impact_statements.{key}' must be a dictionary")
-                    continue
-                if "title" not in statement:
-                    errors.append(f"'impact_statements.{key}.title' is required")
-                if "body" not in statement:
-                    errors.append(f"'impact_statements.{key}.body' is required")
-
     return len(errors) == 0, errors
 
 

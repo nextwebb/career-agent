@@ -448,21 +448,14 @@ def run_quality_gates(
 
     # Whitelist of accepted section orders. The gate passes when the CV
     # matches any listed order. Only sections that always render are used
-    # as anchors; Awards & Recognition, Projects, and legacy Selected Impact
-    # are optional and appear conditionally, so they are not required
-    # anchors here (their positional correctness is covered separately).
+    # as anchors; Awards & Recognition and Projects are optional and appear
+    # conditionally, so they are not required anchors here (their
+    # positional correctness is covered separately).
     expected_section_orders = [
         [
             "Professional Summary",
             "Core Skills",
             "Professional Experience",
-            "Education",
-        ],
-        [
-            "Professional Summary",
-            "Core Skills",
-            "Professional Experience",
-            "Selected Impact",
             "Education",
         ],
     ]
