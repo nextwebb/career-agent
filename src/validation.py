@@ -85,6 +85,11 @@ def validate_profile(data: dict, strict: bool = False) -> tuple[bool, list[str]]
                         f"{', '.join(sorted(valid_experience_types))}"
                     )
 
+                # Optional tech_stack renders verbatim below the role's
+                # bullets as "Tech Stack: <string>"; absent → nothing renders.
+                if "tech_stack" in exp and not isinstance(exp["tech_stack"], str):
+                    errors.append(f"'experience[{i}].tech_stack' must be a string")
+
     # Validate education
     if "education" in data and not isinstance(data["education"], list):
         errors.append("'education' must be a list")

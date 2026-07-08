@@ -304,11 +304,11 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         summary                  str   HTML-safe summary paragraph
         skills                   list[{label, items}]
         experience               list[{title, company_line, client_line?, bullets: list[str],
-                                       type?: employment|open_source|consulting|contract}]
+                                       type?: employment|open_source|consulting|contract,
+                                       tech_stack?: str}]
         additional_experience    list[str]  Older/minor roles rendered as one
                                             condensed line prefixed
                                             "Earlier experience:" (optional)
-        impact_statements        list[{title, body}]
         projects                 list[{title, tech_line, bullets: list[str]}]  (optional)
     """
     full_name = _get_name(profile)
@@ -345,15 +345,6 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     COMPANY = _s("co", fontName="Helvetica-Oblique", fontSize=9, textColor=GREY, spaceAfter=3)
     CLIENT = _s("cl", fontName="Helvetica-Oblique", fontSize=8.5, textColor=LGREY, spaceAfter=3)
     BULLET = _s("bul", leftIndent=11, firstLineIndent=-9, spaceAfter=1.8)
-    IMPACT_H = _s(
-        "imph",
-        fontName="Helvetica-Bold",
-        fontSize=9.5,
-        textColor=ACCENT,
-        spaceAfter=1,
-        spaceBefore=3,
-    )
-    IMPACT_B = _s("impb", fontSize=9, textColor=GREY, spaceAfter=4, leading=13)
     SUMMARY = _s("sum", fontSize=9.5, leading=14, spaceAfter=0)
     EDU = _s("edu", spaceAfter=2)
     SK = _s("sk", spaceAfter=3, leading=13)
@@ -461,6 +452,9 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
             bullets = bullets.get("default", [])
         for b in bullets:
             story.append(bul(b))
+        tech_stack = role.get("tech_stack")
+        if tech_stack:
+            story.append(Paragraph(f"<b>Tech Stack:</b>&nbsp;{tech_stack}", SUMMARY))
         story.append(sp(4))
 
     # ── Earlier Experience (optional, condensed one-liner) ────────────────────
@@ -480,18 +474,16 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
             story.append(Paragraph(f"<b>Earlier experience:</b>&nbsp;{joined}", SUMMARY))
             story.append(sp(4))
 
-    # ── Selected Impact ──────────────────────────────────────────────────────
-    story += section("Selected Impact")
-    for item in config["impact_statements"]:
-        story.append(
-            KeepTogether(
-                [
-                    Paragraph(f'<b><font color="#2563eb">{item["title"]}</font></b>', IMPACT_H),
-                    Paragraph(item["body"], IMPACT_B),
-                ]
-            )
-        )
-    story.append(sp(2))
+    # ── Education ────────────────────────────────────────────────────────────
+    story += section("Education")
+    for edu in profile.get("education", []):
+        # Handle both string and dict formats
+        if isinstance(edu, dict):
+            parts = [edu.get("degree", ""), edu.get("institution", ""), edu.get("year", "")]
+            edu_str = " — ".join(p for p in parts if p)
+        else:
+            edu_str = str(edu)
+        story.append(Paragraph(edu_str, EDU))
 
     # ── Projects (optional) ───────────────────────────────────────────────────
     # Merges open_source experience entries with any config["projects"]. For
@@ -509,6 +501,9 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
                 bullets = bullets.get("default", [])
             for b in bullets:
                 story.append(bul(b))
+            tech_stack = role.get("tech_stack")
+            if tech_stack:
+                story.append(Paragraph(f"<b>Tech Stack:</b>&nbsp;{tech_stack}", SUMMARY))
             story.append(sp(4))
         for proj in projects:
             story.append(Paragraph(proj["title"], JOB_TITLE))
@@ -518,24 +513,15 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
                 story.append(bul(b))
             story.append(sp(4))
 
-    # ── Certifications & Community & Learning (optional) ─────────────────────
+    # ── Awards & Recognition (optional) ──────────────────────────────────────
+    # Sources the profile.certifications field (name retained for backward
+    # compatibility); the heading reflects the current content mix.
     certs = profile.get("certifications", [])
     if certs:
-        story += section("Certifications &amp; Community &amp; Learning")
+        story += section("Awards &amp; Recognition")
         for cert in certs:
             story.append(bul(cert))
         story.append(sp(4))
-
-    # ── Education ────────────────────────────────────────────────────────────
-    story += section("Education")
-    for edu in profile.get("education", []):
-        # Handle both string and dict formats
-        if isinstance(edu, dict):
-            parts = [edu.get("degree", ""), edu.get("institution", ""), edu.get("year", "")]
-            edu_str = " — ".join(p for p in parts if p)
-        else:
-            edu_str = str(edu)
-        story.append(Paragraph(edu_str, EDU))
 
     doc.build(story)
     print(f"  ✓ CV PDF → {output_path}")

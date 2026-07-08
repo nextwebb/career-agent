@@ -199,6 +199,8 @@ def _resolve_experience(profile: dict[str, Any], config: dict[str, Any]) -> list
             resolved_role["start"] = experience["start"]
         if "end" in experience:
             resolved_role["end"] = experience["end"]
+        if "tech_stack" in experience:
+            resolved_role["tech_stack"] = experience["tech_stack"]
         resolved.append(resolved_role)
 
     return resolved
