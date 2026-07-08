@@ -82,3 +82,32 @@ def test_falsy_group_value_is_treated_as_ungrouped():
     result = _collapse_skill_groups(skills)
 
     assert [entry["label"] for entry in result] == ["Languages", "Backend"]
+
+
+def test_singleton_grouped_entry_renders_verbatim():
+    # A group with exactly one member (user tags a single skill or
+    # mistypes the second group value) must keep its original label
+    # and items intact rather than being rewritten to the group label.
+    skills = [
+        {"label": "TypeScript", "group": "Languages", "items": "TypeScript"},
+        {"label": "Backend", "items": "REST"},
+    ]
+
+    result = _collapse_skill_groups(skills)
+
+    assert [entry["label"] for entry in result] == ["TypeScript", "Backend"]
+    ts = result[0]
+    assert ts["group"] == "Languages"
+    assert ts["items"] == "TypeScript"
+
+
+def test_singleton_group_does_not_swallow_original_items():
+    skills = [
+        {"label": "Cloud (AWS)", "group": "Cloud", "items": "Lambda · S3 · ECS"},
+    ]
+
+    result = _collapse_skill_groups(skills)
+
+    assert len(result) == 1
+    assert result[0]["label"] == "Cloud (AWS)"
+    assert result[0]["items"] == "Lambda · S3 · ECS"

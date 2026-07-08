@@ -83,6 +83,11 @@ def _collapse_skill_groups(skills: list[dict]) -> list[dict]:
     grouped_slots: dict[str, int] = {}
     grouped_items: dict[str, list[str]] = {}
     grouped_seen: dict[str, set[str]] = {}
+    # First skill entry seen for each group. Used to restore the singleton
+    # verbatim when a group ends up with exactly one member — merging a
+    # singleton would drop its original label and lose information.
+    grouped_singletons: dict[str, dict] = {}
+    grouped_counts: dict[str, int] = {}
     output: list[dict | None] = []
 
     for skill in skills:
@@ -95,7 +100,11 @@ def _collapse_skill_groups(skills: list[dict]) -> list[dict]:
             grouped_slots[group] = len(output)
             grouped_items[group] = []
             grouped_seen[group] = set()
+            grouped_singletons[group] = dict(skill)
+            grouped_counts[group] = 0
             output.append(None)
+
+        grouped_counts[group] += 1
 
         items_field = skill.get("items", "")
         for part in items_field.split(separator):
@@ -105,10 +114,13 @@ def _collapse_skill_groups(skills: list[dict]) -> list[dict]:
                 grouped_items[group].append(part)
 
     for group, slot in grouped_slots.items():
-        output[slot] = {
-            "label": group,
-            "items": f" {separator} ".join(grouped_items[group]),
-        }
+        if grouped_counts[group] == 1:
+            output[slot] = grouped_singletons[group]
+        else:
+            output[slot] = {
+                "label": group,
+                "items": f" {separator} ".join(grouped_items[group]),
+            }
 
     return [entry for entry in output if entry is not None]
 
