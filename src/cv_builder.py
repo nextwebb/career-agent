@@ -102,7 +102,9 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         summary                  str   HTML-safe summary paragraph
         skills                   list[{label, items}]
         experience               list[{title, company_line, client_line?, bullets: list[str]}]
-        additional_experience    list[str]  One-liner per older/minor role (optional)
+        additional_experience    list[str]  Older/minor roles rendered as one
+                                            condensed line prefixed
+                                            "Earlier experience:" (optional)
         impact_statements        list[{title, body}]
         projects                 list[{title, tech_line, bullets: list[str]}]  (optional)
     """
@@ -243,13 +245,17 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
             story.append(bul(b))
         story.append(sp(4))
 
-    # ── Additional Relevant Experience (optional) ─────────────────────────────
+    # ── Earlier Experience (optional, condensed one-liner) ────────────────────
+    # Rendered as a single condensed paragraph to preserve page budget rather
+    # than expanding into full entry blocks. Entries are joined by " · " and
+    # prefixed with "Earlier experience:". Omitted entirely when empty/absent.
     additional = config.get("additional_experience", [])
     if additional:
-        story += section("Additional Relevant Experience")
-        for line in additional:
-            story.append(bul(line))
-        story.append(sp(4))
+        entries = [str(line).strip() for line in additional if str(line).strip()]
+        if entries:
+            joined = " · ".join(entries)
+            story.append(Paragraph(f"<b>Earlier experience:</b>&nbsp;{joined}", SUMMARY))
+            story.append(sp(4))
 
     # ── Selected Impact ──────────────────────────────────────────────────────
     story += section("Selected Impact")
