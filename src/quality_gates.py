@@ -44,6 +44,36 @@ WEAK_PHRASES = [
     "responsible for",
 ]
 
+# Numeric evidence signal: a digit, a percentage, or a standalone `x`
+# multiplier (e.g. "3x throughput"). Shared by impact_evidence_density
+# and per_bullet_result_signal so both gates agree on what counts as
+# numeric evidence.
+NUMERIC_EVIDENCE_PATTERN = re.compile(r"\d|%|\bx\b")
+
+# Conservative list of scale phrases that describe a measurable change in
+# a Result. `improved` alone is intentionally excluded because it does
+# not carry a magnitude on its own; require `improved by` instead.
+SCALE_PHRASE_PATTERN = re.compile(
+    r"\b("
+    r"reduced|"
+    r"improved by|"
+    r"cut|"
+    r"increased by|"
+    r"saved|"
+    r"boosted|"
+    r"accelerated|"
+    r"optimised|"
+    r"optimized"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# Approved metric placeholders left by the author when the concrete
+# value is still to be filled in. Case-sensitive on purpose: the
+# placeholders are a fixed convention documented in the profile schema
+# and lower-case variants like `[~n]` are typos, not signals.
+METRIC_PLACEHOLDER_PATTERN = re.compile(r"\[~(?:N|%|€)\]")
+
 
 @dataclass(frozen=True)
 class GateResult:
@@ -161,6 +191,57 @@ def _experience_bullets(config: dict[str, Any]) -> list[str]:
         if isinstance(role_bullets, list):
             bullets.extend(str(bullet) for bullet in role_bullets if str(bullet).strip())
     return bullets
+
+
+def _bullet_has_result_signal(bullet: str) -> bool:
+    """Return True when a bullet carries a Result/Metric signal.
+
+    A bullet counts as having a result if it contains numeric evidence,
+    a conservative scale phrase, or an approved metric placeholder.
+    """
+
+    if NUMERIC_EVIDENCE_PATTERN.search(bullet):
+        return True
+    if METRIC_PLACEHOLDER_PATTERN.search(bullet):
+        return True
+    return bool(SCALE_PHRASE_PATTERN.search(bullet))
+
+
+def _entry_label(entry: dict[str, Any], index: int) -> str:
+    """Human-readable identifier for an experience entry in warnings."""
+
+    for key in ("id", "title", "company_line"):
+        value = entry.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return f"entry #{index}"
+
+
+def _bullets_missing_result(config: dict[str, Any]) -> list[str]:
+    """Locate experience bullets that lack any Result/Metric signal.
+
+    Returns a list of "<entry-label>[<bullet-index>]" labels, one per
+    offending bullet. Entries with `suppress_result_check: true` are
+    skipped entirely so authors on confidential work are not nagged.
+    """
+
+    missing: list[str] = []
+    for entry_index, entry in enumerate(config.get("experience", [])):
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("suppress_result_check") is True:
+            continue
+        role_bullets = entry.get("bullets", [])
+        if not isinstance(role_bullets, list):
+            continue
+        label = _entry_label(entry, entry_index)
+        for bullet_index, bullet in enumerate(role_bullets):
+            text = str(bullet).strip()
+            if not text:
+                continue
+            if not _bullet_has_result_signal(text):
+                missing.append(f"{label}[{bullet_index}]")
+    return missing
 
 
 def _ordered(text: str, labels: list[str]) -> bool:
@@ -484,7 +565,7 @@ def run_quality_gates(
     else:
         results.append(GateResult(OK, "bullet_repetition", "No repeated bullets detected."))
 
-    metric_bullets = [bullet for bullet in bullets if re.search(r"\d|%|\bx\b", bullet)]
+    metric_bullets = [bullet for bullet in bullets if NUMERIC_EVIDENCE_PATTERN.search(bullet)]
     if bullets and len(metric_bullets) < max(1, len(bullets) // 3):
         results.append(
             GateResult(
@@ -520,6 +601,26 @@ def run_quality_gates(
                     "additional_experience renders as a condensed one-line section.",
                 )
             )
+
+    missing_result = _bullets_missing_result(config)
+    if missing_result:
+        preview = ", ".join(missing_result[:5])
+        suffix = f" (+{len(missing_result) - 5} more)" if len(missing_result) > 5 else ""
+        results.append(
+            GateResult(
+                WARN,
+                "per_bullet_result_signal",
+                f"Bullets missing Result/Metric signal: {preview}{suffix}.",
+            )
+        )
+    else:
+        results.append(
+            GateResult(
+                OK,
+                "per_bullet_result_signal",
+                "Every experience bullet carries a Result/Metric signal.",
+            )
+        )
 
     weak_hits = [phrase for phrase in WEAK_PHRASES if phrase in combined_text.lower()]
     if weak_hits:
