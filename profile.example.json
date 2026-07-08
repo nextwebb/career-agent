@@ -112,12 +112,14 @@
       "items": "Python · TypeScript · Go · SQL"
     },
     {
-      "label": "Backend",
-      "items": "REST APIs · Microservices · Event-Driven Architecture · Distributed Systems"
+      "label": "AWS Compute",
+      "group": "Cloud & Infra",
+      "items": "AWS Lambda · ECS · Step Functions"
     },
     {
-      "label": "Cloud & Infra",
-      "items": "AWS (Lambda · ECS · S3 · SQS · Step Functions) · Terraform · Docker · GitHub Actions"
+      "label": "AWS Data & Ops",
+      "group": "Cloud & Infra",
+      "items": "S3 · SQS · Terraform · Docker · GitHub Actions"
     }
   ],
   "yolo_mode": {
