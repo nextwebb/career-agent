@@ -30,6 +30,16 @@ For humans contributing PRs, start with `CONTRIBUTING.md` instead.
 | `docs/source-methodology.md` | `/source` evidence and ranking rules | When editing `skills/source/` |
 | `docs/apply-codex-chrome-verification.md` | Codex Chrome verification matrix per ATS | When editing `skills/apply/` or verifying a new ATS |
 | `README.md` | Public-facing overview | Do not rely on it for engineering rules |
+| `plugins/career-agent/` | Mirror of the top-level tree published to the Codex plugin marketplace; regenerate with `npm run sync:codex-marketplace` (never edit by hand) | When touching skills, docs, or `src/` and the mirror check fails |
+
+### Adding a new ATS platform
+
+If you are adding a new ATS platform, `skills/apply/SKILL.md` covers the browser-automation contract. In addition, touch these files so the platform is recognised by the gate battery:
+
+- `src/validation.py` — extend the `valid_platforms` whitelist in `validate_role_config`
+- `src/ats_confirmation_patterns.json` — add per-platform submission success/failure patterns
+- `src/jobqa_workspace.py` — map the platform to its workspace/config
+- `src/yolo.py` and `src/pre_apply_checks.py` — extend the pre-apply gates for the new platform
 
 ## Repository expectations
 

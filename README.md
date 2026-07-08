@@ -224,7 +224,7 @@ Define named variants in `profile.json` under `"variants"`. Each variant emphasi
 - **B**: Data Platform/Pipelines focused
 - **C**: Senior Backend/APIs focused
 
-The role config picks a variant. The CV builder selects the matching experience ordering and impact statements.
+The role config picks a variant. The CV builder resolves the variant-specific headline and summary from `profile.variants[<A|B|C>]` and selects the matching per-bullet variant keys for each experience, so each variant renders a different bullet set per role.
 
 ---
 

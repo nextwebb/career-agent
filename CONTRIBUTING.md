@@ -65,7 +65,7 @@ Do not open PRs for:
 
 - A web UI or database layer
 - Multi-user or SaaS features
-- Any feature that contradicts the principles in `ENGINEERING_PRINCIPLES.md` section 13
+- Any feature that contradicts the principles in `ENGINEERING_PRINCIPLES.md` (minimal dependencies, local-first single-user workflow, deterministic quality gates)
 
 When in doubt, open an issue and ask first.
 
