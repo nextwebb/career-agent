@@ -366,7 +366,7 @@ class TestPlatformSupport:
             "https://jobs.lever.co/acme/abc/apply",
         )
         assert "Detected supported ATS platform 'lever'" in handoff
-        assert '"ats_platform": "lever"' in handoff
+        assert '"ats_platform" is "lever"' in handoff
         assert "unsupported" not in handoff.lower()
         assert "Manual handoff required" not in handoff
         assert "must not fill fields" not in handoff
@@ -749,7 +749,7 @@ class TestCompositeGate:
 
         message = str(exc.value)
         assert "Detected supported ATS platform 'lever'" in message
-        assert '"ats_platform": "lever"' in message
+        assert '"ats_platform" is "lever"' in message
         assert "unsupported for autonomous apply" not in message
         assert "Manual handoff required" not in message
         assert "must not fill fields" not in message

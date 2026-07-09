@@ -108,7 +108,7 @@ def unsupported_platform_handoff(ats_platform: str, job_url: str = "") -> str:
     if platform in SUPPORTED_AUTONOMOUS_PLATFORMS:
         return (
             f"Detected supported ATS platform '{platform}' from the job URL. "
-            f'Update roles/<role_id>.json to set "ats_platform": "{platform}" '
+            f'Update roles/<role_id>.json so "ats_platform" is "{platform}" '
             "and rerun pre-apply checks; autonomous mode remains blocked until "
             "the role config explicitly names the supported platform."
         )

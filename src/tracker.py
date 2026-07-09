@@ -71,9 +71,9 @@ def mark_submitted_unconfirmed(
     job_url: str,
     company: str = "",
     title: str = "",
+    tracker_path: Path = TRACKER_PATH,
     ats_platform: str | None = None,
     variant: str | None = None,
-    tracker_path: Path = TRACKER_PATH,
 ) -> None:
     """Write a provisional tracker entry immediately before Submit.
 

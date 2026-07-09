@@ -347,6 +347,29 @@ class TestSubmissionTransitionRefresh:
 
 
 class TestProvisionalSubmissionMetadata:
+    def test_mark_submitted_unconfirmed_preserves_tracker_path_positional_compatibility(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        cwd = tmp_path / "cwd"
+        cwd.mkdir()
+        monkeypatch.chdir(cwd)
+        tracker_path = tmp_path / "custom" / "tracker.json"
+
+        tracker.mark_submitted_unconfirmed(
+            "legacy_positional_role",
+            "https://jobs.lever.co/acme/abc/apply",
+            "Acme",
+            "Engineer",
+            tracker_path,
+        )
+
+        assert not (cwd / "tracker.json").exists()
+        entry = json.loads(tracker_path.read_text())[0]
+        assert entry["role_id"] == "legacy_positional_role"
+        assert entry["company"] == "Acme"
+        assert entry["title"] == "Engineer"
+        assert entry["url"] == "https://jobs.lever.co/acme/abc/apply"
+
     def test_mark_submitted_unconfirmed_writes_available_metadata(self, tmp_path: Path):
         tracker_path = tmp_path / "tracker.json"
 
