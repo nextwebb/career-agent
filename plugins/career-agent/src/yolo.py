@@ -217,10 +217,12 @@ def run_yolo_gates(
     tracker_path: Path,
 ) -> list[str]:
     """
-    Run the full yolo pre-apply gate battery (gates 3–8 from SKILL.md).
+    Run the full yolo pre-submit gate battery after run_pre_apply_checks.
 
-    Gates 1–2 (duplicate check, artifact check) are handled by run_pre_apply_checks.
-    Call that first with autonomous=True before calling this function.
+    Duplicate, company-repeat, Lever cooldown, artifact, location, and platform
+    gates are handled by run_pre_apply_checks. Call that first with
+    autonomous=True, role_config=role_config, and profile=profile before calling
+    this function.
 
     Returns a list of warning strings (non-blocking) from jobqa.
     Raises YoloGateError on first hard failure.

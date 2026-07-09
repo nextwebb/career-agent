@@ -43,11 +43,18 @@ Resolve the active package/plugin version and the active `skills/apply/SKILL.md`
 
 If the user requested `--dry-run`, run:
 
-```
-python3 <career_agent_root>/src/generate_application.py --role <role_id> --dry-run
+```bash
+PYTHON=python3.10  # or any Python 3.10+ executable in PATH
+$PYTHON <career_agent_root>/src/generate_application.py --role <role_id> --dry-run
 ```
 
 Then stop. The dry run prints target URL, ATS platform, package/skill path, planned safe fields with redacted values, planned handoff fields, redacted artifact status, file sizes when files exist, and upload strategy. It does not open a browser, generate PDFs, upload files, update tracker state, or print raw applicant values.
+
+Use Python 3.10+ for every career-agent Python snippet. Do not assume
+`/usr/bin/python3` or bare `python3` is supported; on some hosts it resolves to
+Python 3.9, which is below the repo target. If unsure, run
+`python3 --version` and choose `python3.10`, `python3.11`, `python3.12`, or
+another supported interpreter.
 
 For a live fill, preflight the selected browser surface, open a fresh tab/page (Prerequisites 5), and start elapsed-time logging before navigation.
 
@@ -76,7 +83,6 @@ Open `role.url` in the available browser surface.
 - **Lever**: URL is typically `https://jobs.lever.co/<company>/<uuid>/apply` (EU variant: `jobs.eu.lever.co`)
 - **Ashby**: URL is typically `https://jobs.ashbyhq.com/<company>/<uuid>/application` (verified: Poolside, Kraken submissions 2026-06-22)
 - **Teamtailor**: URL pattern varies by company — `https://career.teamtailor.com/jobs/<id>/applications/new` or `https://<company>.teamtailor.com/jobs/<id>/applications/new` (verified: BUX submission 2026-06-22)
-
 Take a screenshot to verify the page loaded and the form is visible before proceeding.
 
 ### 3. Sensitive-field classifier
@@ -328,6 +334,58 @@ if (!phoneInput) throw new Error('phone combobox not found inside scoped phone c
 // Click phoneInput, type country name, click the matching listbox option
 ```
 
+Use a user-like listbox commit path. Direct `set_value`, `input.value = ...`,
+or native-setter-only updates can leave the visible input text changed while
+Greenhouse's selected country state remains unset. The safe path is: focus the
+scoped phone combobox, search the country, press Enter or click the matching
+option, then verify both the committed visible value and the absence of the
+adjacent required-field error.
+
+```javascript
+async function commitGreenhousePhoneCountry(countryName, dialCode) {
+  const phoneContainer = [...document.querySelectorAll('[class*="phone" i], [data-qa*="phone" i]')]
+    .find(el => el.querySelector('input[role="combobox"], [aria-autocomplete="list"], input'));
+  if (!phoneContainer) throw new Error('phone container not found; hand off phone country selector');
+
+  const combobox = phoneContainer.querySelector(
+    'input[role="combobox"], input[aria-autocomplete="list"], input'
+  );
+  if (!combobox) throw new Error('phone country combobox not found inside scoped phone container');
+
+  combobox.focus();
+  combobox.click();
+  combobox.select?.();
+  document.execCommand?.('insertText', false, countryName);
+  combobox.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: countryName }));
+
+  const optionText = `${countryName} ${dialCode}`;
+  const listboxOption = [...document.querySelectorAll('[role="option"], [id*="option"]')]
+    .find(el => {
+      const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      return text.includes(countryName) && text.includes(dialCode);
+    });
+  if (listboxOption) {
+    listboxOption.click();
+  } else {
+    combobox.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
+    combobox.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
+  }
+  combobox.blur();
+
+  const committedText = (phoneContainer.textContent || '').replace(/\s+/g, ' ');
+  // Detect the adjacent Greenhouse "Select a country" error before Submit.
+  const adjacentError = [...phoneContainer.querySelectorAll('[role="alert"], [aria-live], .error, [class*="error" i]')]
+    .some(el => /select a country/i.test(el.textContent || ''));
+  if (!committedText.includes(countryName) || !committedText.includes(dialCode) || adjacentError) {
+    throw new Error(`phone country did not commit cleanly: expected ${optionText}`);
+  }
+  return optionText;
+}
+
+// Non-submitting fixture/demo value:
+// await commitGreenhousePhoneCountry('Nigeria', '+234')
+```
+
 If the flyout that opens shows file/Drive icons rather than country names, close it immediately, record a selector failure, and hand off the phone field.
 
 ### 10. Verify radio buttons
@@ -422,13 +480,41 @@ Call `src/yolo.py:is_yolo_enabled(profile)`. If it returns `False` (key mismatch
 ### Step B — Pre-apply gates (autonomous mode)
 
 Using the `profile` and `role_config` already loaded in Step 1 (`profile.json` and
-`roles/<role_id>.json`), run the gates via
-`run_pre_apply_checks(autonomous=True, role_config=role_config, profile=profile)`:
+`roles/<role_id>.json`), run the gates with the installed
+`src/pre_apply_checks.py:run_pre_apply_checks` signature. Copy-pasteable shape:
+
+```python
+from pathlib import Path
+
+from pre_apply_checks import run_pre_apply_checks
+
+run_pre_apply_checks(
+    role_id=role_id,
+    job_url=role_config["url"],
+    ats_platform=role_config.get("ats_platform", "unknown"),
+    output_prefix=role_config["output_prefix"],
+    generated_dir=Path("generated"),
+    tracker_path=Path("tracker.json"),
+    autonomous=True,
+    role_config=role_config,
+    profile=profile,
+)
+```
+
+Required inputs are `role_id`, `job_url`, `ats_platform`, `output_prefix`,
+`generated_dir`, and `tracker_path`; `role_config` and `profile` must also be
+passed for autonomous mode so the company-repeat and location gates run. The
+optional override parameters are real function parameters, not CLI flags:
+`allow_company_repeat=True`, `override_ats_policy=True`, and
+`force_location=True`.
+
+The pre-apply gate order is:
 1. `check_duplicate()` -- **policy halt**: `DUPLICATE` (exact role URL already in tracker)
 2. `check_company_repeat()` -- **policy halt**: `COMPANY_REPEAT` (>= threshold prior same-company rejections)
 3. `check_lever_cooldown()` -- **policy halt**: `LEVER_COOLDOWN` (same-company Lever resubmit within cooldown)
-4. `check_location_eligibility()` -- **policy halt**: `LOCATION_INELIGIBLE` (right-to-work / location-marker mismatch)
-5. `check_artifacts_exist()` + `check_platform_supported()` -- HITL fallback: `PLATFORM_CHECK_FAILED`
+4. `check_artifacts_exist()` -- HITL fallback: `PLATFORM_CHECK_FAILED`
+5. `check_location_eligibility()` -- **policy halt**: `LOCATION_INELIGIBLE` (right-to-work / location-marker mismatch)
+6. `check_platform_supported()` -- HITL fallback: `PLATFORM_CHECK_FAILED`
 
 `role_config` and `profile` must both be passed in; the location gate is skipped when either is
 omitted, so without them the role's `right_to_work`/`location` restriction is never enforced in
@@ -496,7 +582,26 @@ it only with explicit user approval — e.g. when the slug match is a false posi
 > through to HITL. This PR folds the company-repeat and Lever cooldown gates into the shared
 > "route by kind" wording; #149 should join the same family on rebase.
 
-Then run the yolo gate battery via `src/yolo.py:run_yolo_gates(profile, role_config, workspace_dir, tracker_path)`:
+Then run the yolo gate battery via `src/yolo.py:run_yolo_gates`:
+
+```python
+from pathlib import Path
+
+from yolo import run_yolo_gates
+
+warnings = run_yolo_gates(
+    profile=profile,
+    role_config=role_config,
+    workspace_dir=Path(workspace_dir),
+    tracker_path=Path("tracker.json"),
+)
+```
+
+`run_yolo_gates(...)` returns `list[str]`: non-blocking warning messages, currently
+jobqa warnings or `"jobqa not in PATH — workspace gate skipped"`. It returns an
+empty list when all yolo gates pass without warnings. It raises `YoloGateError`
+or `JobQAGateError` on the first blocking yolo failure; route those failures by
+halt code as documented below.
 
 3. Tier in `permitted_tiers` -- halt: `TIER_NOT_PERMITTED`, fall to HITL
 4. Company not in `excluded_companies` -- halt: `COMPANY_EXCLUDED`, fall to HITL
@@ -528,8 +633,8 @@ Before clicking Submit, call `src/record_submission.py` (packaged with career-ag
 external dependency required) to write an audit log and satisfy the `missing_submission_log`
 hard-fail criterion:
 
-```
-python <career_agent_root>/src/record_submission.py \
+```bash
+$PYTHON <career_agent_root>/src/record_submission.py \
   <workspace_dir>/output/manifest.json \
   <ats_platform>:<job_url> \
   "yolo-pre-authorized:<authorization_key_prefix>" \

@@ -122,6 +122,121 @@ class TestBackwardCompatibility:
         assert "ats_platform" not in entry
         assert "variant" not in entry
 
+    def test_update_status_tolerates_unrelated_row_without_role_id(self, workspace: Path):
+        """Mixed tracker files may contain old rows with no role_id; they must not crash updates."""
+        entries = [
+            {
+                "company": "Old Co",
+                "title": "Legacy",
+                "url": "https://old/role",
+                "status": "applied",
+                "added": "2026-01-01",
+                "applied": "2026-01-01",
+                "last_update": "2026-01-01",
+                "notes": [],
+            },
+            {
+                "role_id": "current_role",
+                "company": "Acme",
+                "title": "Engineer",
+                "url": "https://x/y",
+                "status": "draft",
+                "added": "2026-01-01",
+                "applied": None,
+                "last_update": "2026-01-01",
+                "notes": [],
+                "custom_field": "keep me",
+            },
+        ]
+        (workspace / "tracker.json").write_text(json.dumps(entries))
+
+        tracker.update_status("current_role", "interview")
+
+        updated_entries = json.loads((workspace / "tracker.json").read_text())
+        assert "role_id" not in updated_entries[0]
+        current = next(e for e in updated_entries if e.get("role_id") == "current_role")
+        assert current["status"] == "interview"
+        assert current["custom_field"] == "keep me"
+
+    def test_update_status_matches_legacy_id_field_and_missing_applied(self, workspace: Path):
+        """Rows that used id instead of role_id are still updatable without dropping fields."""
+        legacy = {
+            "id": "legacy_id_role",
+            "company": "Old Co",
+            "title": "Engineer",
+            "url": "https://old/role",
+            "status": "draft",
+            "added": "2026-01-01",
+            "last_update": "2026-01-01",
+            "notes": [],
+            "kept": {"nested": True},
+        }
+        (workspace / "tracker.json").write_text(json.dumps([legacy]))
+
+        tracker.update_status("legacy_id_role", "applied")
+
+        updated = json.loads((workspace / "tracker.json").read_text())[0]
+        assert updated["id"] == "legacy_id_role"
+        assert "role_id" not in updated
+        assert updated["status"] == "applied"
+        assert updated["applied"] == str(date.today())
+        assert updated["kept"] == {"nested": True}
+
+    def test_add_tolerates_unrelated_row_without_role_id(self, workspace: Path):
+        """Adding a new role must not crash when old tracker rows have no role_id."""
+        (workspace / "tracker.json").write_text(
+            json.dumps(
+                [
+                    {
+                        "company": "Old Co",
+                        "title": "Legacy",
+                        "url": "https://old/role",
+                        "status": "applied",
+                    }
+                ]
+            )
+        )
+        _write_role(workspace, "new_role", ats_platform="lever")
+
+        tracker.add("new_role")
+
+        entries = json.loads((workspace / "tracker.json").read_text())
+        assert entries[0]["company"] == "Old Co"
+        assert any(e.get("role_id") == "new_role" for e in entries)
+
+    def test_add_note_matches_legacy_id_field_and_creates_missing_notes(self, workspace: Path):
+        """Note updates should work on id-based legacy rows and preserve custom fields."""
+        legacy = {
+            "id": "legacy_id_role",
+            "company": "Old Co",
+            "title": "Engineer",
+            "url": "https://old/role",
+            "status": "draft",
+            "added": "2026-01-01",
+            "last_update": "2026-01-01",
+            "custom": "preserve",
+        }
+        (workspace / "tracker.json").write_text(json.dumps([legacy]))
+
+        tracker.add_note("legacy_id_role", "Followed up")
+
+        updated = json.loads((workspace / "tracker.json").read_text())[0]
+        assert updated["id"] == "legacy_id_role"
+        assert updated["custom"] == "preserve"
+        assert updated["notes"][-1]["text"] == "Followed up"
+
+    def test_list_tolerates_legacy_row_missing_role_id_status_and_title(
+        self, workspace: Path, capsys: pytest.CaptureFixture
+    ):
+        """Listing should show malformed legacy rows instead of crashing."""
+        (workspace / "tracker.json").write_text(json.dumps([{"company": "Old Co"}]))
+
+        tracker.list_entries()
+
+        output = capsys.readouterr().out
+        assert "(missing role_id)" in output
+        assert "Old Co" in output
+
 
 # ---------------------------------------------------------------------------
 # Refresh at submission transition
@@ -229,6 +344,110 @@ class TestSubmissionTransitionRefresh:
         # Value stays as captured at add() time — the submission event owns the value.
         assert entry["ats_platform"] == "greenhouse"
         assert entry["variant"] == "A"
+
+
+class TestProvisionalSubmissionMetadata:
+    def test_mark_submitted_unconfirmed_preserves_tracker_path_positional_compatibility(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        cwd = tmp_path / "cwd"
+        cwd.mkdir()
+        monkeypatch.chdir(cwd)
+        tracker_path = tmp_path / "custom" / "tracker.json"
+
+        tracker.mark_submitted_unconfirmed(
+            "legacy_positional_role",
+            "https://jobs.lever.co/acme/abc/apply",
+            "Acme",
+            "Engineer",
+            tracker_path,
+        )
+
+        assert not (cwd / "tracker.json").exists()
+        entry = json.loads(tracker_path.read_text())[0]
+        assert entry["role_id"] == "legacy_positional_role"
+        assert entry["company"] == "Acme"
+        assert entry["title"] == "Engineer"
+        assert entry["url"] == "https://jobs.lever.co/acme/abc/apply"
+
+    def test_mark_submitted_unconfirmed_writes_available_metadata(self, tmp_path: Path):
+        tracker_path = tmp_path / "tracker.json"
+
+        tracker.mark_submitted_unconfirmed(
+            role_id="acme_eng",
+            job_url="https://jobs.lever.co/acme/abc/apply",
+            company="Acme",
+            title="Engineer",
+            ats_platform="lever",
+            variant="C",
+            tracker_path=tracker_path,
+        )
+
+        entry = json.loads(tracker_path.read_text())[0]
+        assert entry["role_id"] == "acme_eng"
+        assert entry["company"] == "Acme"
+        assert entry["title"] == "Engineer"
+        assert entry["url"] == "https://jobs.lever.co/acme/abc/apply"
+        assert entry["ats_platform"] == "lever"
+        assert entry["variant"] == "C"
+
+    def test_mark_submitted_unconfirmed_preserves_existing_fields_on_update(self, tmp_path: Path):
+        tracker_path = tmp_path / "tracker.json"
+        existing = {
+            "role_id": "acme_eng",
+            "company": "Acme",
+            "title": "Engineer",
+            "url": "https://jobs.lever.co/acme/abc/apply",
+            "ats_platform": "lever",
+            "variant": "B",
+            "status": "draft",
+            "added": "2026-01-01",
+            "applied": None,
+            "last_update": "2026-01-01",
+            "notes": [],
+            "owner_note": "preserve",
+        }
+        tracker_path.write_text(json.dumps([existing]))
+
+        tracker.mark_submitted_unconfirmed(
+            role_id="acme_eng",
+            job_url="https://jobs.lever.co/acme/abc/apply",
+            tracker_path=tracker_path,
+        )
+
+        entry = json.loads(tracker_path.read_text())[0]
+        assert entry["status"] == "submitted_unconfirmed"
+        assert entry["ats_platform"] == "lever"
+        assert entry["variant"] == "B"
+        assert entry["owner_note"] == "preserve"
+
+    def test_mark_submitted_unconfirmed_matches_legacy_id_field(self, tmp_path: Path):
+        tracker_path = tmp_path / "tracker.json"
+        existing = {
+            "id": "legacy_role",
+            "company": "Old Co",
+            "title": "Engineer",
+            "url": "https://old/role",
+            "status": "draft",
+            "added": "2026-01-01",
+            "notes": [],
+            "custom": "preserve",
+        }
+        tracker_path.write_text(json.dumps([existing]))
+
+        tracker.mark_submitted_unconfirmed(
+            role_id="legacy_role",
+            job_url="https://jobs.lever.co/acme/abc/apply",
+            ats_platform="lever",
+            tracker_path=tracker_path,
+        )
+
+        entry = json.loads(tracker_path.read_text())[0]
+        assert entry["id"] == "legacy_role"
+        assert entry["role_id"] == "legacy_role"
+        assert entry["url"] == "https://jobs.lever.co/acme/abc/apply"
+        assert entry["ats_platform"] == "lever"
+        assert entry["custom"] == "preserve"
 
 
 # ---------------------------------------------------------------------------

@@ -283,13 +283,14 @@ def validate_role_config(data: dict, strict: bool = False) -> tuple[bool, list[s
                 "workable",
                 "ashby",
                 "teamtailor",
+                "personio",
                 "unknown",
             }
             platform = data["ats_platform"].lower()
             if platform not in valid_platforms:
                 errors.append(
                     f"Unknown ATS platform '{data['ats_platform']}'. "
-                    f"Supported platforms: {', '.join(sorted(valid_platforms))}"
+                    f"Recognized ats_platform values: {', '.join(sorted(valid_platforms))}"
                 )
 
     # Validate URL format

@@ -34,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import record_submission
 import tracker as tracker_module
+from ats_detection import detect_ats_platform_from_url
 from pre_apply_checks import (
     CompanyRepeatError,
     DuplicateApplicationError,
@@ -50,6 +51,7 @@ from pre_apply_checks import (
     check_location_eligibility,
     check_platform_supported,
     run_pre_apply_checks,
+    unsupported_platform_handoff,
 )
 
 # ---------------------------------------------------------------------------
@@ -328,6 +330,47 @@ class TestArtifactExistence:
 
 
 class TestPlatformSupport:
+    def test_personio_url_detects_explicit_unsupported_platform(self):
+        assert (
+            detect_ats_platform_from_url("https://bitcap.jobs.personio.com/job/2685548?language=en")
+            == "personio"
+        )
+
+    def test_ats_detection_does_not_match_greenhouse_suffix_inside_hostname(self):
+        assert detect_ats_platform_from_url("https://evilgreenhouse.io/jobs/123") == "unknown"
+
+    def test_personio_is_not_added_to_autonomous_confirmation_registry(
+        self,
+        confirmation_registry: Path,
+    ):
+        registry = json.loads(confirmation_registry.read_text(encoding="utf-8"))
+        assert "personio" not in registry
+        with pytest.raises(UnsupportedPlatformError, match="Personio is recognized"):
+            check_platform_supported(
+                ats_platform="personio",
+                registry_path=confirmation_registry,
+            )
+
+    def test_personio_handoff_is_actionable_and_non_automating(self):
+        handoff = unsupported_platform_handoff(
+            "unknown",
+            "https://bitcap.jobs.personio.com/job/2685548?language=en",
+        )
+        assert "Detected unsupported ATS platform 'personio'" in handoff
+        assert "Manual handoff required" in handoff
+        assert "must not fill fields, upload files, submit, or retry" in handoff
+
+    def test_supported_detected_platform_handoff_asks_to_set_role_config(self):
+        handoff = unsupported_platform_handoff(
+            "unknown",
+            "https://jobs.lever.co/acme/abc/apply",
+        )
+        assert "Detected supported ATS platform 'lever'" in handoff
+        assert '"ats_platform" is "lever"' in handoff
+        assert "unsupported" not in handoff.lower()
+        assert "Manual handoff required" not in handoff
+        assert "must not fill fields" not in handoff
+
     def test_blocks_autonomous_mode_for_unknown_platform(self, confirmation_registry: Path):
         """
         Contract: autonomous mode must not run on a platform with no verified
@@ -662,6 +705,71 @@ class TestCompositeGate:
                 registry_path=confirmation_registry,
                 autonomous=True,
             )
+
+    def test_autonomous_mode_blocks_personio_with_manual_guidance(
+        self,
+        empty_tracker: Path,
+        generated_dir_with_pdfs: Path,
+        confirmation_registry: Path,
+    ):
+        with pytest.raises(UnsupportedPlatformError) as exc:
+            run_pre_apply_checks(
+                role_id="bitcap_role",
+                job_url="https://bitcap.jobs.personio.com/job/2685548?language=en",
+                ats_platform="personio",
+                output_prefix="TestCo_SeniorBackend",
+                generated_dir=generated_dir_with_pdfs,
+                tracker_path=empty_tracker,
+                registry_path=confirmation_registry,
+                autonomous=True,
+            )
+
+        message = str(exc.value)
+        assert "personio" in message
+        assert "Manual handoff required" in message
+        assert "must not fill fields, upload files, submit, or retry" in message
+
+    def test_unknown_config_with_supported_detected_url_asks_for_config_fix(
+        self,
+        empty_tracker: Path,
+        generated_dir_with_pdfs: Path,
+        confirmation_registry: Path,
+    ):
+        with pytest.raises(UnsupportedPlatformError) as exc:
+            run_pre_apply_checks(
+                role_id="acme_role",
+                job_url="https://jobs.lever.co/acme/abc/apply",
+                ats_platform="unknown",
+                output_prefix="TestCo_SeniorBackend",
+                generated_dir=generated_dir_with_pdfs,
+                tracker_path=empty_tracker,
+                registry_path=confirmation_registry,
+                autonomous=True,
+            )
+
+        message = str(exc.value)
+        assert "Detected supported ATS platform 'lever'" in message
+        assert '"ats_platform" is "lever"' in message
+        assert "unsupported for autonomous apply" not in message
+        assert "Manual handoff required" not in message
+        assert "must not fill fields" not in message
+
+    def test_hitl_mode_allows_personio_for_manual_handoff_without_browser_fallback(
+        self,
+        empty_tracker: Path,
+        generated_dir_with_pdfs: Path,
+        confirmation_registry: Path,
+    ):
+        run_pre_apply_checks(
+            role_id="bitcap_role",
+            job_url="https://bitcap.jobs.personio.com/job/2685548?language=en",
+            ats_platform="personio",
+            output_prefix="TestCo_SeniorBackend",
+            generated_dir=generated_dir_with_pdfs,
+            tracker_path=empty_tracker,
+            registry_path=confirmation_registry,
+            autonomous=False,
+        )
 
     def test_all_gates_pass_for_clean_application(
         self,
@@ -1348,6 +1456,33 @@ class TestAshbyErrorTokenFalseFail:
         )
         assert result == "confirmed"
 
+    def test_ashby_confirmed_via_application_is_in(self):
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text="Your application is in. We'll review your details soon.",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "confirmed"
+
+    def test_ashby_incomplete_text_is_not_confirmed_by_application_is_in_prefix(self):
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text="Your application is incomplete. Please finish required questions.",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "ambiguous"
+
+    def test_ashby_confirmed_via_successfully_submitted(self):
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text="Your application was successfully submitted.",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "confirmed"
+
     def test_ashby_success_with_incidental_error_substring_is_confirmed(self):
         """
         Regression: an Ashby success page whose markup incidentally contains
@@ -1389,6 +1524,44 @@ class TestAshbyErrorTokenFalseFail:
             ats_platform="ashby",
             final_url="https://jobs.ashbyhq.com/poolside/abc123",
             page_text="You have already applied to this role.",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "failed"
+
+    def test_ashby_failure_wins_before_new_success_tokens(self):
+        result = check_confirmation_pattern(
+            ats_platform="ashby",
+            final_url="https://jobs.ashbyhq.com/poolside/abc123",
+            page_text="You have already applied. Your application was successfully submitted.",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "failed"
+
+
+class TestGreenhouseLiveConfirmationStates:
+    def test_greenhouse_confirmed_via_appreciate_your_time(self):
+        result = check_confirmation_pattern(
+            ats_platform="greenhouse",
+            final_url="https://job-boards.greenhouse.io/acme/jobs/123",
+            page_text="Thanks for applying! We appreciate your time",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "confirmed"
+
+    def test_greenhouse_short_courtesy_text_remains_ambiguous(self):
+        result = check_confirmation_pattern(
+            ats_platform="greenhouse",
+            final_url="https://job-boards.greenhouse.io/acme/jobs/123",
+            page_text="Thanks for applying",
+            # no registry_path override — uses production src/ats_confirmation_patterns.json
+        )
+        assert result == "ambiguous"
+
+    def test_greenhouse_failure_wins_before_new_success_token(self):
+        result = check_confirmation_pattern(
+            ats_platform="greenhouse",
+            final_url="https://job-boards.greenhouse.io/acme/jobs/123",
+            page_text="Duplicate application. Thanks for applying! We appreciate your time",
             # no registry_path override — uses production src/ats_confirmation_patterns.json
         )
         assert result == "failed"

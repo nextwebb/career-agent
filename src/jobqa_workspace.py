@@ -34,6 +34,7 @@ ATS_MAP: dict[str, str] = {
     "ashby": "ashby",
     "workable": "other",
     "teamtailor": "other",
+    "personio": "other",
     "unknown": "other",
 }
 

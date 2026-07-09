@@ -72,6 +72,8 @@ def mark_submitted_unconfirmed(
     company: str = "",
     title: str = "",
     tracker_path: Path = TRACKER_PATH,
+    ats_platform: str | None = None,
+    variant: str | None = None,
 ) -> None:
     """Write a provisional tracker entry immediately before Submit.
 
@@ -93,7 +95,7 @@ def mark_submitted_unconfirmed(
     # keeps blocking even after a post-submit autonomous_failed update (issue #135).
     normalised_url = _normalise_url(job_url)
     for existing in entries:
-        if existing.get("role_id") == role_id or (
+        if _entry_role_id(existing) == role_id or (
             job_url and _normalise_url(existing.get("url", "")) == normalised_url
         ):
             # Claim the row for the incoming role_id. On a URL-only match where the
@@ -109,6 +111,10 @@ def mark_submitted_unconfirmed(
                 existing["company"] = company
             if title:
                 existing["title"] = title
+            if ats_platform is not None:
+                existing["ats_platform"] = ats_platform
+            if variant is not None:
+                existing["variant"] = variant
             existing.setdefault("added", today)
             existing.setdefault("notes", [])
             tracker_path.parent.mkdir(parents=True, exist_ok=True)
@@ -116,11 +122,13 @@ def mark_submitted_unconfirmed(
                 json.dump(entries, f, indent=2)
             return
 
-    entry = {
+    entry: dict[str, Any] = {
         "role_id": role_id,
         "company": company,
         "title": title,
         "url": job_url,
+        "ats_platform": ats_platform,
+        "variant": variant,
         "status": "submitted_unconfirmed",
         "added": today,
         "applied": today,
@@ -165,7 +173,7 @@ def load_role_meta(role_id: str) -> dict:
 
 def add(role_id: str) -> None:
     entries = load()
-    if any(e["role_id"] == role_id for e in entries):
+    if any(_entry_role_id(e) == role_id for e in entries):
         print(f"  Already tracking: {role_id}")
         return
     meta = load_role_meta(role_id)
@@ -226,6 +234,11 @@ def _refresh_submission_metadata(entry: dict, role_id: str) -> None:
 CLOSE_REASON_STATUSES = frozenset({"rejected", "withdrawn"})
 
 
+def _entry_role_id(entry: dict) -> str | None:
+    role_id = entry.get("role_id") or entry.get("id")
+    return role_id if isinstance(role_id, str) else None
+
+
 def update_status(role_id: str, status: str, close_reason: str | None = None) -> None:
     if status not in STATUSES:
         print(f"  Invalid status '{status}'. Choose: {', '.join(STATUSES)}")
@@ -240,11 +253,11 @@ def update_status(role_id: str, status: str, close_reason: str | None = None) ->
         )
     entries = load()
     for e in entries:
-        if e["role_id"] == role_id:
-            old = e["status"]
+        if _entry_role_id(e) == role_id:
+            old = e.get("status", "unknown")
             e["status"] = status
             e["last_update"] = str(date.today())
-            if status == "applied" and not e["applied"]:
+            if status == "applied" and not e.get("applied"):
                 e["applied"] = str(date.today())
             if status in SUBMISSION_STATUSES:
                 _refresh_submission_metadata(e, role_id)
@@ -262,8 +275,9 @@ def update_status(role_id: str, status: str, close_reason: str | None = None) ->
 def add_note(role_id: str, note: str) -> None:
     entries = load()
     for e in entries:
-        if e["role_id"] == role_id:
-            e["notes"].append({"date": str(date.today()), "text": note})
+        if _entry_role_id(e) == role_id:
+            notes = e.setdefault("notes", [])
+            notes.append({"date": str(date.today()), "text": note})
             e["last_update"] = str(date.today())
             save(entries)
             print(f"  ✓ Note added to {role_id}")
@@ -310,7 +324,7 @@ def list_entries(filter_status: str | None = None, ghost_only: bool = False) -> 
         return
 
     if filter_status:
-        entries = [e for e in entries if e["status"] == filter_status]
+        entries = [e for e in entries if e.get("status") == filter_status]
 
     if ghost_only:
         entries = [e for e in entries if _ghost_risk_days(e) is not None]
@@ -330,11 +344,11 @@ def list_entries(filter_status: str | None = None, ghost_only: bool = False) -> 
     ]
     grouped: dict[str, list[Any]] = {s: [] for s in order}
     for e in entries:
-        grouped.get(e["status"], grouped["draft"]).append(e)
+        grouped.get(e.get("status", "draft"), grouped["draft"]).append(e)
 
     total = len(entries)
     inactive = {"rejected", "withdrawn", "autonomous_failed"}
-    active = sum(1 for e in entries if e["status"] not in inactive)
+    active = sum(1 for e in entries if e.get("status") not in inactive)
     print(f"\n  Applications: {total} total, {active} active\n")
 
     for status in order:
@@ -349,8 +363,10 @@ def list_entries(filter_status: str | None = None, ghost_only: bool = False) -> 
             ghost_str = f"  ⚠ ghost risk ({ghost_days}d)" if ghost_days is not None else ""
             close_reason = e.get("close_reason")
             reason_str = f" [{close_reason}]" if close_reason else ""
+            entry_id = _entry_role_id(e) or "(missing role_id)"
             print(
-                f"     {e['role_id']:35s} {e['company']} — {e['title']}{applied_str}{ghost_str}{reason_str}"
+                f"     {entry_id:35s} {e.get('company', '')} — {e.get('title', '')}"
+                f"{applied_str}{ghost_str}{reason_str}"
             )
             if e.get("notes"):
                 last = e["notes"][-1]

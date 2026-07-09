@@ -73,3 +73,105 @@ def test_audit_log_falls_back_to_target_ats_when_no_role_config(tmp_path, monkey
 
     assert log["ats_platform"] == "lever"  # from submission_target
     assert log["variant"] is None
+
+
+def test_tracker_row_falls_back_to_target_ats_when_no_role_config(tmp_path, monkeypatch):
+    """Tracker and audit metadata should agree when roles/<id>.json is absent."""
+    output = tmp_path / "audits" / "log.json"
+    tracker = tmp_path / "tracker.json"
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "record_submission.py",
+            "missing_role",
+            "lever:https://jobs.lever.co/acme/abc/apply",
+            "yolo-pre-authorized:abcd",
+            str(output),
+            str(tracker),
+        ],
+    )
+
+    rc = record_submission.main()
+
+    assert rc == 0
+    entry = json.loads(tracker.read_text())[0]
+    assert entry["ats_platform"] == "lever"
+    assert entry["variant"] is None
+
+
+def test_existing_role_id_writes_metadata_to_provisional_tracker_row(tmp_path, monkeypatch):
+    _write_role(
+        tmp_path,
+        "acme_eng",
+        company="Acme Corp",
+        title="Backend Engineer",
+        url="https://jobs.lever.co/acme/abc/apply",
+        ats_platform="lever",
+        variant="C",
+    )
+    output = tmp_path / "audits" / "log.json"
+    tracker = tmp_path / "tracker.json"
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "record_submission.py",
+            "acme_eng",
+            "lever:https://jobs.lever.co/acme/abc/apply",
+            "yolo-pre-authorized:abcd",
+            str(output),
+            str(tracker),
+        ],
+    )
+
+    rc = record_submission.main()
+
+    assert rc == 0
+    entry = json.loads(tracker.read_text())[0]
+    assert entry["role_id"] == "acme_eng"
+    assert entry["company"] == "Acme Corp"
+    assert entry["title"] == "Backend Engineer"
+    assert entry["url"] == "https://jobs.lever.co/acme/abc/apply"
+    assert entry["ats_platform"] == "lever"
+    assert entry["variant"] == "C"
+
+
+def test_manifest_nested_role_id_resolves_role_config_for_tracker_row(tmp_path, monkeypatch):
+    _write_role(
+        tmp_path,
+        "nested_role",
+        company="Nested Co",
+        title="Platform Engineer",
+        ats_platform="greenhouse",
+        variant="A",
+    )
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"role": {"role_id": "nested_role"}, "summary": {}}))
+    output = tmp_path / "audits" / "log.json"
+    tracker = tmp_path / "tracker.json"
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "record_submission.py",
+            str(manifest),
+            "greenhouse:https://job-boards.greenhouse.io/nested/jobs/123",
+            "yolo-pre-authorized:abcd",
+            str(output),
+            str(tracker),
+        ],
+    )
+
+    rc = record_submission.main()
+
+    assert rc == 0
+    entry = json.loads(tracker.read_text())[0]
+    assert entry["role_id"] == "nested_role"
+    assert entry["company"] == "Nested Co"
+    assert entry["title"] == "Platform Engineer"
+    assert entry["ats_platform"] == "greenhouse"
+    assert entry["variant"] == "A"
