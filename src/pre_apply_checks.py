@@ -84,6 +84,18 @@ class LeverCooldownError(PreApplyError):
     """Raised when a Lever submission would violate the per-company cooldown."""
 
 
+SUPPORTED_AUTONOMOUS_PLATFORMS = frozenset(
+    {
+        "greenhouse",
+        "greenhouse_eu",
+        "lever",
+        "workable",
+        "ashby",
+        "teamtailor",
+    }
+)
+
+
 def unsupported_platform_handoff(ats_platform: str, job_url: str = "") -> str:
     """Return actionable manual guidance for a recognized unsupported ATS."""
     platform = (ats_platform or "").strip().lower()
@@ -92,6 +104,14 @@ def unsupported_platform_handoff(ats_platform: str, job_url: str = "") -> str:
         platform = detected
     if not platform:
         platform = "unknown"
+
+    if platform in SUPPORTED_AUTONOMOUS_PLATFORMS:
+        return (
+            f"Detected supported ATS platform '{platform}' from the job URL. "
+            f'Update roles/<role_id>.json to set "ats_platform": "{platform}" '
+            "and rerun pre-apply checks; autonomous mode remains blocked until "
+            "the role config explicitly names the supported platform."
+        )
 
     if platform == "personio":
         return (

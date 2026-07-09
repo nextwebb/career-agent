@@ -360,6 +360,17 @@ class TestPlatformSupport:
         assert "Manual handoff required" in handoff
         assert "must not fill fields, upload files, submit, or retry" in handoff
 
+    def test_supported_detected_platform_handoff_asks_to_set_role_config(self):
+        handoff = unsupported_platform_handoff(
+            "unknown",
+            "https://jobs.lever.co/acme/abc/apply",
+        )
+        assert "Detected supported ATS platform 'lever'" in handoff
+        assert '"ats_platform": "lever"' in handoff
+        assert "unsupported" not in handoff.lower()
+        assert "Manual handoff required" not in handoff
+        assert "must not fill fields" not in handoff
+
     def test_blocks_autonomous_mode_for_unknown_platform(self, confirmation_registry: Path):
         """
         Contract: autonomous mode must not run on a platform with no verified
@@ -717,6 +728,31 @@ class TestCompositeGate:
         assert "personio" in message
         assert "Manual handoff required" in message
         assert "must not fill fields, upload files, submit, or retry" in message
+
+    def test_unknown_config_with_supported_detected_url_asks_for_config_fix(
+        self,
+        empty_tracker: Path,
+        generated_dir_with_pdfs: Path,
+        confirmation_registry: Path,
+    ):
+        with pytest.raises(UnsupportedPlatformError) as exc:
+            run_pre_apply_checks(
+                role_id="acme_role",
+                job_url="https://jobs.lever.co/acme/abc/apply",
+                ats_platform="unknown",
+                output_prefix="TestCo_SeniorBackend",
+                generated_dir=generated_dir_with_pdfs,
+                tracker_path=empty_tracker,
+                registry_path=confirmation_registry,
+                autonomous=True,
+            )
+
+        message = str(exc.value)
+        assert "Detected supported ATS platform 'lever'" in message
+        assert '"ats_platform": "lever"' in message
+        assert "unsupported for autonomous apply" not in message
+        assert "Manual handoff required" not in message
+        assert "must not fill fields" not in message
 
     def test_hitl_mode_allows_personio_for_manual_handoff_without_browser_fallback(
         self,
