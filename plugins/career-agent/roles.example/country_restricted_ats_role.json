@@ -1,0 +1,50 @@
+{
+  "_comment": "Copy to roles/<role_id>.json. The roles/ directory is gitignored.",
+  "_scenario_note": "Country-restricted ATS: the platform's location field only accepts country granularity, so 'ats_location' uses 'country_only' (reads profile.location_facts.country_of_residence). CV contact line stays on 'remote_label' for a global remote posting.",
+  "role_id": "globalco_backend_2026",
+  "company": "GlobalCo",
+  "title": "Senior Backend Engineer",
+  "location": "Remote, Global",
+  "url": "https://globalco.com/jobs/senior-backend-engineer",
+  "ats_platform": "workable",
+  "variant": "C",
+  "openness": "Open to fully remote roles working across global timezones.",
+  "location_strategy": {
+    "_comment": "Optional per-role override of profile.location_strategy_defaults. Same keys and values. Set 'inherit' to fall through to the profile-level default; omit a key to inherit implicitly. Supported values: inherit, hide, remote_label, current_residence, country_only, role_location, custom:<key>, generated_role_specific.",
+    "cv_contact": "remote_label",
+    "cover_letter_contact": "remote_label",
+    "ats_location": "country_only",
+    "availability_banner": "hide",
+    "relocation_statement": "hide",
+    "on_conflict": "warn"
+  },
+  "additional_experience": [],
+  "output_prefix": "Jane_Doe_GlobalCo_Backend_2026-06",
+  "custom_answers": {
+    "hear_about_us": "LinkedIn",
+    "visa_sponsorship": "No sponsorship required for remote work",
+    "work_authorization": "N/A — remote",
+    "cities_available": [],
+    "why_company": "",
+    "salary_expectation": ""
+  },
+  "cover_letter": {
+    "salutation": "Dear GlobalCo Hiring Team,",
+    "paragraphs": [
+      "Opening paragraph — specific hook to GlobalCo's distributed engineering culture...",
+      "Paragraph 2 — relevant experience shipping in remote-first teams...",
+      "Paragraph 3 — fit with the JD's requirements around async collaboration and reliability...",
+      "Closing — confirm availability across the target timezone."
+    ],
+    "closing": "Best regards,"
+  },
+  "experience_overrides": {
+    "_comment": "Optional: override specific bullets for this role. Leave empty to use profile defaults."
+  },
+  "application_tier": "selective",
+  "sponsorship_available": "not_required",
+  "remote_status": "remote",
+  "required_skills": [],
+  "jd_skills": ["Python", "PostgreSQL", "AWS", "gRPC"],
+  "notes": "ATS location select only accepts country values; do not attempt to enter a city."
+}

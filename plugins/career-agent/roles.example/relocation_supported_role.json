@@ -1,0 +1,55 @@
+{
+  "_comment": "Copy to roles/<role_id>.json. The roles/ directory is gitignored.",
+  "_scenario_note": "Relocation-supported role: 'relocation_statement' uses 'generated_role_specific' so the resolver reads the verbatim 'relocation_statement' field on this role. Pair with a truthful 'availability_banner' for the openness slot.",
+  "role_id": "acme_platform_2026",
+  "company": "Acme",
+  "title": "Staff Platform Engineer",
+  "location": "Dublin, Ireland",
+  "url": "https://acme.com/careers/staff-platform-engineer",
+  "ats_platform": "greenhouse",
+  "variant": "C",
+  "openness": "Open to Dublin-based platform roles with relocation support.",
+  "_openness_note": "Shown on the CV banner under the headline. Overrides profile.openness. Remove this key to inherit the profile-level default.",
+  "location_strategy": {
+    "_comment": "Optional per-role override of profile.location_strategy_defaults. Same keys and values. Set 'inherit' to fall through to the profile-level default; omit a key to inherit implicitly. Supported values: inherit, hide, remote_label, current_residence, country_only, role_location, custom:<key>, generated_role_specific.",
+    "cv_contact": "current_residence",
+    "cover_letter_contact": "current_residence",
+    "ats_location": "current_residence",
+    "availability_banner": "generated_role_specific",
+    "relocation_statement": "generated_role_specific",
+    "on_conflict": "warn"
+  },
+  "availability_banner": "Available to start in Dublin within 8 weeks of offer.",
+  "_availability_banner_note": "Optional. Rendered verbatim when 'location_strategy.availability_banner' is 'generated_role_specific'. Consumed by the resolver, not by cv_builder directly.",
+  "relocation_statement": "Open to relocating to Dublin with employer-supported visa sponsorship.",
+  "_relocation_statement_note": "Optional. Rendered verbatim as an extra line under the availability banner when 'location_strategy.relocation_statement' is 'generated_role_specific'.",
+  "additional_experience": [],
+  "output_prefix": "Jane_Doe_Acme_Platform_2026-06",
+  "custom_answers": {
+    "hear_about_us": "Referral",
+    "visa_sponsorship": "Yes, I need sponsorship",
+    "work_authorization": "No",
+    "cities_available": ["Dublin"],
+    "why_company": "",
+    "salary_expectation": ""
+  },
+  "cover_letter": {
+    "salutation": "Dear Acme Platform Team,",
+    "paragraphs": [
+      "Opening paragraph — specific hook to the platform team and Dublin office...",
+      "Paragraph 2 — relevant platform-engineering experience with concrete evidence...",
+      "Paragraph 3 — fit with the JD's requirements around reliability and developer experience...",
+      "Closing — confirm relocation timeline and availability."
+    ],
+    "closing": "Best regards,"
+  },
+  "experience_overrides": {
+    "_comment": "Optional: override specific bullets for this role. Leave empty to use profile defaults."
+  },
+  "application_tier": "selective",
+  "sponsorship_available": "yes",
+  "remote_status": "onsite",
+  "required_skills": [],
+  "jd_skills": ["Python", "Kubernetes", "Terraform", "AWS"],
+  "notes": "Relocation package confirmed on the JD; keep contact line truthful to current residence."
+}

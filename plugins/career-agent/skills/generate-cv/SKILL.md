@@ -25,6 +25,7 @@ In Codex, invoke this skill with `$generate-cv`, the skills/plugin selector, or 
 
 - `openness` *(optional)* — banner line shown under the headline. Overrides `profile.openness`. Omit the key entirely to inherit the profile-level default; set to `""` to suppress the banner for this role.
 - `additional_experience` *(optional)* — list of one-line summaries for older/minor roles. Rendered as a single condensed line prefixed `Earlier experience:` and joined by ` · ` to preserve page budget. Set to `[]` to suppress the line for this specific role even when `profile.additional_experience` has entries; omit the key entirely to inherit the profile list.
+- `location_strategy` *(optional)* — per-context location rendering override resolved by `src/location_strategy.py::resolve_location`. Applies to the CV contact line, cover-letter contact line, ATS location field, availability banner (renders in the openness slot when set), and relocation statement (renders as an extra line under the availability banner when set). Falls through to `profile.location_strategy_defaults` and then to legacy `profile.location` / `profile.openness`. See `profile.example.json` and `roles.example/example_role.json` for the supported strategy values.
 
 ## Steps
 
@@ -118,6 +119,12 @@ Warnings do not block generation, but must be surfaced for review:
 - Cover letter is longer than 1 page
 - Expected PDF links are not exposed as clickable annotations
 - Repeated bullets, low metric density, or generic wording are detected
+
+`location_consistency` warnings (warning-only, never block) surface configured stories that look contradictory. Sourced from `src/location_strategy.py::collect_location_warnings`:
+- `cv_contact` resolves to `remote_label` but `role_config["location"]` names a specific city
+- Any strategy is `generated_role_specific` but the corresponding role field is missing
+- Any strategy references `custom:<key>` but `profile.location_presentations.custom.<key>` is not defined
+- Legacy `profile["location"]` and `profile["location_facts"]["current_residence"]` disagree
 
 ### 7. Confirm output
 

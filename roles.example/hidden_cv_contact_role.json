@@ -1,0 +1,50 @@
+{
+  "_comment": "Copy to roles/<role_id>.json. The roles/ directory is gitignored.",
+  "_scenario_note": "Hide-CV-contact: candidate wants location suppressed on both the CV contact line and the cover-letter contact line. 'ats_location' still resolves to current residence so the ATS field remains truthful.",
+  "role_id": "quietco_ai_2026",
+  "company": "QuietCo",
+  "title": "Senior AI Engineer",
+  "location": "Remote, EMEA",
+  "url": "https://quietco.example/jobs/senior-ai-engineer",
+  "ats_platform": "ashby",
+  "variant": "A",
+  "openness": "Open to fully remote AI/LLM roles across EMEA.",
+  "location_strategy": {
+    "_comment": "Optional per-role override of profile.location_strategy_defaults. Same keys and values. Set 'inherit' to fall through to the profile-level default; omit a key to inherit implicitly. Supported values: inherit, hide, remote_label, current_residence, country_only, role_location, custom:<key>, generated_role_specific.",
+    "cv_contact": "hide",
+    "cover_letter_contact": "hide",
+    "ats_location": "current_residence",
+    "availability_banner": "hide",
+    "relocation_statement": "hide",
+    "on_conflict": "warn"
+  },
+  "additional_experience": [],
+  "output_prefix": "Jane_Doe_QuietCo_AI_2026-06",
+  "custom_answers": {
+    "hear_about_us": "Company blog",
+    "visa_sponsorship": "No sponsorship required for remote work",
+    "work_authorization": "N/A — remote",
+    "cities_available": [],
+    "why_company": "",
+    "salary_expectation": ""
+  },
+  "cover_letter": {
+    "salutation": "Dear QuietCo Team,",
+    "paragraphs": [
+      "Opening paragraph — specific hook to QuietCo's research direction...",
+      "Paragraph 2 — relevant LLM evaluation and safety experience with concrete evidence...",
+      "Paragraph 3 — fit with the JD's requirements around applied research...",
+      "Closing — confirm availability and preferred next step."
+    ],
+    "closing": "Best regards,"
+  },
+  "experience_overrides": {
+    "_comment": "Optional: override specific bullets for this role. Leave empty to use profile defaults."
+  },
+  "application_tier": "selective",
+  "sponsorship_available": "not_required",
+  "remote_status": "remote",
+  "required_skills": [],
+  "jd_skills": ["Python", "PyTorch", "LLM evaluation", "MLOps"],
+  "notes": "Contact line intentionally omits location on both CV and cover letter; ATS field still receives truthful current residence."
+}

@@ -46,6 +46,7 @@ PROFILE_PATH = WORKSPACE_DIR / "profile.json"
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from location_strategy import resolve_location
 from quality_gates import QualityGateError, format_quality_report, run_quality_gates
 from validation import (
     ValidationError,
@@ -354,7 +355,7 @@ def print_apply_dry_run(profile: dict[str, Any], role_id: str) -> None:
         ("Last name", _present(last_name)),
         ("Email", _present(profile.get("email"))),
         ("Phone", _present(profile.get("phone"))),
-        ("Location / City", _present(profile.get("location"))),
+        ("Location / City", _present(resolve_location(profile, config, "ats_location"))),
         ("LinkedIn URL", _present(links.get("linkedin") if isinstance(links, dict) else "")),
         ("GitHub URL", _present(links.get("github") if isinstance(links, dict) else "")),
         ("Portfolio / website", _present(links.get("website") if isinstance(links, dict) else "")),

@@ -12,6 +12,37 @@
     "formatted": "+15551234567"
   },
   "location": "Berlin, Germany",
+  "_location_note": "Legacy top-level field. Still honoured for backward compatibility — profiles that only set this key render exactly as before. New installs should also fill 'location_facts' below and let 'location_strategy_defaults' choose what each artifact renders.",
+  "location_facts": {
+    "_comment": "Truthful source data referenced by the location resolver. Not directly rendered — 'location_strategy_defaults' and per-role 'location_strategy' decide which fact goes where.",
+    "current_residence": "Berlin, Germany",
+    "country_of_residence": "Germany",
+    "remote_available": true,
+    "open_to_relocation": true,
+    "requires_sponsorship_by_default": true,
+    "work_authorization": {
+      "US": false,
+      "UK": false,
+      "EU": true
+    }
+  },
+  "location_presentations": {
+    "_comment": "Candidate-owned labels reused by the resolver's remote_label and custom:<key> strategies. Add custom entries for narratives you use across roles.",
+    "remote_label": "Remote",
+    "custom": {
+      "global_remote": "Available for global remote work",
+      "eu_timezone": "Relocating to an EU timezone shortly"
+    }
+  },
+  "location_strategy_defaults": {
+    "_comment": "Default strategy per rendering context. Per-role 'location_strategy' in roles/<id>.json overrides these. Supported values: inherit, hide, remote_label, current_residence, country_only, role_location, custom:<key>, generated_role_specific.",
+    "cv_contact": "current_residence",
+    "cover_letter_contact": "current_residence",
+    "ats_location": "current_residence",
+    "availability_banner": "hide",
+    "relocation_statement": "hide",
+    "on_conflict": "warn"
+  },
   "relocation": "Open to EU/UK relocation with visa sponsorship",
   "_relocation_note": "ATS metadata only. Used to answer 'are you open to relocation?' style form fields. Not shown on the CV; use 'openness' for the CV banner.",
   "openness": "Open to fully remote roles globally and relocation for the right opportunity.",
