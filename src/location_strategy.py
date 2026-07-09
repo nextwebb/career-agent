@@ -58,7 +58,7 @@ def _apply_strategy(
         presentations = _get_dict(profile, "location_presentations")
         return _clean(presentations.get("remote_label")) or DEFAULT_REMOTE_LABEL
 
-    if strategy in ("current_residence", "ats_location"):
+    if strategy == "current_residence":
         facts = _get_dict(profile, "location_facts")
         return _clean(facts.get("current_residence")) or _clean(profile.get("location"))
 

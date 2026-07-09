@@ -120,6 +120,12 @@ Warnings do not block generation, but must be surfaced for review:
 - Expected PDF links are not exposed as clickable annotations
 - Repeated bullets, low metric density, or generic wording are detected
 
+`location_consistency` warnings (warning-only, never block) surface configured stories that look contradictory. Sourced from `src/location_strategy.py::collect_location_warnings`:
+- `cv_contact` resolves to `remote_label` but `role_config["location"]` names a specific city
+- Any strategy is `generated_role_specific` but the corresponding role field is missing
+- Any strategy references `custom:<key>` but `profile.location_presentations.custom.<key>` is not defined
+- Legacy `profile["location"]` and `profile["location_facts"]["current_residence"]` disagree
+
 ### 7. Confirm output
 
 After generation, report:

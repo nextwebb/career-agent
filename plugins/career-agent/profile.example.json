@@ -35,7 +35,7 @@
     }
   },
   "location_strategy_defaults": {
-    "_comment": "Default strategy per rendering context. Per-role 'location_strategy' in roles/<id>.json overrides these. Supported values: inherit, hide, remote_label, current_residence, country_only, ats_location, role_location, custom:<key>, generated_role_specific.",
+    "_comment": "Default strategy per rendering context. Per-role 'location_strategy' in roles/<id>.json overrides these. Supported values: inherit, hide, remote_label, current_residence, country_only, role_location, custom:<key>, generated_role_specific.",
     "cv_contact": "current_residence",
     "cover_letter_contact": "current_residence",
     "ats_location": "current_residence",
