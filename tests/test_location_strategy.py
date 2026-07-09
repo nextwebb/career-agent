@@ -281,3 +281,65 @@ def test_remote_label_defaults_when_presentation_absent():
     role = _legacy_role()
 
     assert resolve_location(profile, role, "cv_contact") == "Remote"
+
+
+def test_generated_role_specific_availability_banner_renders_in_cv(tmp_path):
+    pytest.importorskip("reportlab")
+    pypdf = pytest.importorskip("pypdf")
+
+    from cv_builder import build_cv
+    from generate_application import prepare_generation_config
+
+    profile = _legacy_profile()
+    role = _legacy_role()
+    role["location_strategy"] = {"availability_banner": "generated_role_specific"}
+    role["availability_banner"] = "Available for immediate start in Europe timezone."
+    config = prepare_generation_config(profile, role, create_output_dir=False)
+
+    cv_path = tmp_path / "cv.pdf"
+    build_cv(profile, config, str(cv_path))
+
+    cv_text = "\n".join(page.extract_text() or "" for page in pypdf.PdfReader(str(cv_path)).pages)
+    assert "Available for immediate start in Europe timezone." in cv_text
+
+
+def test_relocation_statement_renders_in_cv_when_configured(tmp_path):
+    pytest.importorskip("reportlab")
+    pypdf = pytest.importorskip("pypdf")
+
+    from cv_builder import build_cv
+    from generate_application import prepare_generation_config
+
+    profile = _legacy_profile()
+    profile["location_presentations"] = {
+        "custom": {"berlin_move": "Relocating to Berlin next month."}
+    }
+    role = _legacy_role()
+    role["location_strategy"] = {"relocation_statement": "custom:berlin_move"}
+    config = prepare_generation_config(profile, role, create_output_dir=False)
+
+    cv_path = tmp_path / "cv.pdf"
+    build_cv(profile, config, str(cv_path))
+
+    cv_text = "\n".join(page.extract_text() or "" for page in pypdf.PdfReader(str(cv_path)).pages)
+    assert "Relocating to Berlin next month." in cv_text
+
+
+def test_legacy_openness_still_renders_when_no_availability_strategy(tmp_path):
+    pytest.importorskip("reportlab")
+    pypdf = pytest.importorskip("pypdf")
+
+    from cv_builder import build_cv
+    from generate_application import prepare_generation_config
+
+    profile = _legacy_profile()
+    profile["openness"] = "Open to remote roles globally."
+    role = _legacy_role()
+    role.pop("openness", None)
+    config = prepare_generation_config(profile, role, create_output_dir=False)
+
+    cv_path = tmp_path / "cv.pdf"
+    build_cv(profile, config, str(cv_path))
+
+    cv_text = "\n".join(page.extract_text() or "" for page in pypdf.PdfReader(str(cv_path)).pages)
+    assert "Open to remote roles globally." in cv_text

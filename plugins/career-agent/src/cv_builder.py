@@ -412,9 +412,18 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
         Paragraph(full_name, NAME),
         Paragraph(config["headline"], ROLETITLE),
     ]
-    openness_text = config.get("openness", "") or ""
-    if openness_text:
-        story.append(Paragraph(openness_text, OPENNESS))
+    # availability_banner strategy overrides the openness line so
+    # generated_role_specific / custom:<key> etc. reach the rendered CV.
+    # Falls back to config["openness"] when the resolver returns None,
+    # preserving the pre-resolver banner behaviour.
+    availability_banner = resolve_location(profile, config, "availability_banner")
+    if availability_banner is None:
+        availability_banner = config.get("openness", "") or ""
+    if availability_banner:
+        story.append(Paragraph(availability_banner, OPENNESS))
+    relocation_statement = resolve_location(profile, config, "relocation_statement")
+    if relocation_statement:
+        story.append(Paragraph(relocation_statement, OPENNESS))
     story += [
         Paragraph(contact_line, CONTACT),
         sp(10),
