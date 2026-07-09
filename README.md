@@ -292,7 +292,7 @@ career-agent/
 ├── src/
 │   ├── cv_builder.py                # reportlab Platypus PDF engine
 │   ├── cl_builder.py                # Cover letter PDF builder
-│   ├── generate_application.py      # CLI: python src/generate_application.py <role_id>
+│   ├── generate_application.py      # CLI: $PYTHON src/generate_application.py --role <role_id>
 │   └── tracker.py                   # Pipeline tracker CLI
 │
 ├── roles.example/
@@ -328,10 +328,11 @@ npx --package=@nextwebb/career-agent career-agent
 Ensure `reportlab` and `pypdf` are installed and use the correct flag syntax:
 
 ```bash
-pip install -r requirements.txt
-python src/generate_application.py --role <role_id>   # correct
-python src/generate_application.py --role <role_id> --dry-run  # preflight only
-python src/generate_application.py <role_id>           # wrong: positional args not accepted
+PYTHON=python3.10  # or any Python 3.10+ executable in PATH
+$PYTHON -m pip install -r requirements.txt
+$PYTHON src/generate_application.py --role <role_id>   # correct
+$PYTHON src/generate_application.py --role <role_id> --dry-run  # preflight only
+$PYTHON src/generate_application.py <role_id>           # wrong: positional args not accepted
 ```
 
 The `generated/` output directory is created automatically on first run.

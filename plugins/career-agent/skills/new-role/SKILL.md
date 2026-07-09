@@ -43,8 +43,12 @@ Examine the URL and page content:
 | `apply.workable.com` | `workable` | `https://apply.workable.com/<company>/j/<id>/apply/` |
 | `jobs.ashbyhq.com` | `ashby` | `https://jobs.ashbyhq.com/<company>/<uuid>/application` |
 | `teamtailor.com` in URL | `teamtailor` | `https://<company>.teamtailor.com/jobs/<id>/applications/new` |
+| `jobs.personio.com` | `personio` (recognized, unsupported for apply automation) | Use the Personio URL as-is |
 
 Set `ats_platform` accordingly. If undetectable, set `"ats_platform": "unknown"` and note it.
+`personio` is recognized so the user sees the exact unsupported platform, but it is not a
+supported autonomous apply platform; `/apply` must hand off manually without filling,
+uploading, submitting, or retrying.
 
 ### 3. Determine CV variant
 
@@ -74,7 +78,7 @@ Write `roles/<role_id>.json` using this template, filled with what you extracted
   "title": "<title>",
   "location": "<location>",
   "url": "<direct_application_url>",
-  "ats_platform": "<greenhouse|greenhouse_eu|lever|workable|ashby|teamtailor|unknown>",
+  "ats_platform": "<greenhouse|greenhouse_eu|lever|workable|ashby|teamtailor|personio|unknown>",
   "variant": "<A|B|C>",
   "openness": "Open to fully remote roles globally and relocation for the right opportunity.",
   "output_prefix": "<FirstName_LastName_Company_Role_YYYY-MM>",

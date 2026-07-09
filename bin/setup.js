@@ -49,6 +49,7 @@ function commandVersion(command) {
 }
 
 function findPython() {
+  const detected = [];
   for (const candidate of ["python3", "python3.12", "python3.11", "python3.10", "python"]) {
     const result = run(candidate, ["--version"]);
     if (result.status !== 0) {
@@ -56,6 +57,7 @@ function findPython() {
     }
 
     const versionLine = (result.stdout || result.stderr || "").trim();
+    detected.push(`${candidate}: ${versionLine || "unknown version"}`);
     const match = versionLine.match(/Python (\d+)\.(\d+)/);
     const major = match ? parseInt(match[1], 10) : 0;
     const minor = match ? parseInt(match[2], 10) : 0;
@@ -64,7 +66,7 @@ function findPython() {
     }
   }
 
-  return null;
+  return { error: "unsupported", required: "Python 3.10+", detected };
 }
 
 if (process.argv[2] === "doctor") {
@@ -85,8 +87,10 @@ let hasErrors = false;
 header("Checking prerequisites…");
 
 const python = findPython();
-if (!python) {
+if (python.error) {
   fail("Python 3.10+ not found.");
+  dim(`Required: ${python.required}`);
+  dim(`Detected: ${python.detected.length ? python.detected.join("; ") : "none"}`);
   dim("Install Python 3.10+ from https://python.org/downloads and re-run this setup.");
   process.exit(1);
 }

@@ -8,6 +8,7 @@ without requiring external dependencies or PII data.
 Run: pytest tests/smoke_test.py -v
 """
 
+import inspect
 import json
 import os
 import py_compile
@@ -197,6 +198,8 @@ class TestSetupInstaller:
         output = result.stdout + result.stderr
         assert result.returncode == 1
         assert "Python 3.10+ not found." in output
+        assert "Required: Python 3.10+" in output
+        assert "Detected: python3: Python 3.9.6" in output
         assert not (tmp_path / "profile.json").exists()
 
     @pytest.mark.parametrize("python_version", ["3.10.14", "3.11.13", "3.12.11"])
@@ -267,6 +270,8 @@ class TestSetupInstaller:
         output = result.stdout + result.stderr
         assert result.returncode == 1
         assert "Python 3.10+" in output
+        assert "Required: Python 3.10+" in output
+        assert "detected: python3: Python 3.9.6" in output
         assert "FAIL" in output
 
     def test_doctor_reports_codex_without_claude(self, tmp_path):
@@ -727,6 +732,110 @@ class TestSKILLMarkdown:
         assert normalized.index("### 3. Sensitive-field classifier") < normalized.index(
             "### 4. Fill safe personal fields"
         )
+
+    def test_apply_yolo_docs_match_helper_signatures(self):
+        """/apply yolo snippets should match the installed helper APIs."""
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            from pre_apply_checks import run_pre_apply_checks
+            from yolo import run_yolo_gates
+
+            pre_apply_params = list(inspect.signature(run_pre_apply_checks).parameters)
+            yolo_params = list(inspect.signature(run_yolo_gates).parameters)
+            yolo_return = inspect.signature(run_yolo_gates).return_annotation
+        finally:
+            sys.path.pop(0)
+
+        content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
+
+        for param in [
+            "role_id",
+            "job_url",
+            "ats_platform",
+            "output_prefix",
+            "generated_dir",
+            "tracker_path",
+            "autonomous",
+            "role_config",
+            "profile",
+            "allow_company_repeat",
+            "override_ats_policy",
+            "force_location",
+        ]:
+            assert param in pre_apply_params
+            assert f"{param}=" in content or f"`{param}" in content
+
+        assert yolo_params == ["profile", "role_config", "workspace_dir", "tracker_path"]
+        assert "run_yolo_gates(" in content
+        assert "profile=profile" in content
+        assert "role_config=role_config" in content
+        assert "workspace_dir=Path(workspace_dir)" in content
+        assert 'tracker_path=Path("tracker.json")' in content
+        assert yolo_return in (list[str], "list[str]")
+        assert "`run_yolo_gates(...)` returns `list[str]`" in content
+        assert (
+            "It returns an empty list when all yolo gates pass without warnings"
+            in normalize_whitespace(content)
+        )
+        assert (
+            "run_pre_apply_checks(autonomous=True, role_config=role_config, profile=profile)"
+            not in content
+        )
+
+    def test_apply_python_runtime_guidance_is_supported_version_only(self):
+        content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
+        normalized = normalize_whitespace(content)
+        unsupported_python_warning = (
+            "Do not assume `/usr/bin/python3` or bare `python3` is supported"
+        )
+
+        assert "Use Python 3.10+ for every career-agent Python snippet" in normalized
+        assert unsupported_python_warning in normalized
+        assert "PYTHON=python3.10" in content
+        assert "/usr/bin/python3" not in normalized.replace(unsupported_python_warning, "")
+
+    def test_apply_greenhouse_phone_country_commits_listbox_option(self):
+        content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
+        normalized = normalize_whitespace(content)
+
+        required_terms = [
+            "commitGreenhousePhoneCountry",
+            "Greenhouse's selected country state remains unset",
+            'querySelectorAll(\'[role="option"], [id*="option"]\')',
+            "listboxOption.click()",
+            "KeyboardEvent('keydown', { bubbles: true, key: 'Enter' })",
+            "Select a country",
+            "Nigeria",
+            "+234",
+        ]
+        for term in required_terms:
+            assert term in content, f"/apply missing phone country commit term: {term}"
+
+        for term in [
+            "focus the scoped phone combobox",
+            "press Enter or click the matching option",
+            "absence of the adjacent required-field error",
+        ]:
+            assert term in normalized, f"/apply missing phone country commit term: {term}"
+
+        assert normalized.index("Direct `set_value`") < normalized.index(
+            "commitGreenhousePhoneCountry"
+        )
+        assert normalized.index("phoneContainer.querySelector") < normalized.index(
+            'querySelectorAll(\'[role="option"], [id*="option"]\')'
+        )
+
+    def test_apply_greenhouse_phone_country_avoids_bare_toggle_selector(self):
+        content = (ROOT / "skills" / "apply" / "SKILL.md").read_text(encoding="utf-8")
+
+        forbidden_fragments = [
+            "document.querySelector('[aria-label=\"Toggle flyout\"]')",
+            'document.querySelector("[aria-label=\\"Toggle flyout\\"]")',
+            "page.locator('[aria-label=\"Toggle flyout\"]')",
+            'page.locator("[aria-label=\\"Toggle flyout\\"]")',
+        ]
+        for fragment in forbidden_fragments:
+            assert fragment not in content
 
     def test_apply_codex_chrome_verification_matrix_present(self):
         """Codex Chrome /apply support should be tied to structured evidence."""
@@ -2400,6 +2509,19 @@ class TestRoleConfigValidation:
             return validate_role_config(data)
         finally:
             sys.path.pop(0)
+
+    def test_personio_is_valid_detected_but_unsupported_platform(self):
+        config = {
+            "role_id": "bitcap_role_2026",
+            "company": "BIT Capital",
+            "title": "Engineer",
+            "url": "https://bitcap.jobs.personio.com/job/2685548?language=en",
+            "ats_platform": "personio",
+            "variant": "C",
+            "output_prefix": "Jane_Doe_BIT_Capital_Engineer",
+        }
+        is_valid, errors = self._validate(config)
+        assert is_valid, errors
 
     @staticmethod
     def _minimal_role(**overrides: Any) -> dict[str, Any]:

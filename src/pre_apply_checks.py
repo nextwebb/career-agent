@@ -33,6 +33,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from ats_detection import detect_ats_platform_from_url
+
 # ASSUMPTION (policy choice, not platform-confirmed): block after this many prior
 # same-company rejections. Default 2 per issue #138; not derived from any observed
 # ATS rule. Configurable — change here or via the threshold parameter.
@@ -80,6 +82,42 @@ class CompanyRepeatError(PreApplyError):
 
 class LeverCooldownError(PreApplyError):
     """Raised when a Lever submission would violate the per-company cooldown."""
+
+
+def unsupported_platform_handoff(ats_platform: str, job_url: str = "") -> str:
+    """Return actionable manual guidance for a recognized unsupported ATS."""
+    platform = (ats_platform or "").strip().lower()
+    detected = detect_ats_platform_from_url(job_url)
+    if platform in ("", "unknown") and detected != "unknown":
+        platform = detected
+    if not platform:
+        platform = "unknown"
+
+    if platform == "personio":
+        return (
+            "Detected unsupported ATS platform 'personio'. Personio is recognized "
+            "but is not supported for autonomous apply. Manual handoff required: "
+            "open the Personio URL yourself, review the generated CV and cover "
+            "letter, upload files manually, answer any required questions, and "
+            "click Submit only after your own review. The agent must not fill "
+            "fields, upload files, submit, or retry this Personio flow."
+        )
+
+    if platform == "unknown":
+        return (
+            "ATS platform is unknown. Manual handoff required: inspect the job URL "
+            "and application form yourself, upload files manually, answer required "
+            "questions, and click Submit only after your own review. The agent must "
+            "not fill fields, upload files, submit, or retry an unknown ATS flow."
+        )
+
+    return (
+        f"ATS platform '{platform}' is recognized or configured but unsupported "
+        "for autonomous apply. Manual handoff required: open the application URL "
+        "yourself, review the generated CV and cover letter, upload files manually, "
+        "answer any required questions, and click Submit only after your own review. "
+        "The agent must not fill fields, upload files, submit, or retry this flow."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -288,8 +326,7 @@ def check_platform_supported(
         raise UnsupportedPlatformError(
             f"ATS platform '{ats_platform}' has no verified confirmation pattern. "
             f"Known platforms: {', '.join(sorted(registry.keys()))}. "
-            f"Add a confirmed entry to src/ats_confirmation_patterns.json before "
-            f"enabling autonomous mode for this platform."
+            f"{unsupported_platform_handoff(ats_platform)}"
         )
 
 
@@ -613,10 +650,13 @@ def run_pre_apply_checks(
         check_location_eligibility(role_config, profile, force_location=force_location)
 
     if autonomous:
+        detected_platform = detect_ats_platform_from_url(job_url)
         if ats_platform in ("unknown", ""):
             raise UnsupportedPlatformError(
                 "Cannot run in autonomous mode: ats_platform is 'unknown'. "
-                "Set a known ATS platform in the role config before enabling yolo_mode."
+                f"{unsupported_platform_handoff(detected_platform, job_url)} "
+                "Set a known supported ATS platform in the role config before "
+                "enabling yolo_mode."
             )
         # In autonomous mode, unsupported platform is a hard block
         check_platform_supported(ats_platform, registry_path)

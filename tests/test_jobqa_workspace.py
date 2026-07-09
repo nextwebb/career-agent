@@ -314,6 +314,7 @@ class TestATSMap:
             "ashby",
             "workable",
             "teamtailor",
+            "personio",
             "unknown",
         }
         for platform in required_in_map:

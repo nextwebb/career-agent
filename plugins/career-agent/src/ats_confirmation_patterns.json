@@ -34,13 +34,14 @@
   },
   "greenhouse": {
     "_verified": "2026-06-22",
-    "_evidence": "Showpad, Monzo, Forter, TooGoodToGo, OpenUp confirmed via confirmation page text",
+    "_evidence": "Showpad, Monzo, Forter, TooGoodToGo, OpenUp confirmed via confirmation page text; live Greenhouse success observed via 'Thanks for applying! We appreciate your time'",
     "url_contains": "",
     "text_contains": [
       "Application submitted",
       "Thank you for applying",
       "Thank you for your interest",
-      "received your application"
+      "received your application",
+      "Thanks for applying! We appreciate your time"
     ],
     "failure_text_contains": [
       "already applied",
@@ -64,11 +65,13 @@
   },
   "ashby": {
     "_verified": "2026-06-22",
-    "_evidence": "Poolside and Kraken submissions confirmed via confirmation page",
+    "_evidence": "Poolside and Kraken submissions confirmed via confirmation page; live Ashby success observed via 'Your application is in...' and 'Your application was successfully submitted'",
     "url_contains": "",
     "text_contains": [
       "Application submitted",
-      "We'll be in touch"
+      "We'll be in touch",
+      "Your application is in.",
+      "Your application was successfully submitted"
     ],
     "failure_text_contains": [
       "already applied"

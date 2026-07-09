@@ -21,14 +21,17 @@ Philosophy: keep the workflow lightweight and local-first, put deterministic gat
 - `.codex-plugin/plugin.json`: Codex plugin manifest
 - `AGENTS.md`: Codex repository guidance
 - `src/cv_builder.py`: reportlab Platypus PDF engine (single-column, Helvetica, ATS-safe)
-- `src/generate_application.py`: CLI PDF generator with quality gates: `python src/generate_application.py --role <role_id>`
+- `src/generate_application.py`: CLI PDF generator with quality gates: `$PYTHON src/generate_application.py --role <role_id>` where `$PYTHON` is Python 3.10+
 - `src/quality_gates.py`: Deterministic PDF and content-hygiene quality gates
-- `src/tracker.py`: Application pipeline tracker: `python src/tracker.py --list`
+- `src/tracker.py`: Application pipeline tracker: `$PYTHON src/tracker.py --list` where `$PYTHON` is Python 3.10+
 - `generated/`: Output PDFs (gitignored)
 
 ## ATS platforms supported
 
-Six platforms are enforced by the `role.ats_platform` whitelist in `src/validation.py`: `greenhouse`, `greenhouse_eu`, `lever`, `workable`, `ashby`, `teamtailor`.
+Autonomous apply support remains limited to the supported platforms below. `src/validation.py`
+may also accept recognized unsupported platforms such as `personio` so `/new-role` and
+manual handoff can report the exact ATS instead of collapsing to `unknown`; recognized
+unsupported platforms must still hard-block autonomous apply.
 
 - **Greenhouse** (`greenhouse`, direct): `https://job-boards.greenhouse.io/<company>/jobs/<id>`
 - **Greenhouse** (`greenhouse`, iframe embed): navigate to `https://boards.greenhouse.io/embed/job_app?for=<company>&token=<id>` as a top-level page: cross-origin iframes block all DOM tools
@@ -37,6 +40,7 @@ Six platforms are enforced by the `role.ats_platform` whitelist in `src/validati
 - **Workable** (`workable`): `https://apply.workable.com/<company>/j/<id>/apply/`
 - **Ashby** (`ashby`): `https://jobs.ashbyhq.com/<company>/<uuid>/application`
 - **Teamtailor** (`teamtailor`): `https://career.teamtailor.com/jobs/<id>/applications/new` or `https://<company>.teamtailor.com/jobs/<id>/applications/new`
+- **Personio** (`personio`): recognized for status/manual handoff only; no autonomous fill, upload, submit, confirmation pattern, yolo eligibility, or fallback browser automation
 
 ## Known ATS quirks
 

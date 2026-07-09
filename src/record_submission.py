@@ -67,7 +67,7 @@ def _load_role_config(manifest_or_role_id: str, manifest_data: dict) -> dict:
     roles/<role_id>.json under the current workspace. Never raises — a missing
     or unreadable config just yields {} so the audit log still writes.
     """
-    role_id = manifest_data.get("role_id") or ""
+    role_id = _extract_role_id(manifest_data)
     if not role_id:
         candidate = Path(manifest_or_role_id)
         # A bare role_id arg has no .json suffix and is not an existing path.
@@ -190,6 +190,10 @@ def main() -> int:
         tracker_module.mark_submitted_unconfirmed(
             role_id=role_id,
             job_url=url_part,
+            company=role_config.get("company", ""),
+            title=role_config.get("title", ""),
+            ats_platform=ats_platform,
+            variant=role_config.get("variant"),
             tracker_path=Path(tracker_path_str),
         )
 
