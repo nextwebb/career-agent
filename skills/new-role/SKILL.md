@@ -105,6 +105,8 @@ Use `profile.json` to fill `output_prefix` with the user's actual name.
 
 The scaffold seeds `openness` with the generic banner. Where the job is in a specific city or region, customise the line by editing the file (e.g. `"Open to fully remote roles in EU and relocation to Dublin for the right opportunity."`). Do not write literal placeholder tokens like `<location>` into the JSON — they will render verbatim on the CV banner with no quality gate to catch them. Removing the key entirely falls back to `profile.openness`.
 
+Add an optional `location_strategy` block when the role needs a different rendering than the profile-level default (for example, showing `Remote` on the CV while giving the ATS form the current city). Supported keys and values are documented in `profile.example.json` under `location_strategy_defaults` and mirrored per-role in `roles.example/example_role.json`.
+
 ### 6. Check for reading check phrases
 
 Scan the job description text for hidden instructions like:

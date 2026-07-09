@@ -9,6 +9,17 @@
   "variant": "C",
   "openness": "Open to fully remote roles in Europe and relocation to Dublin for the right opportunity.",
   "_openness_note": "Shown on the CV banner under the headline. Overrides profile.openness. Remove this key to inherit the profile-level default.",
+  "location_strategy": {
+    "_comment": "Optional per-role override of profile.location_strategy_defaults. Same keys and values. Set 'inherit' to fall through to the profile-level default; omit a key to inherit implicitly. Supported values: inherit, hide, remote_label, current_residence, country_only, ats_location, role_location, custom:<key>, generated_role_specific.",
+    "cv_contact": "remote_label",
+    "cover_letter_contact": "remote_label",
+    "ats_location": "current_residence",
+    "availability_banner": "generated_role_specific",
+    "relocation_statement": "hide",
+    "on_conflict": "warn"
+  },
+  "availability_banner": "Available for immediate start in Europe timezone.",
+  "_availability_banner_note": "Optional. Rendered verbatim when 'location_strategy.availability_banner' is 'generated_role_specific'. Consumed by the resolver, not by cv_builder directly.",
   "additional_experience": [],
   "_additional_experience_note": "Set to [] to suppress the condensed 'Earlier experience:' line for this role (e.g. tight one-page submission). Remove the key entirely to inherit profile.additional_experience. Rendered as one condensed paragraph, not full entry blocks.",
   "output_prefix": "Jane_Doe_Stripe_Backend_2026-06",

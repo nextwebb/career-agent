@@ -15,6 +15,8 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import HRFlowable, KeepTogether, Paragraph, SimpleDocTemplate, Spacer
 
+from location_strategy import resolve_location
+
 DARK = colors.HexColor("#1a1a2e")
 GREY = colors.HexColor("#555566")
 LGREY = colors.HexColor("#888899")
@@ -375,9 +377,14 @@ def build_cv(profile: dict, config: dict, output_path: str) -> None:
     # (per-role) or profile.openness (default) instead.
     links = profile.get("links", {})
     cv_display = resolve_cv_display(profile)
-    contact_parts = [
-        profile.get("location", "") if cv_display["show_location"] else "",
-    ]
+    # cv_display.show_location is a hard suppression: it always wins over the
+    # resolver so an existing profile that opts out of contact-line location
+    # keeps that guarantee regardless of any new location_strategy value.
+    if cv_display["show_location"]:
+        cv_contact_location = resolve_location(profile, config, "cv_contact") or ""
+    else:
+        cv_contact_location = ""
+    contact_parts = [cv_contact_location]
     if profile.get("email"):
         contact_parts.append(
             f'<a href="mailto:{profile["email"]}" color="#2563eb">{profile["email"]}</a>'

@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from location_strategy import collect_location_warnings
+
 OK = "PASS"
 WARN = "WARN"
 FAIL = "FAIL"
@@ -633,6 +635,15 @@ def run_quality_gates(
     else:
         results.append(
             GateResult(OK, "generic_language", "No configured generic phrases detected.")
+        )
+
+    location_warnings = collect_location_warnings(profile, config)
+    if location_warnings:
+        for warning in location_warnings:
+            results.append(GateResult(WARN, "location_consistency", warning))
+    else:
+        results.append(
+            GateResult(OK, "location_consistency", "Location rendering story is consistent.")
         )
 
     return QualityReport(tuple(results))

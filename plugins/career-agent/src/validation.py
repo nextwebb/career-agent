@@ -7,6 +7,22 @@ Provides actionable error messages for debugging.
 from collections.abc import Callable
 
 
+def _validate_location_strategy_block(block: dict, field_path: str, errors: list[str]) -> None:
+    """Validate an optional location_strategy or location_strategy_defaults block.
+
+    Only shape is enforced (must be a dict of string→string). Unknown context
+    keys and unknown strategy values pass validation so future contexts and
+    custom strategies do not need a schema bump before use.
+    """
+
+    for context, value in block.items():
+        if not isinstance(context, str):
+            errors.append(f"'{field_path}' keys must be strings")
+            continue
+        if not isinstance(value, str):
+            errors.append(f"'{field_path}.{context}' must be a string")
+
+
 class ValidationError(Exception):
     """Raised when validation fails."""
 
@@ -156,6 +172,66 @@ def validate_profile(data: dict, strict: bool = False) -> tuple[bool, list[str]]
             for i, line in enumerate(data["additional_experience"]):
                 if not isinstance(line, str):
                     errors.append(f"'additional_experience[{i}]' must be a string")
+
+    # Validate location_facts if present — truthful source data referenced by
+    # the location resolver. Shape-only: strings and bools where documented.
+    if "location_facts" in data:
+        facts = data["location_facts"]
+        if not isinstance(facts, dict):
+            errors.append("'location_facts' must be a dictionary")
+        else:
+            for str_field in ("current_residence", "country_of_residence"):
+                if str_field in facts and not isinstance(facts[str_field], str):
+                    errors.append(f"'location_facts.{str_field}' must be a string")
+            for bool_field in (
+                "remote_available",
+                "open_to_relocation",
+                "requires_sponsorship_by_default",
+            ):
+                if bool_field in facts and not isinstance(facts[bool_field], bool):
+                    errors.append(f"'location_facts.{bool_field}' must be a boolean")
+            if "work_authorization" in facts:
+                if not isinstance(facts["work_authorization"], dict):
+                    errors.append("'location_facts.work_authorization' must be a dictionary")
+                else:
+                    for region, allowed in facts["work_authorization"].items():
+                        if not isinstance(allowed, bool):
+                            errors.append(
+                                f"'location_facts.work_authorization.{region}' "
+                                f"must be a boolean"
+                            )
+
+    # Validate location_presentations if present — candidate-owned labels
+    # referenced by the resolver's remote_label and custom:<key> strategies.
+    if "location_presentations" in data:
+        presentations = data["location_presentations"]
+        if not isinstance(presentations, dict):
+            errors.append("'location_presentations' must be a dictionary")
+        else:
+            for key, value in presentations.items():
+                if key == "custom":
+                    if not isinstance(value, dict):
+                        errors.append("'location_presentations.custom' must be a dictionary")
+                    else:
+                        for custom_key, custom_value in value.items():
+                            if not isinstance(custom_value, str):
+                                errors.append(
+                                    f"'location_presentations.custom.{custom_key}' "
+                                    f"must be a string"
+                                )
+                elif key.startswith("_"):
+                    continue
+                elif not isinstance(value, str):
+                    errors.append(f"'location_presentations.{key}' must be a string")
+
+    # Validate location_strategy_defaults if present — profile-level defaults
+    # for each rendering context. Same shape rules as the per-role override.
+    if "location_strategy_defaults" in data:
+        defaults = data["location_strategy_defaults"]
+        if not isinstance(defaults, dict):
+            errors.append("'location_strategy_defaults' must be a dictionary")
+        else:
+            _validate_location_strategy_block(defaults, "location_strategy_defaults", errors)
 
     return len(errors) == 0, errors
 
@@ -312,6 +388,21 @@ def validate_role_config(data: dict, strict: bool = False) -> tuple[bool, list[s
             for i, line in enumerate(data["additional_experience"]):
                 if not isinstance(line, str):
                     errors.append(f"'additional_experience[{i}]' must be a string")
+
+    # Validate location_strategy if present — per-role override of the
+    # profile-level defaults. Optional; unknown keys pass so future contexts
+    # or custom strategies do not need a schema bump before use.
+    if "location_strategy" in data:
+        strategy = data["location_strategy"]
+        if not isinstance(strategy, dict):
+            errors.append("'location_strategy' must be a dictionary")
+        else:
+            _validate_location_strategy_block(strategy, "location_strategy", errors)
+
+    # Optional per-role fields consumed by the generated_role_specific strategy.
+    for field in ("availability_banner", "relocation_statement"):
+        if field in data and not isinstance(data[field], str):
+            errors.append(f"'{field}' must be a string")
 
     return len(errors) == 0, errors
 
