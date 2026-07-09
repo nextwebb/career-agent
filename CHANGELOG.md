@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0](https://github.com/nextwebb/career-agent/compare/v1.10.1...v1.11.0) (2026-07-09)
+
+
+### Features
+
+* **cv:** configurable, context-aware location rendering — closes [#198](https://github.com/nextwebb/career-agent/issues/198) ([#206](https://github.com/nextwebb/career-agent/issues/206)) ([f1e8129](https://github.com/nextwebb/career-agent/commit/f1e81297c914285b302c23ebf2ccfa20eaa690d2))
+
+
+### Fixes
+
+* **apply:** address live yolo run regressions ([#208](https://github.com/nextwebb/career-agent/issues/208)) ([e65d2fb](https://github.com/nextwebb/career-agent/commit/e65d2fb3935b5875b25683621d37c0f8a3e1945b))
+
 ## [1.10.1](https://github.com/nextwebb/career-agent/compare/v1.10.0...v1.10.1) (2026-07-08)
 
 
